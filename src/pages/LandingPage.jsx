@@ -6,6 +6,8 @@ import {
   CheckCircle, ArrowRight, UserCheck, Star, Sparkles, MessageSquare 
 } from 'lucide-react';
 import Accordion from '../components/Accordion';
+import DashboardPreview from '../components/DashboardPreview';
+import heroPet from '../assets/hero-pet.png';
 
 // Stats data
 const STATS = [
@@ -69,10 +71,10 @@ const FAQS = [
   },
   {
     question: "Is my pet's medical record secure?",
-    answer: "Absolutely. PawNexus uses bank-grade encryption to protect all medical records, pet owner profiles, and payment histories. We strictly align with animal patient safety and security guidelines."
+    answer: "Absolutely. PetVerse uses bank-grade encryption to protect all medical records, pet owner profiles, and payment histories. We strictly align with animal patient safety and security guidelines."
   },
   {
-    question: "Can shelters manage adoptions through PawNexus?",
+    question: "Can shelters manage adoptions through PetVerse?",
     answer: "Yes! Shelter managers can create custom organizational profiles, intake pets, publish medical logs, check adoptability status, and manage adoption requests directly from their accounts."
   },
   {
@@ -93,7 +95,7 @@ const TESTIMONIALS = [
     name: "Dr. Arthur Vance",
     role: "Veterinarian, Vance Clinic",
     rating: 5,
-    text: "As a practitioner, PawNexus integrates my appointment diary with patient medical history seamlessly. Clients arrive pre-screened and records are always accurate.",
+    text: "As a practitioner, PetVerse integrates my appointment diary with patient medical history seamlessly. Clients arrive pre-screened and records are always accurate.",
     avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=150"
   }
 ];
@@ -136,7 +138,7 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="text-slate-600 text-sm sm:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              PawNexus connects pet parents, certified vets, shelter networks, and wellness marketplaces. Chart health histories, request live telehealth support, and manage adoption pipelines in a secure HIPAA-aligned dashboard.
+              PetVerse connects pet parents, certified vets, shelter networks, and wellness marketplaces. Chart health histories, request live telehealth support, and manage adoption pipelines in a secure HIPAA-aligned dashboard.
             </p>
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
               <Link
@@ -168,33 +170,12 @@ export default function LandingPage() {
           <div className="lg:col-span-5 flex justify-center">
             <div className="relative w-full max-w-[420px] aspect-square bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/5 to-secondary-500/5 rounded-3xl pointer-events-none"></div>
-              {/* Illustrated Vet SVG */}
-              <svg className="w-[85%] h-[85%] text-primary-500" viewBox="0 0 200 200" fill="none">
-                <circle cx="100" cy="100" r="80" fill="url(#hero-gradient)" fillOpacity="0.08" />
-                <path d="M100 45C69.624 45 45 69.624 45 100C45 130.376 69.624 155 100 155C130.376 155 155 130.376 155 100C155 69.624 130.376 45 100 45Z" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
-                <rect x="75" y="85" width="50" height="30" rx="8" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" />
-                <circle cx="85" cy="100" r="4" fill="currentColor" />
-                <circle cx="100" cy="100" r="4" fill="currentColor" />
-                <circle cx="115" cy="100" r="4" fill="currentColor" />
-                <path d="M100 135V115" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <path d="M90 120H110" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                
-                {/* Floating elements */}
-                <g className="animate-bounce" style={{ animationDuration: '4s' }}>
-                  <path d="M50 80C50 74.477 54.477 70 60 70C65.523 70 70 74.477 70 80C70 85.523 65.523 90 60 90C54.477 90 50 85.523 50 80Z" fill="#14B8A6" fillOpacity="0.2" />
-                  <path d="M57 80H63M60 77V83" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" />
-                </g>
-                <g className="animate-bounce" style={{ animationDuration: '5s', animationDelay: '1s' }}>
-                  <path d="M130 70C130 64.477 134.477 60 140 60C145.523 60 150 64.477 150 70C150 75.523 145.523 80 140 80C134.477 80 130 75.523 130 70Z" fill="#F59E0B" fillOpacity="0.2" />
-                  <path d="M136 67L144 73M144 67L136 73" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
-                </g>
-                <defs>
-                  <linearGradient id="hero-gradient" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#2563EB" />
-                    <stop offset="1" stopColor="#14B8A6" />
-                  </linearGradient>
-                </defs>
-              </svg>
+              {/* Animated Hero Image */}
+              <img
+                src={heroPet}
+                alt="PetVerse digital pet healthcare management platform"
+                className="w-[90%] h-[90%] object-contain rounded-2xl drop-shadow-[0_20px_50px_rgba(37,99,235,0.15)] animate-float"
+              />
             </div>
           </div>
 
@@ -265,6 +246,11 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Interactive Role-Based Dashboard Preview Section */}
+      <section className="max-w-7xl mx-auto px-6 py-4">
+        <DashboardPreview />
+      </section>
+
       {/* 4. Services Section */}
       <section id="services" className="bg-slate-100/50 py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
@@ -302,7 +288,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. Why Choose PawNexus */}
+      {/* 5. Why Choose PetVerse */}
       <section id="why-us" className="max-w-7xl mx-auto px-6 scroll-mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
@@ -339,7 +325,7 @@ export default function LandingPage() {
               Built on Complete Trust
             </h2>
             <p className="text-slate-600 text-sm leading-relaxed">
-              We understand that pet health management is highly sensitive. PawNexus was engineered by leading veterinary practitioners and software architects to deliver error-free medical charts and on-time treatment reminders.
+              We understand that pet health management is highly sensitive. PetVerse was engineered by leading veterinary practitioners and software architects to deliver error-free medical charts and on-time treatment reminders.
             </p>
             <div className="space-y-4">
               <div className="flex gap-3">
@@ -375,7 +361,7 @@ export default function LandingPage() {
               Trusted by 10,000+ Happy Families
             </h2>
             <p className="text-slate-500 text-sm">
-              Read how pet owners and veterinarians enhance medical operations with PawNexus.
+              Read how pet owners and veterinarians enhance medical operations with PetVerse.
             </p>
           </div>
 
@@ -458,7 +444,7 @@ export default function LandingPage() {
                 <input
                   type="email"
                   required
-                  placeholder="alex@pawnexus.com"
+                  placeholder="alex@petverse.com"
                   className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-xs font-medium"
                 />
               </div>

@@ -3,14 +3,14 @@
 const DEFAULT_USERS = [
   {
     name: "Dr. Sarah Jenkins",
-    email: "vet@pawnexus.com",
+    email: "vet@petverse.com",
     password: "Password123!",
     phone: "9876543210",
     role: "Veterinarian"
   },
   {
     name: "Alex Carter",
-    email: "owner@pawnexus.com",
+    email: "owner@petverse.com",
     password: "Password123!",
     phone: "9876543211",
     role: "Pet Owner"
@@ -19,8 +19,8 @@ const DEFAULT_USERS = [
 
 // Initialize mock DB
 const initializeDB = () => {
-  if (!localStorage.getItem('pawnexus_users')) {
-    localStorage.setItem('pawnexus_users', JSON.stringify(DEFAULT_USERS));
+  if (!localStorage.getItem('petverse_users')) {
+    localStorage.setItem('petverse_users', JSON.stringify(DEFAULT_USERS));
   }
 };
 
@@ -32,7 +32,7 @@ export const authService = {
     // Simulate network latency
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const users = JSON.parse(localStorage.getItem('pawnexus_users') || '[]');
+    const users = JSON.parse(localStorage.getItem('petverse_users') || '[]');
     
     // Check if user already exists
     const exists = users.some((u) => u.email.toLowerCase() === userData.email.toLowerCase());
@@ -50,7 +50,7 @@ export const authService = {
     };
 
     users.push(newUser);
-    localStorage.setItem('pawnexus_users', JSON.stringify(users));
+    localStorage.setItem('petverse_users', JSON.stringify(users));
     return newUser;
   },
 
@@ -59,7 +59,7 @@ export const authService = {
     // Simulate network latency
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const users = JSON.parse(localStorage.getItem('pawnexus_users') || '[]');
+    const users = JSON.parse(localStorage.getItem('petverse_users') || '[]');
     
     const user = users.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
@@ -71,18 +71,18 @@ export const authService = {
 
     // Save current session
     const sessionUser = { name: user.name, email: user.email, role: user.role };
-    localStorage.setItem('pawnexus_current_user', JSON.stringify(sessionUser));
+    localStorage.setItem('petverse_current_user', JSON.stringify(sessionUser));
     return sessionUser;
   },
 
   // Logout
   logout: () => {
-    localStorage.removeItem('pawnexus_current_user');
+    localStorage.removeItem('petverse_current_user');
   },
 
   // Get current user session
   getCurrentUser: () => {
-    const session = localStorage.getItem('pawnexus_current_user');
+    const session = localStorage.getItem('petverse_current_user');
     return session ? JSON.parse(session) : null;
   }
 };

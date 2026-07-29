@@ -28,7 +28,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await login(data.email, data.password);
-      showToast("Access Granted. Welcome to PawNexus!", "success");
+      showToast("Access Granted. Welcome to PetVerse!", "success");
       navigate('/');
     } catch (err) {
       showToast(err.message || "Invalid credentials.", "error");
@@ -64,7 +64,7 @@ export default function LoginPage() {
             </span>
             <input
               type="email"
-              placeholder="owner@pawnexus.com"
+              placeholder="owner@petverse.com"
               disabled={isSubmitting}
               className={`w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border ${errors.email ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
               {...register('email', {
@@ -194,8 +194,8 @@ export default function LoginPage() {
       {/* Seed Accounts Info Panel */}
       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-[10px] text-slate-500 text-left space-y-1">
         <p className="font-bold text-slate-700">Mock Accounts Available:</p>
-        <p>🐾 Pet Owner: <span className="font-mono font-semibold text-primary-600">owner@pawnexus.com</span> / <span className="font-mono">Password123!</span></p>
-        <p>🩺 Veterinarian: <span className="font-mono font-semibold text-secondary-600">vet@pawnexus.com</span> / <span className="font-mono">Password123!</span></p>
+        <p>🐾 Pet Owner: <span className="font-mono font-semibold text-primary-600">owner@petverse.com</span> / <span className="font-mono">Password123!</span></p>
+        <p>🩺 Veterinarian: <span className="font-mono font-semibold text-secondary-600">vet@petverse.com</span> / <span className="font-mono">Password123!</span></p>
       </div>
 
     </div>

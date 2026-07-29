@@ -1,16 +1,53 @@
-# React + Vite
+# 🐾 PetVerse: The Ultimate Pet Care & Community Ecosystem
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**PetVerse** is a premium, full-stack application designed to cater to all aspects of pet care, adoption, health tracking, social networking, and expert veterinary consultations. Built specifically as a final-year project, it offers a robust, component-based, mobile-first design with role-based access controls.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Technology Stack
 
-## React Compiler
+### Frontend
+* **Core Library:** React 19
+* **Language:** TypeScript
+* **Build Tool:** Vite
+* **Styling & UI:** Tailwind CSS & shadcn/ui
+* **Routing:** React Router DOM (v7)
+* **Form & Validation:** React Hook Form & Zod
+* **State Management:** Zustand
+* **Data Fetching:** TanStack Query (React Query) & Axios
+* **Animations:** Framer Motion
+* **Visuals & Charts:** Lucide React & Recharts
+* **Utilities:** date-fns
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Backend
+* **Framework:** Django & Django REST Framework (DRF)
+* **Authentication:** JWT (JSON Web Tokens) Authentication
 
-## Expanding the Oxlint configuration
+### Database
+* **Database Management System:** MySQL
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Development Tools
+* **IDE:** Visual Studio Code
+* **Version Control:** Git & GitHub
+* **API Testing:** Postman
+* **Package Manager:** npm
+
+### Deployment (Future Targets)
+* **Frontend:** Vercel
+* **Backend:** Render / Railway
+* **Database:** MySQL Database Server
+
+---
+
+## 📐 Architecture & Key Features
+* **RESTful API Architecture:** Seamless decoupled client-server communication.
+* **Component-Based UI:** Highly reusable, modular React components.
+* **Responsive Mobile-First Design:** Optimized user experience across all screen sizes.
+* **Role-Based Access Control (RBAC):** Tailored experiences and permissions for pet owners, shelter representatives, and veterinarians.
+
+---
+
+## 🔍 Code Quality & Best Practices
+* **Linting:** ESLint / Oxlint
+* **Formatting:** Prettier
+* **Type Safety:** TypeScript

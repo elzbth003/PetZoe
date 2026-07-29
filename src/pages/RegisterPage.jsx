@@ -117,7 +117,7 @@ export default function RegisterPage() {
             </span>
             <input
               type="email"
-              placeholder="sarah@pawnexus.com"
+              placeholder="sarah@petverse.com"
               disabled={isSubmitting}
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border ${errors.email ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
               {...register('email', {

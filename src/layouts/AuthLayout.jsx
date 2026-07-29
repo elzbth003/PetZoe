@@ -21,7 +21,7 @@ export default function AuthLayout() {
             <PawPrint size={24} className="fill-current text-white" />
           </div>
           <span className="font-display font-extrabold text-2xl tracking-tight text-white">
-            Paw<span className="text-secondary-300">Nexus</span>
+            Pet<span className="text-secondary-300">Verse</span>
           </span>
         </Link>
 
@@ -73,7 +73,7 @@ export default function AuthLayout() {
 
         {/* Footer Credit */}
         <div className="z-10 text-[10px] text-slate-300 flex justify-between border-t border-white/10 pt-4">
-          <span>&copy; PawNexus Healthcare</span>
+          <span>&copy; PetVerse Healthcare</span>
           <span>Verified Security Standard</span>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function AuthLayout() {
                 <PawPrint size={20} className="fill-current" />
               </div>
               <span className="font-display font-extrabold text-xl tracking-tight text-slate-900">
-                Paw<span className="text-primary-600">Nexus</span>
+                Pet<span className="text-primary-600">Verse</span>
               </span>
             </Link>
           </div>

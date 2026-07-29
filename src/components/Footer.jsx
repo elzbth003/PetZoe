@@ -19,7 +19,7 @@ export default function Footer() {
                 <PawPrint size={18} className="fill-current text-white" />
               </div>
               <span className="font-display font-extrabold text-xl tracking-tight text-white">
-                Paw<span className="text-secondary-400">Nexus</span>
+                Pet<span className="text-secondary-400">Verse</span>
               </span>
             </Link>
             <p className="text-slate-400 text-xs max-w-sm leading-relaxed">
@@ -58,7 +58,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={14} className="text-primary-400" />
-                <span>support@pawnexus.com</span>
+                <span>support@petverse.com</span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin size={14} className="text-primary-400 mt-0.5" />
@@ -72,7 +72,7 @@ export default function Footer() {
         {/* Bottom Banner */}
         <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
           <div className="flex items-center gap-1">
-            <span>&copy; {currentYear} PawNexus Inc. Licensed for Pet Care and Telehealth. Made with</span>
+            <span>&copy; {currentYear} PetVerse Inc. Licensed for Pet Care and Telehealth. Made with</span>
             <Heart size={10} className="fill-rose-500 text-rose-500" />
           </div>
           <div className="flex gap-6">

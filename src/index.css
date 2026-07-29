@@ -29,6 +29,18 @@
   --color-accent-500: #f59e0b;
   --color-accent-600: #d97706;
   --color-accent-700: #b45309;
+
+  --animate-float: float 5s ease-in-out infinite;
+  --animate-pulse-slow: pulse-slow 8s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(1.08); }
+  }
 }
 
 body {

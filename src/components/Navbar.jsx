@@ -50,7 +50,7 @@ export default function Navbar() {
             <PawPrint size={20} className="fill-current text-white" />
           </div>
           <span className="font-display font-extrabold text-xl tracking-tight text-slate-900">
-            Paw<span className="text-primary-600">Nexus</span>
+            Pet<span className="text-primary-600">Verse</span>
           </span>
         </Link>
 
