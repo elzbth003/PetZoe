@@ -55,7 +55,7 @@ The system addresses common challenges in traditional veterinary care, including
 
 ### Project Objective
 
-The objective of PawNexus is to develop a secure, scalable, and centralized digital veterinary healthcare platform that enhances continuity of care, streamlines veterinary workflows, simplifies pet healthcare management, and strengthens collaboration between pet owners, veterinarians, shelters, and administrators.
+The objective of PetZoe is to develop a secure, scalable, and centralized digital veterinary healthcare platform that enhances continuity of care, streamlines veterinary workflows, simplifies pet healthcare management, and strengthens collaboration between pet owners, veterinarians, shelters, and administrators.
 
 ### Future Enhancements
 
@@ -68,4 +68,4 @@ The platform is designed with a modular architecture to support future enhanceme
 - Predictive Health Analytics
 - Telemedicine Integration
 
-PawNexus aims to bridge the gap between traditional veterinary practices and modern digital healthcare by providing a unified platform that improves pet healthcare management while laying the foundation for future AI-powered veterinary services.
+PetZoe aims to bridge the gap between traditional veterinary practices and modern digital healthcare by providing a unified platform that improves pet healthcare management while laying the foundation for future AI-powered veterinary services.
