@@ -1,16 +1,71 @@
-# React + Vite
+## **PetZoe – Digital Pet Healthcare & Veterinary Management System**
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+PetZoe is a modern web-based platform designed to streamline veterinary healthcare by providing a centralized ecosystem for pet owners, veterinarians, shelters, and administrators. The application enables efficient management of pet health records, veterinary appointments, digital prescriptions, adoption services, and emergency support through a secure and user-friendly interface.
 
-Currently, two official plugins are available:
+The system addresses common challenges in traditional veterinary care, including paper-based medical records, fragmented healthcare history, manual appointment scheduling, and limited communication between pet owners and veterinary professionals. By maintaining a lifelong digital health record for every pet, PawNexus ensures continuity of care across multiple veterinary clinics while improving accessibility, collaboration, and overall healthcare management.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Features
 
-## React Compiler
+- Secure authentication with role-based access control
+- Pet profile and digital health passport management
+- Veterinary appointment booking and scheduling
+- Lifetime digital medical records and prescription history
+- Vaccination, medication, and follow-up reminders
+- Verified veterinarian and shelter management
+- Pet adoption and shelter management
+- Emergency contacts and nearby veterinary assistance
+- Interactive dashboards for different user roles
+- Fully responsive and intuitive user interface
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### User Roles
 
-## Expanding the Oxlint configuration
+- **Pet Owner** – Manage pets, appointments, medical records, and adoption requests.
+- **Veterinarian** – Manage appointments, consultation records, prescriptions, and patient history.
+- **Shelter Manager** – Publish pets for adoption and manage adoption applications.
+- **Administrator** – Verify veterinarians and shelters, manage users, and monitor platform activities.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Technology Stack
+
+#### Frontend
+
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
+- Zustand
+- TanStack Query
+- React Router
+- Axios
+- Framer Motion
+
+#### Backend
+
+- Java 21
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- Hibernate
+- RESTful APIs
+- JWT Authentication
+
+#### Database
+
+- MySQL
+
+### Project Objective
+
+The objective of PawNexus is to develop a secure, scalable, and centralized digital veterinary healthcare platform that enhances continuity of care, streamlines veterinary workflows, simplifies pet healthcare management, and strengthens collaboration between pet owners, veterinarians, shelters, and administrators.
+
+### Future Enhancements
+
+The platform is designed with a modular architecture to support future enhancements, including:
+
+- AI Symptom Checker
+- AI Disease Prediction
+- AI-Assisted Veterinary Oncology Screening
+- AI Clinical Decision Support
+- Predictive Health Analytics
+- Telemedicine Integration
+
+PawNexus aims to bridge the gap between traditional veterinary practices and modern digital healthcare by providing a unified platform that improves pet healthcare management while laying the foundation for future AI-powered veterinary services.
