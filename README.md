@@ -8,7 +8,7 @@
 
 ### Frontend
 * **Core Library:** React 19
-* **Language:** TypeScript
+* **Language:** JavaScript
 * **Build Tool:** Vite
 * **Styling & UI:** Tailwind CSS & shadcn/ui
 * **Routing:** React Router DOM (v7)
@@ -20,11 +20,11 @@
 * **Utilities:** date-fns
 
 ### Backend
-* **Framework:** Django & Django REST Framework (DRF)
+* **Framework:** Spring Boot (Java 12)
 * **Authentication:** JWT (JSON Web Tokens) Authentication
 
 ### Database
-* **Database Management System:** MySQL
+* **Database Management System:** PL/SQL (Oracle Database)
 
 ### Development Tools
 * **IDE:** Visual Studio Code
@@ -34,8 +34,8 @@
 
 ### Deployment (Future Targets)
 * **Frontend:** Vercel
-* **Backend:** Render / Railway
-* **Database:** MySQL Database Server
+* **Backend:** Render / Railway / Heroku
+* **Database:** Oracle Database / PL/SQL Server
 
 ---
 
