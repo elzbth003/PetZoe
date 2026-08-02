@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, Calendar, Clock, Video, FileText, Activity, Shield, Users, 
-  ArrowRight, CheckCircle2, TrendingUp, Sparkles, Plus
+  ArrowRight, CheckCircle2, TrendingUp, Plus
 } from 'lucide-react';
 
 export default function DashboardPreview() {

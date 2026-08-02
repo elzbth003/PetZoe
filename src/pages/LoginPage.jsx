@@ -27,9 +27,25 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      await login(data.email, data.password);
-      showToast("Access Granted. Welcome to PetVerse!", "success");
-      navigate('/');
+      const user = await login(data.email, data.password);
+      showToast(`Access Granted. Welcome back, ${user.name}!`, "success");
+      
+      switch (user.role) {
+        case 'Pet Owner':
+          navigate('/dashboard/owner');
+          break;
+        case 'Veterinarian':
+          navigate('/dashboard/vet');
+          break;
+        case 'Shelter Manager':
+          navigate('/dashboard/shelter');
+          break;
+        case 'Admin':
+          navigate('/dashboard/admin');
+          break;
+        default:
+          navigate('/');
+      }
     } catch (err) {
       showToast(err.message || "Invalid credentials.", "error");
     } finally {
@@ -120,13 +136,12 @@ export default function LoginPage() {
             />
             <span>Remember me</span>
           </label>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); showToast("Password recovery is not implemented in this mock client.", "info"); }}
+          <Link
+            to="/forgot-password"
             className="text-primary-600 hover:underline"
           >
             Forgot Password?
-          </a>
+          </Link>
         </div>
 
         {/* Submit */}

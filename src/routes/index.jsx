@@ -9,6 +9,14 @@ import AuthLayout from '../layouts/AuthLayout';
 import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
+import ForgotPasswordPage from '../pages/ForgotPassword';
+
+// Protected Dashboards
+import ProtectedRoute from '../components/ProtectedRoute';
+import OwnerDashboard from '../pages/dashboard/OwnerDashboard';
+import VetDashboard from '../pages/dashboard/VetDashboard';
+import ShelterDashboard from '../pages/dashboard/ShelterDashboard';
+import AdminDashboard from '../pages/dashboard/AdminDashboard';
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +40,32 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: <RegisterPage />
+      },
+      {
+        path: 'forgot-password',
+        element: <ForgotPasswordPage />
+      }
+    ]
+  },
+  {
+    path: '/dashboard',
+    element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Admin']} />,
+    children: [
+      {
+        path: 'owner',
+        element: <OwnerDashboard />
+      },
+      {
+        path: 'vet',
+        element: <VetDashboard />
+      },
+      {
+        path: 'shelter',
+        element: <ShelterDashboard />
+      },
+      {
+        path: 'admin',
+        element: <AdminDashboard />
       }
     ]
   }

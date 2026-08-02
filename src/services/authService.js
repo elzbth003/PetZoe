@@ -1,88 +1,50 @@
-// Mock Authentication Service using localStorage
-
-const DEFAULT_USERS = [
-  {
-    name: "Dr. Sarah Jenkins",
-    email: "vet@petverse.com",
-    password: "Password123!",
-    phone: "9876543210",
-    role: "Veterinarian"
-  },
-  {
-    name: "Alex Carter",
-    email: "owner@petverse.com",
-    password: "Password123!",
-    phone: "9876543211",
-    role: "Pet Owner"
-  }
-];
-
-// Initialize mock DB
-const initializeDB = () => {
-  if (!localStorage.getItem('petverse_users')) {
-    localStorage.setItem('petverse_users', JSON.stringify(DEFAULT_USERS));
-  }
-};
-
-initializeDB();
+import api from './api';
 
 export const authService = {
   // Register user
   register: async (userData) => {
-    // Simulate network latency
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const users = JSON.parse(localStorage.getItem('petverse_users') || '[]');
-    
-    // Check if user already exists
-    const exists = users.some((u) => u.email.toLowerCase() === userData.email.toLowerCase());
-    if (exists) {
-      throw new Error("An account with this email address already exists.");
-    }
-
-    // Save new user
-    const newUser = {
+    const response = await api.post('/auth/register', {
       name: userData.name,
       email: userData.email,
-      phone: userData.phone,
       password: userData.password,
-      role: userData.role
-    };
-
-    users.push(newUser);
-    localStorage.setItem('petverse_users', JSON.stringify(users));
-    return newUser;
+      phone: userData.phone,
+      role: userData.role,
+    });
+    return response.data;
   },
 
   // Login user
   login: async (email, password) => {
-    // Simulate network latency
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const users = JSON.parse(localStorage.getItem('petverse_users') || '[]');
-    
-    const user = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (!user) {
-      throw new Error("Invalid email address or password.");
+    const response = await api.post('/auth/login', { email, password });
+    if (response.data && response.data.token) {
+      localStorage.setItem('petzoe_token', response.data.token);
+      
+      const user = {
+        name: response.data.name,
+        email: response.data.email,
+        role: response.data.role
+      };
+      localStorage.setItem('petzoe_user', JSON.stringify(user));
+      return user;
     }
+    throw new Error("Authentication failed. No token received.");
+  },
 
-    // Save current session
-    const sessionUser = { name: user.name, email: user.email, role: user.role };
-    localStorage.setItem('petverse_current_user', JSON.stringify(sessionUser));
-    return sessionUser;
+  // Forgot password
+  forgotPassword: async (email) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
   },
 
   // Logout
   logout: () => {
-    localStorage.removeItem('petverse_current_user');
+    localStorage.removeItem('petzoe_token');
+    localStorage.removeItem('petzoe_user');
   },
 
   // Get current user session
   getCurrentUser: () => {
-    const session = localStorage.getItem('petverse_current_user');
-    return session ? JSON.parse(session) : null;
+    const userJson = localStorage.getItem('petzoe_user');
+    return userJson ? JSON.parse(userJson) : null;
   }
 };
