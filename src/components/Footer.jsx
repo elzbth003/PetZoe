@@ -14,12 +14,13 @@ export default function Footer() {
           
           {/* Column 1: Brand & Tagline */}
           <div className="md:col-span-4 space-y-4">
-            <Link to="/" className="flex items-center gap-2 group self-start">
-              <div className="p-2 bg-primary-600 rounded-xl text-white shadow-md">
-                <PawPrint size={18} className="fill-current text-white" />
-              </div>
-              <span className="font-display font-extrabold text-xl tracking-tight text-white">
-                Pet<span className="text-secondary-400">Verse</span>
+            <Link to="/" className="flex items-center gap-1.5 group self-start">
+              <span className="font-display font-black text-xl tracking-tight text-white flex items-center select-none">
+                PetZ
+                <span className="inline-block hover:-rotate-12 transition-transform duration-300">
+                  <PawPrint size={20} className="fill-current text-secondary-400 mx-0.5 animate-pulse" />
+                </span>
+                e
               </span>
             </Link>
             <p className="text-slate-400 text-xs max-w-sm leading-relaxed">
@@ -58,7 +59,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={14} className="text-primary-400" />
-                <span>support@petverse.com</span>
+                <span>support@petzoe.com</span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin size={14} className="text-primary-400 mt-0.5" />
@@ -72,7 +73,7 @@ export default function Footer() {
         {/* Bottom Banner */}
         <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
           <div className="flex items-center gap-1">
-            <span>&copy; {currentYear} PetVerse Inc. Licensed for Pet Care and Telehealth. Made with</span>
+            <span>&copy; {currentYear} PetZoe Inc. Licensed for Pet Care and Telehealth. Made with</span>
             <Heart size={10} className="fill-rose-500 text-rose-500" />
           </div>
           <div className="flex gap-6">

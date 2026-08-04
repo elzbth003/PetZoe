@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Heart, Calendar, FileText, ShoppingBag, 
   Bell, User, LogOut, Sparkles, ShieldAlert, CalendarDays,
-  Plus, ArrowRight, Activity, Clock
+  Plus, ArrowRight, Activity, Clock, PawPrint
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import PetList from '../../components/dashboard/PetList';
@@ -332,11 +332,14 @@ export default function OwnerDashboard() {
         
         {/* Brand Header */}
         <div className="space-y-8">
-          <div className="flex items-center gap-2 px-2">
-            <div className="h-8 w-8 rounded-lg bg-[#38BDF8] flex items-center justify-center text-white font-bold text-lg">
-              P
-            </div>
-            <span className="font-display font-black text-xl text-white tracking-tight">PetZoe</span>
+          <div className="flex items-center gap-1.5 px-2 select-none">
+            <span className="font-display font-black text-xl text-white flex items-center">
+              PetZ
+              <span className="inline-block hover:rotate-12 transition-transform duration-300">
+                <PawPrint size={20} className="fill-current text-[#38BDF8] mx-0.5 animate-pulse" />
+              </span>
+              e
+            </span>
           </div>
 
           {/* Navigation Links */}

@@ -16,12 +16,13 @@ export default function AuthLayout() {
         <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-white/10 rounded-full blur-3xl pointer-events-none animate-pulse-slow"></div>
 
         {/* Brand Header */}
-        <Link to="/" className="flex items-center gap-2 cursor-pointer group z-10 self-start">
-          <div className="p-2 bg-white/10 rounded-xl text-white backdrop-blur-md border border-white/20 group-hover:scale-105 transition-transform duration-300">
-            <PawPrint size={24} className="fill-current text-white" />
-          </div>
-          <span className="font-display font-extrabold text-2xl tracking-tight text-white">
-            Pet<span className="text-secondary-300">Verse</span>
+        <Link to="/" className="flex items-center gap-1.5 cursor-pointer group z-10 self-start select-none">
+          <span className="font-display font-black text-2xl tracking-tight text-white flex items-center">
+            PetZ
+            <span className="inline-block hover:rotate-12 transition-transform duration-300">
+              <PawPrint size={24} className="fill-current text-secondary-300 mx-0.5 animate-pulse" />
+            </span>
+            e
           </span>
         </Link>
 
@@ -73,7 +74,7 @@ export default function AuthLayout() {
 
         {/* Footer Credit */}
         <div className="z-10 text-[10px] text-slate-300 flex justify-between border-t border-white/10 pt-4">
-          <span>&copy; PetVerse Healthcare</span>
+          <span>&copy; PetZoe Healthcare</span>
           <span>Verified Security Standard</span>
         </div>
       </div>
@@ -84,12 +85,13 @@ export default function AuthLayout() {
           
           {/* Mobile Logo Header */}
           <div className="flex lg:hidden justify-center mb-6">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-tr from-primary-600 to-secondary-500 rounded-xl text-white shadow-md">
-                <PawPrint size={20} className="fill-current" />
-              </div>
-              <span className="font-display font-extrabold text-xl tracking-tight text-slate-900">
-                Pet<span className="text-primary-600">Verse</span>
+            <Link to="/" className="flex items-center gap-1.5 select-none">
+              <span className="font-display font-black text-xl tracking-tight text-slate-900 flex items-center">
+                PetZ
+                <span className="inline-block hover:rotate-12 transition-transform duration-300">
+                  <PawPrint size={20} className="fill-current text-primary-500 mx-0.5 animate-pulse" />
+                </span>
+                e
               </span>
             </Link>
           </div>

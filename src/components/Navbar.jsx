@@ -45,12 +45,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-          <div className="p-2 bg-primary-600 rounded-xl text-white shadow-md shadow-primary-600/20 group-hover:scale-105 transition-transform duration-300">
-            <PawPrint size={20} className="fill-current text-white" />
-          </div>
-          <span className="font-display font-extrabold text-xl tracking-tight text-slate-900">
-            Pet<span className="text-primary-600">Verse</span>
+        <Link to="/" className="flex items-center gap-1.5 group cursor-pointer">
+          <span className="font-display font-black text-xl tracking-tight text-slate-900 flex items-center select-none">
+            PetZ
+            <span className="inline-block hover:rotate-12 transition-transform duration-300">
+              <PawPrint size={20} className="fill-current text-primary-500 mx-0.5 animate-pulse" />
+            </span>
+            e
           </span>
         </Link>
 

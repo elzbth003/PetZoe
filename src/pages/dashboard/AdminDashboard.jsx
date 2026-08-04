@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Shield, Users, Database, LogOut } from 'lucide-react';
+import { Shield, Users, Database, LogOut, PawPrint } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -17,11 +17,14 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6">
         <div className="space-y-8">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-secondary-500 flex items-center justify-center text-white font-bold text-lg">
-              P
-            </div>
-            <span className="font-display font-black text-xl text-white">PetZoe</span>
+          <div className="flex items-center gap-1.5 select-none">
+            <span className="font-display font-black text-xl text-white flex items-center">
+              PetZ
+              <span className="inline-block hover:rotate-12 transition-transform duration-300">
+                <PawPrint size={20} className="fill-current text-[#38BDF8] mx-0.5 animate-pulse" />
+              </span>
+              e
+            </span>
           </div>
           
           <nav className="space-y-1">
