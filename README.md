@@ -1,10 +1,10 @@
-#PetZoe – Digital Pet Healthcare & Veterinary Management System
+PetZoe – Digital Pet Healthcare & Veterinary Management System
 
 **PetZoe** is a premium, full-stack application designed to cater to all aspects of pet care, adoption, health tracking, social networking, and expert veterinary consultations. Built specifically as a final-year project, it offers a robust, component-based, mobile-first design with role-based access controls.
 
 The system addresses common challenges in traditional veterinary care, including paper-based medical records, fragmented healthcare history, manual appointment scheduling, and limited communication between pet owners and veterinary professionals.
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend
 * **Core Library:** React 19
