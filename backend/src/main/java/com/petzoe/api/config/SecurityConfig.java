@@ -3,6 +3,7 @@ package com.petzoe.api.config;
 import com.petzoe.api.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -31,7 +32,7 @@ public class SecurityConfig {
     private final UserRepository userRepository;
     private final JwtAuthenticationFilter jwtAuthFilter;
 
-    public SecurityConfig(UserRepository userRepository, JwtAuthenticationFilter jwtAuthFilter) {
+    public SecurityConfig(UserRepository userRepository, @Lazy JwtAuthenticationFilter jwtAuthFilter) {
         this.userRepository = userRepository;
         this.jwtAuthFilter = jwtAuthFilter;
     }
