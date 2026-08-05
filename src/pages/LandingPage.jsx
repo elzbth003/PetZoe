@@ -11,10 +11,10 @@ import DashboardPreview from '../components/DashboardPreview';
 
 // Stats data
 const STATS = [
-  { label: "Registered Pets", value: "48K+", color: "text-[#38BDF8]" },
-  { label: "Certified Vets", value: "1,200+", color: "text-[#F97360]" },
-  { label: "Partner Shelters", value: "350+", color: "text-amber-500" },
-  { label: "Platform Uptime", value: "99.9%", color: "text-emerald-500" }
+  { label: "Registered Pets", value: "48K+", color: "text-secondary-600" },
+  { label: "Certified Vets", value: "1,200+", color: "text-accent-600" },
+  { label: "Partner Shelters", value: "350+", color: "text-primary-600" },
+  { label: "Platform Uptime", value: "99.9%", color: "text-emerald-600" }
 ];
 
 // Features list
@@ -23,25 +23,25 @@ const FEATURES = [
     icon: Database,
     title: "Digital Health Vault",
     desc: "A centralized electronic health record keeping vaccinations, clinical conditions, and weight logs secure and ready.",
-    color: "bg-blue-500/10 text-blue-600"
+    color: "bg-primary-50 text-primary-600"
   },
   {
     icon: Video,
     title: "24/7 Virtual Care",
     desc: "Instantly consult licensed veterinarians from your couch. Perfect for late-night questions or emergency triage.",
-    color: "bg-teal-500/10 text-teal-600"
+    color: "bg-secondary-50 text-secondary-600"
   },
   {
     icon: Heart,
     title: "Adoption Logistics",
     desc: "Direct communication channels to rescue shelters, digital fostering logs, and streamlined background checks.",
-    color: "bg-rose-500/10 text-rose-600"
+    color: "bg-accent-50 text-accent-600"
   },
   {
     icon: Clock,
     title: "Smart Reminders",
     desc: "Automatic alerts for heartworm pills, checkups, and medicine doses synchronized directly to your calendar.",
-    color: "bg-amber-500/10 text-amber-600"
+    color: "bg-primary-100 text-primary-700"
   }
 ];
 
@@ -89,14 +89,14 @@ const TESTIMONIALS = [
     role: "Golden Retriever Parent",
     rating: 5,
     text: "The 24/7 video consultation saved us a late-night trip to the ER when Milo swallowed a toy. The vet was incredibly calming and gave us clear guidance.",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150"
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150&h=150"
   },
   {
     name: "Dr. Arthur Vance",
     role: "Veterinarian, Vance Clinic",
     rating: 5,
     text: "As a practitioner, PetZoe integrates my appointment diary with patient medical history seamlessly. Clients arrive pre-screened and records are always accurate.",
-    avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=150"
+    avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=150&h=150"
   }
 ];
 
@@ -249,16 +249,19 @@ export default function LandingPage() {
       <section id="hero" className="relative min-h-[90vh] flex items-center pt-24 pb-16 overflow-hidden">
         
         {/* Full width background image with overlay */}
-        <div className="absolute inset-0 z-0">
+        <motion.div 
+          initial={{ scale: 1.05 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute inset-0 z-0"
+        >
           <img 
-            src="https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&q=80&w=1920" 
-            alt="Dog with veterinarian" 
+            src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=1920" 
+            alt="Elegant Dog with veterinarian" 
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-transparent"></div>
-          {/* Bottom gradient fade for smooth transition to next section */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-50 to-transparent"></div>
-        </div>
+          <div className="absolute inset-0 bg-slate-900/70"></div>
+        </motion.div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full mt-10">
           
@@ -266,16 +269,16 @@ export default function LandingPage() {
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
             className="max-w-2xl text-left space-y-7"
           >
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white backdrop-blur-md text-[10px] font-bold border border-white/20 uppercase tracking-wider shadow-sm">
-              <Sparkles size={12} className="text-[#38BDF8]" />
+              <Sparkles size={12} className="text-secondary-300" />
               The Next-Gen Pet Healthcare Ecosystem
             </span>
             <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight tracking-tight drop-shadow-sm">
               A Unified Portal for <br />
-              <span className="text-[#38BDF8]">
+              <span className="text-secondary-300">
                 Digital Pet Care
               </span>
             </h1>
@@ -283,27 +286,30 @@ export default function LandingPage() {
               PetZoe connects pet owners, certified vets, shelter networks, and wellness marketplaces. Chart health histories, request live telehealth support, and manage adoption pipelines in a secure, role-based dashboard.
             </p>
             <div className="flex flex-col sm:flex-row justify-start gap-4">
-              <Link
-                to="/register"
-                className="px-8 py-4 rounded-full font-bold bg-[#38BDF8] hover:bg-[#0ea5e9] text-white shadow-lg shadow-sky-500/20 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
-              >
-                Get Started Now <ArrowRight size={14} />
-              </Link>
-              <a
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Link
+                  to="/register"
+                  className="px-8 py-4 rounded-full font-bold bg-secondary-400 hover:bg-secondary-500 text-white shadow-lg shadow-secondary-500/20 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
+                >
+                  Get Started Now <ArrowRight size={14} />
+                </Link>
+              </motion.div>
+              <motion.a
                 href="#features"
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 className="px-8 py-4 rounded-full font-bold bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all duration-200 text-xs uppercase tracking-wider flex items-center justify-center"
               >
                 Learn More
-              </a>
+              </motion.a>
             </div>
 
             {/* Micro Badges */}
             <div className="pt-6 flex flex-wrap justify-start gap-6 text-xs text-slate-300 font-bold border-t border-white/10">
               <div className="flex items-center gap-1.5">
-                <Shield className="text-[#38BDF8]" size={16} /> Encrypted Records
+                <Shield className="text-secondary-300" size={16} /> Encrypted Records
               </div>
               <div className="flex items-center gap-1.5">
-                <UserCheck className="text-[#F97360]" size={16} /> Certified Practitioners
+                <UserCheck className="text-accent-400" size={16} /> Certified Practitioners
               </div>
             </div>
           </motion.div>
