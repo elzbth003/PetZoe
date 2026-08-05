@@ -351,7 +351,13 @@ export default function OwnerDashboard() {
               return (
                 <button
                   key={item.name}
-                  onClick={() => setActiveTab(item.name)}
+                  onClick={() => {
+                    if (item.name === 'Marketplace') {
+                      navigate('/marketplace');
+                    } else {
+                      setActiveTab(item.name);
+                    }
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                     isActive 
                       ? 'bg-[#1E3A5F] text-white border-l-4 border-[#38BDF8]' 
