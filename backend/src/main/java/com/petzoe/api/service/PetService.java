@@ -16,15 +16,17 @@ public class PetService {
 
     private final PetRepository petRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    public PetService(PetRepository petRepository, UserRepository userRepository) {
+    public PetService(PetRepository petRepository, UserRepository userRepository,
+                      NotificationService notificationService) {
         this.petRepository = petRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public List<PetDTO> getPetsByOwner(String email) {
-        User owner = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        User owner = getOwner(email);
         return petRepository.findByOwner(owner).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -36,8 +38,7 @@ public class PetService {
     }
 
     public PetDTO createPet(PetDTO petDTO, String email) {
-        User owner = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        User owner = getOwner(email);
 
         Pet pet = new Pet(
                 petDTO.name(),
@@ -48,10 +49,23 @@ public class PetService {
                 petDTO.weight(),
                 petDTO.vaccinationStatus(),
                 petDTO.photoUrl(),
+                petDTO.dateOfBirth(),
+                petDTO.color(),
+                petDTO.allergies(),
+                petDTO.medicalNotes(),
                 owner
         );
 
         Pet savedPet = petRepository.save(pet);
+
+        // Trigger vaccination notification if needed
+        if (!"Up-to-date".equals(petDTO.vaccinationStatus())) {
+            notificationService.createNotification(owner,
+                    "Vaccination Reminder 💉",
+                    petDTO.name() + " needs vaccination. Status: " + petDTO.vaccinationStatus(),
+                    "VACCINATION");
+        }
+
         return convertToDTO(savedPet);
     }
 
@@ -65,6 +79,10 @@ public class PetService {
         pet.setWeight(petDTO.weight());
         pet.setVaccinationStatus(petDTO.vaccinationStatus());
         pet.setPhotoUrl(petDTO.photoUrl());
+        pet.setDateOfBirth(petDTO.dateOfBirth());
+        pet.setColor(petDTO.color());
+        pet.setAllergies(petDTO.allergies());
+        pet.setMedicalNotes(petDTO.medicalNotes());
 
         Pet updatedPet = petRepository.save(pet);
         return convertToDTO(updatedPet);
@@ -76,16 +94,18 @@ public class PetService {
     }
 
     private Pet getPetEntityOwnedByUser(Long id, String email) {
-        User owner = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-        
+        User owner = getOwner(email);
         Pet pet = petRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Pet not found with ID: " + id));
-
         if (!pet.getOwner().getId().equals(owner.getId())) {
             throw new SecurityException("Unauthorized: You do not own this pet.");
         }
         return pet;
+    }
+
+    private User getOwner(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
     }
 
     private PetDTO convertToDTO(Pet pet) {
@@ -99,6 +119,10 @@ public class PetService {
                 pet.getWeight(),
                 pet.getVaccinationStatus(),
                 pet.getPhotoUrl(),
+                pet.getDateOfBirth(),
+                pet.getColor(),
+                pet.getAllergies(),
+                pet.getMedicalNotes(),
                 pet.getOwner().getId()
         );
     }

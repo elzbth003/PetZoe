@@ -29,7 +29,11 @@ const petSchema = z.object({
   vaccinationStatus: z.enum(["Up-to-date", "Needs Vaccination", "Overdue"], { 
     errorMap: () => ({ message: "Select a valid status" }) 
   }),
-  photoUrl: z.string().optional()
+  photoUrl: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  color: z.string().optional(),
+  allergies: z.string().optional(),
+  medicalNotes: z.string().optional(),
 });
 
 export default function PetList({ onPetsUpdated }) {
@@ -61,7 +65,11 @@ export default function PetList({ onPetsUpdated }) {
       gender: 'Male',
       weight: 5.0,
       vaccinationStatus: 'Up-to-date',
-      photoUrl: ''
+      photoUrl: '',
+      dateOfBirth: '',
+      color: '',
+      allergies: '',
+      medicalNotes: '',
     }
   });
 
@@ -94,7 +102,11 @@ export default function PetList({ onPetsUpdated }) {
       gender: 'Male',
       weight: 5.0,
       vaccinationStatus: 'Up-to-date',
-      photoUrl: ''
+      photoUrl: '',
+      dateOfBirth: '',
+      color: '',
+      allergies: '',
+      medicalNotes: '',
     });
     setIsModalOpen(true);
   };
@@ -109,7 +121,11 @@ export default function PetList({ onPetsUpdated }) {
       gender: pet.gender,
       weight: pet.weight,
       vaccinationStatus: pet.vaccinationStatus,
-      photoUrl: pet.photoUrl || ''
+      photoUrl: pet.photoUrl || '',
+      dateOfBirth: pet.dateOfBirth || '',
+      color: pet.color || '',
+      allergies: pet.allergies || '',
+      medicalNotes: pet.medicalNotes || '',
     });
     setIsModalOpen(true);
   };
@@ -117,18 +133,22 @@ export default function PetList({ onPetsUpdated }) {
   const onSubmit = async (data) => {
     setIsActionSubmitting(true);
     try {
-      // Auto-assign preset photo if no photo URL provided
-      if (!data.photoUrl) {
-        data.photoUrl = SPECIES_PRESETS[data.species] || SPECIES_PRESETS.Other;
-      }
+      const payload = {
+        ...data,
+        photoUrl: data.photoUrl?.trim() ? data.photoUrl.trim() : (SPECIES_PRESETS[data.species] || SPECIES_PRESETS.Other),
+        dateOfBirth: data.dateOfBirth && data.dateOfBirth.trim() !== '' ? data.dateOfBirth : null,
+        color: data.color?.trim() ? data.color.trim() : null,
+        allergies: data.allergies?.trim() ? data.allergies.trim() : null,
+        medicalNotes: data.medicalNotes?.trim() ? data.medicalNotes.trim() : null,
+      };
 
       if (editingPet) {
         // Edit existing pet
-        await api.put(`/pets/${editingPet.id}`, data);
+        await api.put(`/pets/${editingPet.id}`, payload);
         showToast(`${data.name} updated successfully!`, "success");
       } else {
         // Create new pet
-        await api.post('/pets', data);
+        await api.post('/pets', payload);
         showToast(`${data.name} added successfully!`, "success");
       }
       setIsModalOpen(false);
@@ -309,6 +329,7 @@ export default function PetList({ onPetsUpdated }) {
                     </span>
                   </h3>
                   <p className="text-[11px] text-slate-500 font-semibold">{pet.species} • {pet.breed}</p>
+                  {pet.color && <p className="text-[10px] text-slate-400 font-semibold">🎨 {pet.color}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-3 text-xs text-slate-500 font-semibold">
@@ -322,6 +343,22 @@ export default function PetList({ onPetsUpdated }) {
                   </div>
                 </div>
 
+                {(pet.allergies || pet.medicalNotes) && (
+                  <div className="border-t border-slate-50 pt-3 space-y-1.5">
+                    {pet.allergies && (
+                      <p className="text-[10px] text-rose-600 font-semibold flex gap-1">
+                        <span className="shrink-0">⚠️</span>
+                        <span><strong>Allergies:</strong> {pet.allergies}</span>
+                      </p>
+                    )}
+                    {pet.medicalNotes && (
+                      <p className="text-[10px] text-slate-500 line-clamp-2">
+                        <strong>Notes:</strong> {pet.medicalNotes}
+                      </p>
+                    )}
+                  </div>
+                )}
+
               </div>
 
             </div>
@@ -332,7 +369,7 @@ export default function PetList({ onPetsUpdated }) {
       {/* Add / Edit Pet Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white w-full max-w-lg rounded-3xl border border-slate-100 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl border border-slate-100 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             
             {/* Modal Header */}
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
@@ -349,7 +386,7 @@ export default function PetList({ onPetsUpdated }) {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 overflow-y-auto">
               
               <div className="grid grid-cols-2 gap-4">
                 {/* Pet Name */}
@@ -467,6 +504,49 @@ export default function PetList({ onPetsUpdated }) {
                   {errors.photoUrl && (
                     <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.photoUrl.message}</p>
                   )}
+                </div>
+
+                {/* Color */}
+                <div>
+                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Color / Markings <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Golden, Black & White"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none"
+                    {...register('color')}
+                  />
+                </div>
+
+                {/* Date of Birth */}
+                <div>
+                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Date of Birth <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none"
+                    {...register('dateOfBirth')}
+                  />
+                </div>
+
+                {/* Allergies */}
+                <div>
+                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Known Allergies <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Pollen, Certain foods, Medications"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none"
+                    {...register('allergies')}
+                  />
+                </div>
+
+                {/* Medical Notes */}
+                <div>
+                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Medical Notes <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <textarea
+                    rows={3}
+                    placeholder="Previous conditions, ongoing treatments, special care instructions..."
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none resize-none"
+                    {...register('medicalNotes')}
+                  />
                 </div>
               </div>
 
