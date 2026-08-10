@@ -19,11 +19,14 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final PetRepository petRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    public AppointmentService(AppointmentRepository appointmentRepository, PetRepository petRepository, UserRepository userRepository) {
+    public AppointmentService(AppointmentRepository appointmentRepository, PetRepository petRepository,
+                               UserRepository userRepository, NotificationService notificationService) {
         this.appointmentRepository = appointmentRepository;
         this.petRepository = petRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public List<AppointmentDTO> getAppointmentsByOwner(String email) {
@@ -53,16 +56,20 @@ public class AppointmentService {
         }
 
         Appointment appointment = new Appointment(
-                pet,
-                owner,
-                veterinarian,
-                dto.appointmentDate(),
-                dto.appointmentTime(),
-                "UPCOMING",
-                dto.notes()
+                pet, owner, veterinarian,
+                dto.appointmentDate(), dto.appointmentTime(),
+                "UPCOMING", dto.notes()
         );
 
         Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        // Send appointment confirmation notification
+        notificationService.createNotification(owner,
+                "Appointment Confirmed 📅",
+                "Your appointment for " + pet.getName() + " with Dr. " + veterinarian.getName() +
+                        " on " + dto.appointmentDate() + " at " + dto.appointmentTime() + " is confirmed.",
+                "APPOINTMENT");
+
         return convertToDTO(savedAppointment);
     }
 
@@ -79,6 +86,14 @@ public class AppointmentService {
 
         appointment.setStatus("CANCELLED");
         Appointment updatedAppointment = appointmentRepository.save(appointment);
+
+        // Send cancellation notification
+        notificationService.createNotification(owner,
+                "Appointment Cancelled",
+                "Your appointment for " + appointment.getPet().getName() +
+                        " with Dr. " + appointment.getVeterinarian().getName() + " has been cancelled.",
+                "APPOINTMENT");
+
         return convertToDTO(updatedAppointment);
     }
 

@@ -1,0 +1,28 @@
+import api from './api';
+
+export const appointmentService = {
+  getAppointments: async () => {
+    const response = await api.get('/appointments');
+    return response.data;
+  },
+
+  bookAppointment: async (data) => {
+    const response = await api.post('/appointments', data);
+    return response.data;
+  },
+
+  cancelAppointment: async (id) => {
+    const response = await api.put(`/appointments/${id}/cancel`);
+    return response.data;
+  },
+
+  getVets: async () => {
+    const response = await api.get('/vets');
+    return response.data;
+  },
+
+  getVetById: async (id) => {
+    const response = await api.get(`/vets/${id}`);
+    return response.data;
+  },
+};

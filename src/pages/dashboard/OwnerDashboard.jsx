@@ -8,6 +8,11 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import PetList from '../../components/dashboard/PetList';
 import AppointmentList from '../../components/dashboard/AppointmentList';
+import ProfileManagement from '../../components/dashboard/ProfileManagement';
+import NotificationCenter from '../../components/dashboard/NotificationCenter';
+import ShopDashboard from '../../components/dashboard/ShopDashboard';
+import { notificationService } from '../../services/notificationService';
+import marketplaceService from '../../services/marketplaceService';
 import api from '../../services/api';
 
 export default function OwnerDashboard() {
@@ -15,6 +20,8 @@ export default function OwnerDashboard() {
   const [petsCount, setPetsCount] = useState(0);
   const [upcomingAppointments, setUpcomingAppointments] = useState(0);
   const [vaccineAlerts, setVaccineAlerts] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [cartItemCount, setCartItemCount] = useState(0);
   const [recentActivities, setRecentActivities] = useState([
     { id: 1, action: "Logged in securely", time: "Just now", type: "auth" },
     { id: 2, action: "Retrieved patient records", time: "10 mins ago", type: "system" }
@@ -40,32 +47,17 @@ export default function OwnerDashboard() {
       const upcomingCount = apptData.filter(a => a.status === 'UPCOMING').length;
       setUpcomingAppointments(upcomingCount);
 
-      // Count pets needing vaccines
       const vaccineNeeds = petData.filter(p => p.vaccinationStatus !== 'Up-to-date').length;
       setVaccineAlerts(vaccineNeeds);
 
-      // Populate dynamic activities based on actual data
-      const activities = [
-        { id: 1, action: "Logged in securely", time: "Just now", type: "auth" }
-      ];
-      
+      const activities = [{ id: 1, action: "Logged in securely", time: "Just now", type: "auth" }];
       if (petData.length > 0) {
-        activities.push({
-          id: 2,
-          action: `Active patients: ${petData.map(p => p.name).join(', ')}`,
-          time: "Synced",
-          type: "pet"
-        });
+        activities.push({ id: 2, action: `Active patients: ${petData.map(p => p.name).join(', ')}`, time: "Synced", type: "pet" });
       }
       if (apptData.length > 0) {
         const nextAppt = apptData.find(a => a.status === 'UPCOMING');
         if (nextAppt) {
-          activities.push({
-            id: 3,
-            action: `Upcoming consultation with ${nextAppt.veterinarianName}`,
-            time: `${nextAppt.appointmentDate} @ ${nextAppt.appointmentTime}`,
-            type: "calendar"
-          });
+          activities.push({ id: 3, action: `Upcoming consultation with ${nextAppt.veterinarianName}`, time: `${nextAppt.appointmentDate} @ ${nextAppt.appointmentTime}`, type: "calendar" });
         }
       }
       setRecentActivities(activities);
@@ -74,8 +66,27 @@ export default function OwnerDashboard() {
     }
   };
 
+  const fetchUnreadCount = async () => {
+    try {
+      const count = await notificationService.getUnreadCount();
+      setUnreadNotifications(count);
+    } catch (_) {}
+  };
+
+  const fetchCartCount = async () => {
+    try {
+      const res = await marketplaceService.getCart();
+      setCartItemCount(res.data.reduce((s, i) => s + i.quantity, 0));
+    } catch (_) {}
+  };
+
   useEffect(() => {
     fetchOverviewData();
+    fetchUnreadCount();
+    fetchCartCount();
+    const onCartUpdate = () => fetchCartCount();
+    window.addEventListener('cart-updated', onCartUpdate);
+    return () => window.removeEventListener('cart-updated', onCartUpdate);
   }, [activeTab]);
 
   const handleLogout = () => {
@@ -205,12 +216,10 @@ export default function OwnerDashboard() {
                     <div className="space-y-3">
                       {pets.filter(p => p.vaccinationStatus !== 'Up-to-date').map(p => (
                         <div key={p.id} className="p-3 bg-amber-50/50 border border-amber-100 rounded-2xl flex items-center gap-3">
-                          <img src={p.photoUrl} className="h-9 w-9 rounded-xl object-cover shrink-0" />
+                          <img src={p.photoUrl} className="h-9 w-9 rounded-xl object-cover shrink-0" alt={p.name} />
                           <div className="space-y-0.5">
                             <p className="text-xs font-bold text-slate-800">{p.name}</p>
-                            <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wide">
-                              {p.vaccinationStatus}
-                            </p>
+                            <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wide">{p.vaccinationStatus}</p>
                           </div>
                         </div>
                       ))}
@@ -220,7 +229,16 @@ export default function OwnerDashboard() {
 
                 {/* Account Summary */}
                 <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm text-left space-y-3">
-                  <h3 className="font-bold text-slate-800 text-sm">Owner Account</h3>
+                  <div className="flex items-center gap-3 mb-2">
+                    {user?.profileImage ? (
+                      <img src={user.profileImage} alt={user.name} className="h-10 w-10 rounded-xl object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                        <User size={18} className="text-slate-400" />
+                      </div>
+                    )}
+                    <h3 className="font-bold text-slate-800 text-sm">Owner Account</h3>
+                  </div>
                   <div className="space-y-2 text-xs text-slate-500 font-semibold">
                     <p className="flex justify-between border-b border-slate-50 pb-1.5">
                       <span className="text-slate-400">Name:</span> 
@@ -228,13 +246,19 @@ export default function OwnerDashboard() {
                     </p>
                     <p className="flex justify-between border-b border-slate-50 pb-1.5">
                       <span className="text-slate-400">Email:</span> 
-                      <span className="text-slate-800">{user?.email}</span>
+                      <span className="text-slate-800 truncate max-w-[140px]">{user?.email}</span>
                     </p>
                     <p className="flex justify-between">
                       <span className="text-slate-400">Role:</span> 
                       <span className="text-slate-800">{user?.role}</span>
                     </p>
                   </div>
+                  <button
+                    onClick={() => setActiveTab('Profile')}
+                    className="w-full mt-2 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <User size={12} /> Edit Profile
+                  </button>
                 </div>
 
               </div>
@@ -247,66 +271,27 @@ export default function OwnerDashboard() {
         return <PetList onPetsUpdated={setPetsCount} />;
       case 'Appointments':
         return <AppointmentList onAppointmentsUpdated={setUpcomingAppointments} />;
-      case 'Medical Records':
-      case 'Marketplace':
+      case 'My Shop':
+        return <ShopDashboard />;
       case 'Notifications':
+        return <NotificationCenter />;
+      case 'Profile':
+        return <ProfileManagement />;
+      case 'Medical Records':
         return (
           <div className="bg-white border border-slate-100 rounded-3xl p-16 text-center space-y-4 animate-in fade-in duration-200 max-w-xl mx-auto">
             <div className="h-16 w-16 bg-blue-50 text-[#1E3A5F] rounded-2xl flex items-center justify-center mx-auto">
               <Sparkles size={32} />
             </div>
             <div className="space-y-1">
-              <h3 className="font-display font-bold text-lg text-slate-800">{activeTab} Module</h3>
+              <h3 className="font-display font-bold text-lg text-slate-800">Medical Records Module</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                This dashboard module is planned for a future release (Milestone 2/3) and will support interactive AI assistance, local pharmacy marketplace delivery, and encrypted file storage.
+                This module is planned for Milestone 2 and will support encrypted medical history, lab results, and prescription tracking.
               </p>
             </div>
-            <button
-              onClick={() => setActiveTab('Dashboard')}
-              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-            >
+            <button onClick={() => setActiveTab('Dashboard')} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer">
               Return to Overview
             </button>
-          </div>
-        );
-      case 'Profile':
-        return (
-          <div className="bg-white border border-slate-100 rounded-3xl p-8 max-w-xl mx-auto text-left space-y-6 animate-in fade-in duration-200">
-            <h3 className="font-display font-black text-xl text-slate-800">Your Account Profile</h3>
-            
-            <div className="space-y-4 text-xs font-semibold text-slate-600">
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-slate-400">Full Name</span>
-                  <span className="text-slate-800 font-bold">{user?.name}</span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-t border-slate-200/50">
-                  <span className="text-slate-400">Email Address</span>
-                  <span className="text-slate-800 font-bold">{user?.email}</span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-t border-slate-200/50">
-                  <span className="text-slate-400">Mobile Phone</span>
-                  <span className="text-slate-800 font-bold">{user?.phone || 'Not provided'}</span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-t border-slate-200/50">
-                  <span className="text-slate-400">Account Access Level</span>
-                  <span className="text-sky-700 font-bold px-2 py-0.5 bg-sky-50 border border-sky-100 rounded-full">{user?.role}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center bg-rose-50 border border-rose-100 p-4 rounded-2xl">
-                <div>
-                  <h4 className="font-bold text-rose-900 text-xs">Security Settings</h4>
-                  <p className="text-[10px] text-rose-700 font-medium">Log out of the secure patient care vault.</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-                >
-                  <LogOut size={14} /> Log Out
-                </button>
-              </div>
-            </div>
           </div>
         );
       default:
@@ -318,9 +303,9 @@ export default function OwnerDashboard() {
     { name: 'Dashboard', icon: LayoutDashboard },
     { name: 'My Pets', icon: Heart },
     { name: 'Appointments', icon: Calendar },
+    { name: 'My Shop', icon: ShoppingBag, badge: cartItemCount },
     { name: 'Medical Records', icon: FileText },
-    { name: 'Marketplace', icon: ShoppingBag },
-    { name: 'Notifications', icon: Bell },
+    { name: 'Notifications', icon: Bell, badge: unreadNotifications },
     { name: 'Profile', icon: User }
   ];
 
@@ -342,6 +327,14 @@ export default function OwnerDashboard() {
             </span>
           </div>
 
+          {/* User Avatar in Sidebar */}
+          {user?.profileImage && (
+            <div className="flex items-center gap-3 px-2">
+              <img src={user.profileImage} alt={user.name} className="h-8 w-8 rounded-lg object-cover border border-slate-700" />
+              <span className="text-xs font-semibold text-slate-300 truncate">{user.name}</span>
+            </div>
+          )}
+
           {/* Navigation Links */}
           <nav className="space-y-1">
             {navItems.map((item) => {
@@ -352,11 +345,7 @@ export default function OwnerDashboard() {
                 <button
                   key={item.name}
                   onClick={() => {
-                    if (item.name === 'Marketplace') {
-                      navigate('/marketplace');
-                    } else {
-                      setActiveTab(item.name);
-                    }
+                    setActiveTab(item.name);
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                     isActive 
@@ -365,7 +354,12 @@ export default function OwnerDashboard() {
                   }`}
                 >
                   <Icon size={16} />
-                  <span>{item.name}</span>
+                  <span className="flex-1 text-left">{item.name}</span>
+                  {item.badge > 0 && (
+                    <span className="h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -395,6 +389,29 @@ export default function OwnerDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {cartItemCount > 0 && (
+              <button
+                onClick={() => setActiveTab('My Shop')}
+                className="relative p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-[#1E3A5F] hover:border-[#38BDF8] transition-all cursor-pointer shadow-sm"
+                title="View Cart"
+              >
+                <ShoppingBag size={16} />
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#38BDF8] text-white text-[9px] font-black flex items-center justify-center">
+                  {cartItemCount > 9 ? '9+' : cartItemCount}
+                </span>
+              </button>
+            )}
+            {unreadNotifications > 0 && (
+              <button
+                onClick={() => setActiveTab('Notifications')}
+                className="relative p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-[#1E3A5F] hover:border-[#38BDF8] transition-all cursor-pointer shadow-sm"
+              >
+                <Bell size={16} />
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                </span>
+              </button>
+            )}
             <span className="text-slate-500 text-xs font-semibold bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
               🔑 {user?.role}
             </span>

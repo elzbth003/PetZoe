@@ -61,7 +61,7 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
     try {
       const [petsRes, vetsRes, apptsRes] = await Promise.all([
         api.get('/pets'),
-        api.get('/users/veterinarians'),
+        api.get('/vets'),
         api.get('/appointments')
       ]);
       setPets(petsRes.data);
