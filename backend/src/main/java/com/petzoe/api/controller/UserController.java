@@ -1,37 +1,47 @@
 package com.petzoe.api.controller;
 
-import com.petzoe.api.entity.User;
-import com.petzoe.api.repository.UserRepository;
+import com.petzoe.api.dto.ChangePasswordRequest;
+import com.petzoe.api.dto.UpdateProfileRequest;
+import com.petzoe.api.dto.UserDTO;
+import com.petzoe.api.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
-    @GetMapping("/veterinarians")
-    public ResponseEntity<List<Map<String, Object>>> getVeterinarians() {
-        List<User> veterinarians = userRepository.findByRole("Veterinarian");
-        List<Map<String, Object>> response = veterinarians.stream()
-                .map(v -> Map.of(
-                        "id", (Object) v.getId(),
-                        "name", (Object) v.getName(),
-                        "email", (Object) v.getEmail(),
-                        "phone", (Object) v.getPhone()
-                ))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(response);
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getProfile(Authentication auth) {
+        return ResponseEntity.ok(userService.getProfile(auth.getName()));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserDTO> updateProfile(@Valid @RequestBody UpdateProfileRequest request,
+                                                  Authentication auth) {
+        return ResponseEntity.ok(userService.updateProfile(auth.getName(), request));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request,
+                                             Authentication auth) {
+        userService.changePassword(auth.getName(), request);
+        return ResponseEntity.ok(Map.of("message", "Password updated successfully."));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteAccount(Authentication auth) {
+        userService.deleteAccount(auth.getName());
+        return ResponseEntity.ok(Map.of("message", "Account deleted successfully."));
     }
 }
