@@ -222,11 +222,26 @@ export default function LandingPage() {
 
   // Framer Motion Animation Settings
   const fadeInUp = {
-    hidden: { opacity: 0, y: 25 },
+    hidden: { opacity: 0, y: 30, scale: 0.96 },
     visible: { 
       opacity: 1, 
       y: 0, 
-      transition: { duration: 0.6, ease: "easeOut" } 
+      scale: 1,
+      transition: { type: "spring", stiffness: 80, damping: 20 } 
+    }
+  };
+
+  const floatAnimation = {
+    animate: {
+      y: [0, -8, 0],
+      transition: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+    }
+  };
+
+  const floatAnimationReverse = {
+    animate: {
+      y: [0, 8, 0],
+      transition: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }
     }
   };
 
@@ -250,10 +265,9 @@ export default function LandingPage() {
         
         {/* Full width background image with overlay */}
         <motion.div 
-          initial={{ scale: 1.05 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="absolute inset-0 z-0"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 z-0 origin-center"
         >
           <img 
             src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=1920" 
@@ -276,12 +290,22 @@ export default function LandingPage() {
               <Sparkles size={12} className="text-secondary-300" />
               The Next-Gen Pet Healthcare Ecosystem
             </span>
-            <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight tracking-tight drop-shadow-sm">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+              className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight tracking-tight drop-shadow-sm"
+            >
               A Unified Portal for <br />
-              <span className="text-secondary-300">
+              <motion.span 
+                initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                transition={{ duration: 0.8, delay: 0.5, ease: "backOut" }}
+                className="text-secondary-300 inline-block"
+              >
                 Digital Pet Care
-              </span>
-            </h1>
+              </motion.span>
+            </motion.h1>
             <p className="text-slate-200 text-sm sm:text-base leading-relaxed font-medium drop-shadow-sm">
               PetZoe connects pet owners, certified vets, shelter networks, and wellness marketplaces. Chart health histories, request live telehealth support, and manage adoption pipelines in a secure, role-based dashboard.
             </p>
@@ -305,12 +329,12 @@ export default function LandingPage() {
 
             {/* Micro Badges */}
             <div className="pt-6 flex flex-wrap justify-start gap-6 text-xs text-slate-300 font-bold border-t border-white/10">
-              <div className="flex items-center gap-1.5">
+              <motion.div variants={floatAnimation} animate="animate" className="flex items-center gap-1.5">
                 <Shield className="text-secondary-300" size={16} /> Encrypted Records
-              </div>
-              <div className="flex items-center gap-1.5">
+              </motion.div>
+              <motion.div variants={floatAnimationReverse} animate="animate" className="flex items-center gap-1.5">
                 <UserCheck className="text-accent-400" size={16} /> Certified Practitioners
-              </div>
+              </motion.div>
             </div>
           </motion.div>
 
@@ -378,12 +402,17 @@ export default function LandingPage() {
               <motion.div
                 key={idx}
                 variants={fadeInUp}
-                className="group p-6 bg-white rounded-[24px] border border-slate-100 hover:border-[#38BDF8]/30 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left"
+                whileHover={{ y: -8 }}
+                className="group p-6 bg-white rounded-[24px] border border-slate-100 hover:border-[#38BDF8]/30 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left cursor-pointer"
               >
                 <div className="space-y-4">
-                  <div className={`p-3 rounded-2xl w-fit ${feat.color} group-hover:scale-110 transition-transform duration-300`}>
+                  <motion.div 
+                    whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                    transition={{ duration: 0.5 }}
+                    className={`p-3 rounded-2xl w-fit ${feat.color} group-hover:scale-110 transition-transform duration-300`}
+                  >
                     <Icon size={22} />
-                  </div>
+                  </motion.div>
                   <h3 className="font-display font-bold text-base text-slate-950 group-hover:text-[#1E3A5F] transition-colors">
                     {feat.title}
                   </h3>
