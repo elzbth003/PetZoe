@@ -49,4 +49,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     /** Count products by category (for analytics). */
     Long countByCategory(Category category);
+
+    // --- New Methods for Vendor Product Management ---
+    
+    /** Find all products by a specific seller with pagination. */
+    Page<Product> findBySellerId(Long sellerId, Pageable pageable);
+
+    /** Find products by seller and status. */
+    Page<Product> findBySellerIdAndStatus(Long sellerId, com.petzoe.api.entity.ProductStatus status, Pageable pageable);
+
+    /** Find all products by status (for admin review). */
+    Page<Product> findByStatus(com.petzoe.api.entity.ProductStatus status, Pageable pageable);
 }
