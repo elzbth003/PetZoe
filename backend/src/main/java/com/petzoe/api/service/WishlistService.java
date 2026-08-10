@@ -1,5 +1,7 @@
 package com.petzoe.api.service;
 
+import com.petzoe.api.dto.ProductSummaryDTO;
+import com.petzoe.api.dto.WishlistItemResponseDTO;
 import com.petzoe.api.entity.CartItem;
 import com.petzoe.api.entity.Product;
 import com.petzoe.api.entity.User;
@@ -10,6 +12,7 @@ import com.petzoe.api.repository.UserRepository;
 import com.petzoe.api.repository.WishlistItemRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service layer for wishlist operations.
@@ -32,24 +35,25 @@ public class WishlistService {
         this.userRepository = userRepository;
     }
 
-    /** Get all wishlist items for the authenticated user. */
-    public List<WishlistItem> getWishlist(String email) {
+    /** Get all wishlist items for the authenticated user as DTOs. */
+    public List<WishlistItemResponseDTO> getWishlist(String email) {
         User user = findUser(email);
-        return wishlistItemRepository.findByUser(user);
+        return wishlistItemRepository.findByUser(user)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     /** Add a product to the wishlist. */
-    public WishlistItem addToWishlist(Long productId, String email) {
+    public WishlistItemResponseDTO addToWishlist(Long productId, String email) {
         User user = findUser(email);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        // Prevent duplicates
-        if (wishlistItemRepository.findByUserAndProduct(user, product).isPresent()) {
-            throw new RuntimeException("Product is already in your wishlist");
-        }
-
-        return wishlistItemRepository.save(new WishlistItem(user, product));
+        // Prevent duplicates — return existing item silently
+        return wishlistItemRepository.findByUserAndProduct(user, product)
+                .map(this::toDTO)
+                .orElseGet(() -> toDTO(wishlistItemRepository.save(new WishlistItem(user, product))));
     }
 
     /** Remove a product from the wishlist. */
@@ -83,12 +87,21 @@ public class WishlistService {
                         () -> cartItemRepository.save(new CartItem(1, user, product))
                 );
 
-        // Remove from wishlist
         wishlistItemRepository.delete(item);
     }
 
     private User findUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    private WishlistItemResponseDTO toDTO(WishlistItem item) {
+        Product p = item.getProduct();
+        ProductSummaryDTO productDTO = new ProductSummaryDTO(
+                p.getId(), p.getName(), p.getBrand(), p.getImageUrl(),
+                p.getPrice(), p.getDiscountPrice(), p.getStockQuantity(),
+                p.getSku(), p.getAverageRating(), p.getReviewCount()
+        );
+        return new WishlistItemResponseDTO(item.getId(), productDTO);
     }
 }

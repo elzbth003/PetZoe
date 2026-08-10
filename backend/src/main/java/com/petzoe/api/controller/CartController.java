@@ -1,12 +1,13 @@
 package com.petzoe.api.controller;
 
 import com.petzoe.api.dto.CartItemDTO;
-import com.petzoe.api.entity.CartItem;
+import com.petzoe.api.dto.CartItemResponseDTO;
 import com.petzoe.api.service.CartService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST controller for shopping cart operations.
@@ -24,34 +25,34 @@ public class CartController {
 
     /** Get all cart items for the authenticated user. */
     @GetMapping
-    public ResponseEntity<List<CartItem>> getCart(Authentication auth) {
+    public ResponseEntity<List<CartItemResponseDTO>> getCart(Authentication auth) {
         return ResponseEntity.ok(cartService.getCartItems(auth.getName()));
     }
 
     /** Add a product to the cart. */
     @PostMapping
-    public ResponseEntity<CartItem> addToCart(@RequestBody CartItemDTO dto, Authentication auth) {
+    public ResponseEntity<CartItemResponseDTO> addToCart(@RequestBody CartItemDTO dto, Authentication auth) {
         return ResponseEntity.ok(cartService.addToCart(dto, auth.getName()));
     }
 
     /** Update quantity of a cart item. */
     @PutMapping("/{id}")
-    public ResponseEntity<CartItem> updateQuantity(
+    public ResponseEntity<CartItemResponseDTO> updateQuantity(
             @PathVariable Long id, @RequestParam Integer quantity, Authentication auth) {
         return ResponseEntity.ok(cartService.updateQuantity(id, quantity, auth.getName()));
     }
 
     /** Remove a specific item from the cart. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> removeFromCart(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<Map<String, String>> removeFromCart(@PathVariable Long id, Authentication auth) {
         cartService.removeFromCart(id, auth.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of("message", "Item removed from cart."));
     }
 
     /** Clear the entire cart. */
     @DeleteMapping
-    public ResponseEntity<Void> clearCart(Authentication auth) {
+    public ResponseEntity<Map<String, String>> clearCart(Authentication auth) {
         cartService.clearCart(auth.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of("message", "Cart cleared."));
     }
 }

@@ -1,6 +1,6 @@
 package com.petzoe.api.controller;
 
-import com.petzoe.api.entity.WishlistItem;
+import com.petzoe.api.dto.WishlistItemResponseDTO;
 import com.petzoe.api.service.WishlistService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,28 +24,28 @@ public class WishlistController {
 
     /** Get the authenticated user's wishlist. */
     @GetMapping
-    public ResponseEntity<List<WishlistItem>> getWishlist(Authentication auth) {
+    public ResponseEntity<List<WishlistItemResponseDTO>> getWishlist(Authentication auth) {
         return ResponseEntity.ok(wishlistService.getWishlist(auth.getName()));
     }
 
     /** Add a product to the wishlist. */
     @PostMapping
-    public ResponseEntity<WishlistItem> addToWishlist(
+    public ResponseEntity<WishlistItemResponseDTO> addToWishlist(
             @RequestBody Map<String, Long> body, Authentication auth) {
         return ResponseEntity.ok(wishlistService.addToWishlist(body.get("productId"), auth.getName()));
     }
 
     /** Remove an item from the wishlist. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> removeFromWishlist(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<Map<String, String>> removeFromWishlist(@PathVariable Long id, Authentication auth) {
         wishlistService.removeFromWishlist(id, auth.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of("message", "Item removed from wishlist."));
     }
 
     /** Move a wishlist item to the cart. */
     @PostMapping("/{id}/move-to-cart")
-    public ResponseEntity<Void> moveToCart(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<Map<String, String>> moveToCart(@PathVariable Long id, Authentication auth) {
         wishlistService.moveToCart(id, auth.getName());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of("message", "Item moved to cart."));
     }
 }

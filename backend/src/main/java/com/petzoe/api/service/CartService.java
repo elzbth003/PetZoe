@@ -1,6 +1,8 @@
 package com.petzoe.api.service;
 
 import com.petzoe.api.dto.CartItemDTO;
+import com.petzoe.api.dto.CartItemResponseDTO;
+import com.petzoe.api.dto.ProductSummaryDTO;
 import com.petzoe.api.entity.CartItem;
 import com.petzoe.api.entity.Product;
 import com.petzoe.api.entity.User;
@@ -10,6 +12,7 @@ import com.petzoe.api.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service layer for shopping cart operations.
@@ -29,39 +32,53 @@ public class CartService {
         this.userRepository = userRepository;
     }
 
-    /** Get all cart items for the authenticated user. */
-    public List<CartItem> getCartItems(String email) {
+    /** Get all cart items for the authenticated user as DTOs. */
+    public List<CartItemResponseDTO> getCartItems(String email) {
         User user = findUser(email);
-        return cartItemRepository.findByUser(user);
+        return cartItemRepository.findByUser(user)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     /** Add a product to the cart. If it already exists, increase the quantity. */
-    public CartItem addToCart(CartItemDTO dto, String email) {
+    public CartItemResponseDTO addToCart(CartItemDTO dto, String email) {
         User user = findUser(email);
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        // Check if the product is already in the cart
-        return cartItemRepository.findByUserAndProduct(user, product)
+        if (product.getStockQuantity() <= 0) {
+            throw new RuntimeException("Product is out of stock");
+        }
+
+        CartItem saved = cartItemRepository.findByUserAndProduct(user, product)
                 .map(existingItem -> {
-                    existingItem.setQuantity(existingItem.getQuantity() + dto.getQuantity());
+                    int newQty = existingItem.getQuantity() + dto.getQuantity();
+                    if (newQty > product.getStockQuantity()) {
+                        newQty = product.getStockQuantity();
+                    }
+                    existingItem.setQuantity(newQty);
                     return cartItemRepository.save(existingItem);
                 })
                 .orElseGet(() -> {
-                    CartItem newItem = new CartItem(dto.getQuantity(), user, product);
+                    int qty = Math.min(dto.getQuantity(), product.getStockQuantity());
+                    CartItem newItem = new CartItem(qty, user, product);
                     return cartItemRepository.save(newItem);
                 });
+
+        return toDTO(saved);
     }
 
     /** Update the quantity of a specific cart item. */
-    public CartItem updateQuantity(Long cartItemId, Integer quantity, String email) {
+    public CartItemResponseDTO updateQuantity(Long cartItemId, Integer quantity, String email) {
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
         if (!item.getUser().getEmail().equals(email)) {
             throw new RuntimeException("Not authorized");
         }
-        item.setQuantity(quantity);
-        return cartItemRepository.save(item);
+        if (quantity < 1) throw new RuntimeException("Quantity must be at least 1");
+        item.setQuantity(Math.min(quantity, item.getProduct().getStockQuantity()));
+        return toDTO(cartItemRepository.save(item));
     }
 
     /** Remove a specific item from the cart. */
@@ -74,7 +91,7 @@ public class CartService {
         cartItemRepository.delete(item);
     }
 
-    /** Clear all items from the cart (e.g., after placing an order). */
+    /** Clear all items from the cart. */
     @Transactional
     public void clearCart(String email) {
         User user = findUser(email);
@@ -84,5 +101,15 @@ public class CartService {
     private User findUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    private CartItemResponseDTO toDTO(CartItem item) {
+        Product p = item.getProduct();
+        ProductSummaryDTO productDTO = new ProductSummaryDTO(
+                p.getId(), p.getName(), p.getBrand(), p.getImageUrl(),
+                p.getPrice(), p.getDiscountPrice(), p.getStockQuantity(),
+                p.getSku(), p.getAverageRating(), p.getReviewCount()
+        );
+        return new CartItemResponseDTO(item.getId(), item.getQuantity(), productDTO);
     }
 }
