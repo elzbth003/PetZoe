@@ -2,6 +2,7 @@ package com.petzoe.api.controller;
 
 import com.petzoe.api.dto.AuthResponse;
 import com.petzoe.api.dto.ForgotPasswordRequest;
+import com.petzoe.api.dto.GoogleLoginRequest;
 import com.petzoe.api.dto.LoginRequest;
 import com.petzoe.api.dto.RegisterRequest;
 import com.petzoe.api.service.AuthService;
@@ -29,6 +30,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(authService.processGoogleLogin(request));
     }
 
     @PostMapping("/forgot-password")

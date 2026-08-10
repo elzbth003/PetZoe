@@ -4,12 +4,13 @@ import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Lock, Mail, Phone, User, Shield, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: 'Empty', color: 'bg-slate-200' });
-  const { register: registerAuth } = useAuth();
+  const { register: registerAuth, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -64,11 +65,32 @@ export default function RegisterPage() {
     try {
       await registerAuth(data);
       showToast("Account created successfully! Please log in.", "success");
-      setTimeout(() => {
-        navigate('/login');
-      }, 1500);
+      setTimeout(() => { navigate('/login'); }, 1500);
     } catch (err) {
-      showToast(err.message || "Registration failed.", "error");
+      showToast(err.response?.data?.message || err.message || "Registration failed.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const redirectByRole = (user) => {
+    switch (user.role) {
+      case 'Pet Owner': navigate('/dashboard/owner'); break;
+      case 'Veterinarian': navigate('/dashboard/vet'); break;
+      case 'Shelter Manager': navigate('/dashboard/shelter'); break;
+      case 'Admin': navigate('/dashboard/admin'); break;
+      default: navigate('/');
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setIsSubmitting(true);
+    try {
+      const user = await googleLogin(credentialResponse.credential);
+      showToast(`Welcome, ${user.name}! Account created with Google.`, "success");
+      redirectByRole(user);
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Google sign-up failed.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -299,6 +321,27 @@ export default function RegisterPage() {
         </button>
 
       </form>
+
+      {/* Divider */}
+      <div className="flex items-center">
+        <div className="flex-grow border-t border-slate-200"></div>
+        <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Or sign up with Google</span>
+        <div className="flex-grow border-t border-slate-200"></div>
+      </div>
+
+      {/* Google Sign Up Button */}
+      <div className="flex justify-center">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => showToast("Google sign-up was cancelled or failed.", "error")}
+          useOneTap={false}
+          width="100%"
+          theme="outline"
+          size="large"
+          text="signup_with"
+          shape="rectangular"
+        />
+      </div>
 
       {/* Redirect to Login */}
       <p className="text-center text-xs text-slate-500 font-semibold pt-2">

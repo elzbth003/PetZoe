@@ -4,11 +4,12 @@ import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -24,37 +25,40 @@ export default function LoginPage() {
     }
   });
 
+  const redirectByRole = (user) => {
+    switch (user.role) {
+      case 'Pet Owner': navigate('/dashboard/owner'); break;
+      case 'Veterinarian': navigate('/dashboard/vet'); break;
+      case 'Shelter Manager': navigate('/dashboard/shelter'); break;
+      case 'Admin': navigate('/dashboard/admin'); break;
+      default: navigate('/');
+    }
+  };
+
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
       const user = await login(data.email, data.password);
       showToast(`Access Granted. Welcome back, ${user.name}!`, "success");
-      
-      switch (user.role) {
-        case 'Pet Owner':
-          navigate('/dashboard/owner');
-          break;
-        case 'Veterinarian':
-          navigate('/dashboard/vet');
-          break;
-        case 'Shelter Manager':
-          navigate('/dashboard/shelter');
-          break;
-        case 'Admin':
-          navigate('/dashboard/admin');
-          break;
-        default:
-          navigate('/');
-      }
+      redirectByRole(user);
     } catch (err) {
-      showToast(err.message || "Invalid credentials.", "error");
+      showToast(err.response?.data?.message || err.message || "Invalid credentials.", "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    showToast("Google Authentication is not configured for this sandbox.", "info");
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setIsSubmitting(true);
+    try {
+      const user = await googleLogin(credentialResponse.credential);
+      showToast(`Welcome, ${user.name}! Signed in with Google.`, "success");
+      redirectByRole(user);
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Google sign-in failed.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -109,9 +113,7 @@ export default function LoginPage() {
               placeholder="••••••••"
               disabled={isSubmitting}
               className={`w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border ${errors.password ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
-              {...register('password', {
-                required: 'Password is required'
-              })}
+              {...register('password', { required: 'Password is required' })}
             />
             <button
               type="button"
@@ -136,10 +138,7 @@ export default function LoginPage() {
             />
             <span>Remember me</span>
           </label>
-          <Link
-            to="/forgot-password"
-            className="text-primary-600 hover:underline"
-          >
+          <Link to="/forgot-password" className="text-primary-600 hover:underline">
             Forgot Password?
           </Link>
         </div>
@@ -167,36 +166,23 @@ export default function LoginPage() {
       {/* Divider */}
       <div className="flex items-center my-4">
         <div className="flex-grow border-t border-slate-200"></div>
-        <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Or</span>
+        <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Or continue with</span>
         <div className="flex-grow border-t border-slate-200"></div>
       </div>
 
-      {/* Google Login button */}
-      <button
-        onClick={handleGoogleLogin}
-        className="w-full py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer shadow-sm"
-      >
-        {/* Google Icon */}
-        <svg className="w-4 h-4" viewBox="0 0 24 24">
-          <path
-            fill="#EA4335"
-            d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582l3.51-3.51C17.642 1.09 14.97 0 12 0 7.354 0 3.307 2.673 1.255 6.573L5.266 9.765z"
-          />
-          <path
-            fill="#4285F4"
-            d="M23.49 12.275c0-.825-.075-1.613-.21-2.373H12v4.51h6.46c-.277 1.488-1.116 2.748-2.373 3.6l3.7 3.7c2.164-2 3.7-4.945 3.7-8.437z"
-          />
-          <path
-            fill="#FBBC05"
-            d="M5.266 14.235L1.255 17.427C3.307 21.327 7.354 24 12 24c3.08 0 5.86-1.01 7.9-2.73l-3.7-3.7c-1.04.697-2.37 1.11-4.2 1.11-3.618 0-6.68-2.436-7.77-5.735l-.014-.01-3.95 3.3z"
-          />
-          <path
-            fill="#34A853"
-            d="M12 4.909c1.94 0 3.68.67 5.05 1.98l3.52-3.52C18.3 1.43 15.35.5 12 .5A11.45 11.45 0 0 0 .5 12c0 2.22.62 4.29 1.7 6.07l3.96-3.08c-.28-.79-.44-1.63-.44-2.5 0-3.62 2.44-6.68 5.73-7.77l.014.01z"
-          />
-        </svg>
-        Continue with Google
-      </button>
+      {/* Google Login Button */}
+      <div className="flex justify-center">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => showToast("Google sign-in was cancelled or failed.", "error")}
+          useOneTap={false}
+          width="100%"
+          theme="outline"
+          size="large"
+          text="signin_with"
+          shape="rectangular"
+        />
+      </div>
 
       {/* Navigation to Register */}
       <p className="text-center text-xs text-slate-500 font-semibold">

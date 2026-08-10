@@ -13,8 +13,23 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
+  // Listen for 401 events from the API interceptor
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setUser(null);
+    };
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, []);
+
   const login = async (email, password) => {
     const sessionUser = await authService.login(email, password);
+    setUser(sessionUser);
+    return sessionUser;
+  };
+
+  const googleLogin = async (credential) => {
+    const sessionUser = await authService.googleLogin(credential);
     setUser(sessionUser);
     return sessionUser;
   };
@@ -29,7 +44,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, googleLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

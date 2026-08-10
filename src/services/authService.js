@@ -18,16 +18,33 @@ export const authService = {
     const response = await api.post('/auth/login', { email, password });
     if (response.data && response.data.token) {
       localStorage.setItem('petzoe_token', response.data.token);
-      
       const user = {
         name: response.data.name,
         email: response.data.email,
-        role: response.data.role
+        role: response.data.role,
+        profileImage: response.data.profileImage || null,
       };
       localStorage.setItem('petzoe_user', JSON.stringify(user));
       return user;
     }
     throw new Error("Authentication failed. No token received.");
+  },
+
+  // Google OAuth login
+  googleLogin: async (credential) => {
+    const response = await api.post('/auth/google', { token: credential });
+    if (response.data && response.data.token) {
+      localStorage.setItem('petzoe_token', response.data.token);
+      const user = {
+        name: response.data.name,
+        email: response.data.email,
+        role: response.data.role,
+        profileImage: response.data.profileImage || null,
+      };
+      localStorage.setItem('petzoe_user', JSON.stringify(user));
+      return user;
+    }
+    throw new Error("Google authentication failed. No token received.");
   },
 
   // Forgot password

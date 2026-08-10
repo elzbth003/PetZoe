@@ -105,11 +105,13 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 // Configure route access rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Open login/register endpoints
+                        .requestMatchers("/api/auth/**").permitAll() // Open login/register/google endpoints
                         .requestMatchers("/error").permitAll()       // Open error endpoint
                         // Marketplace: allow public browsing of products and categories
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/marketplace/products/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/marketplace/categories/**").permitAll()
+                        // Vets: allow public browsing of veterinarians
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/vets/**").permitAll()
                         .anyRequest().authenticated()                // Secure everything else
                 )
                 // Set session management to stateless (no server-side sessions)
