@@ -7,9 +7,11 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
+import AddProductWizard from '../../components/dashboard/AddProductWizard';
 
 export default function SellerDashboard() {
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [showAddProductWizard, setShowAddProductWizard] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -107,11 +109,28 @@ export default function SellerDashboard() {
           </div>
         );
       case 'My Products':
+        if (showAddProductWizard) {
+          return (
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+              <AddProductWizard 
+                onCancel={() => setShowAddProductWizard(false)} 
+                onProductAdded={() => {
+                  setShowAddProductWizard(false);
+                  fetchMyProducts();
+                }} 
+              />
+            </div>
+          );
+        }
+        
         return (
           <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-slate-800">Product Inventory</h2>
-              <button className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-primary-700 transition-colors">
+              <button 
+                onClick={() => setShowAddProductWizard(true)}
+                className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-primary-700 transition-colors"
+              >
                 <Plus size={16} /> Add Product
               </button>
             </div>

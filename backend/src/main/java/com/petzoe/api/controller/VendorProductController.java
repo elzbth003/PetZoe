@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/vendor/products")
-@PreAuthorize("hasRole('SELLER')")
+@PreAuthorize("hasAnyRole('SELLER', 'MARKETPLACE_SELLER', 'ADMIN')")
 public class VendorProductController {
 
     private final VendorProductService vendorProductService;

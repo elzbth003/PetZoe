@@ -65,7 +65,7 @@ public class Product {
     private Boolean approved = false; // Legacy/Backward compatibility
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status")
     private ProductStatus status = ProductStatus.DRAFT;
 
     @Column(name = "rejection_reason")

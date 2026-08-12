@@ -72,6 +72,48 @@ public class ProductMapper {
             }).collect(Collectors.toList()));
         }
 
+        if (dto.getHealthDetails() != null) {
+            HealthProductDetails hd = new HealthProductDetails();
+            hd.setDosage(dto.getHealthDetails().getDosage());
+            hd.setActiveIngredients(dto.getHealthDetails().getActiveIngredients());
+            hd.setWarnings(dto.getHealthDetails().getWarnings());
+            hd.setProduct(product);
+            product.setHealthDetails(hd);
+        }
+
+        if (dto.getFoodDetails() != null) {
+            FoodProductDetails fd = new FoodProductDetails();
+            fd.setFlavor(dto.getFoodDetails().getFlavor());
+            fd.setIngredients(dto.getFoodDetails().getIngredients());
+            fd.setNutritionalInformation(dto.getFoodDetails().getNutritionalInformation());
+            fd.setProduct(product);
+            product.setFoodDetails(fd);
+        }
+
+        if (dto.getToyDetails() != null) {
+            ToyProductDetails td = new ToyProductDetails();
+            td.setMaterial(dto.getToyDetails().getMaterial());
+            td.setProduct(product);
+            product.setToyDetails(td);
+        }
+
+        if (dto.getGroomingDetails() != null) {
+            GroomingProductDetails gd = new GroomingProductDetails();
+            gd.setFragrance(dto.getGroomingDetails().getFragrance());
+            gd.setVolume(dto.getGroomingDetails().getVolume());
+            gd.setProduct(product);
+            product.setGroomingDetails(gd);
+        }
+
+        if (dto.getAccessoryDetails() != null) {
+            AccessoryProductDetails ad = new AccessoryProductDetails();
+            ad.setSize(dto.getAccessoryDetails().getSize());
+            ad.setColor(dto.getAccessoryDetails().getColor());
+            ad.setMaterial(dto.getAccessoryDetails().getMaterial());
+            ad.setProduct(product);
+            product.setAccessoryDetails(ad);
+        }
+
         return product;
     }
 
