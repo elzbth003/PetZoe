@@ -60,7 +60,25 @@ public class DatabaseInitializer implements CommandLineRunner {
     // ─── Users, Pets & Appointments ──────────────────────────────────────────
 
     private void seedUsersAndPets() {
-        if (userRepository.count() > 0) return;
+        // Ensure Admin user always exists
+        String adminEmail = System.getenv("ADMIN_EMAIL");
+        if (adminEmail == null || adminEmail.isEmpty()) {
+            adminEmail = "admin@petverse.com";
+        }
+        
+        String adminPassword = System.getenv("ADMIN_PASSWORD");
+        if (adminPassword == null || adminPassword.isEmpty()) {
+            adminPassword = "Password123!";
+        }
+
+        if (userRepository.findByEmail(adminEmail).isEmpty()) {
+            User admin = new User("System Administrator", adminEmail,
+                    passwordEncoder.encode(adminPassword), "9876543213", "Admin");
+            admin.setVerificationStatus(VerificationStatus.APPROVED);
+            userRepository.save(admin);
+        }
+
+        if (userRepository.count() > 1) return; // Only admin exists, seed rest
 
         User owner = new User("Alex Carter", "owner@petverse.com",
                 passwordEncoder.encode("Password123!"), "9876543211", "Pet Owner");
@@ -73,10 +91,6 @@ public class DatabaseInitializer implements CommandLineRunner {
         User shelter = new User("Emma Watson", "shelter@petverse.com",
                 passwordEncoder.encode("Password123!"), "9876543212", "Shelter Manager");
         userRepository.save(shelter);
-
-        User admin = new User("System Administrator", "admin@petverse.com",
-                passwordEncoder.encode("Password123!"), "9876543213", "Admin");
-        userRepository.save(admin);
 
         Pet pet1 = new Pet("Milo", "Dog", "Golden Retriever", 2, "Male", 28.5,
                 "Up-to-date",

@@ -49,6 +49,10 @@ public class User implements UserDetails {
     @Column
     private String specialization;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification_status")
+    private VerificationStatus verificationStatus = VerificationStatus.NOT_SUBMITTED;
+
     public User() {
     }
 
@@ -94,11 +98,33 @@ public class User implements UserDetails {
     public String getSpecialization() { return specialization; }
     public void setSpecialization(String specialization) { this.specialization = specialization; }
 
+    public VerificationStatus getVerificationStatus() { return verificationStatus; }
+    public void setVerificationStatus(VerificationStatus verificationStatus) { this.verificationStatus = verificationStatus; }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String formattedRole = "ROLE_" + role.toUpperCase().replace(" ", "_");
-        return List.of(new SimpleGrantedAuthority(formattedRole));
+        List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        if (role != null) {
+            String cleanRole = role.trim().toUpperCase().replace(" ", "_");
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
+            
+            if (cleanRole.contains("SELLER")) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_SELLER"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_MARKETPLACE_SELLER"));
+            }
+            if (cleanRole.contains("ADMIN")) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_SELLER"));
+                authorities.add(new SimpleGrantedAuthority("ROLE_MARKETPLACE_SELLER"));
+            }
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+        return authorities;
     }
+
+    @Column(nullable = false)
+    private boolean enabled = true;
 
     @Override
     public String getUsername() { return email; }
@@ -113,5 +139,7 @@ public class User implements UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { return enabled; }
+    
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 }

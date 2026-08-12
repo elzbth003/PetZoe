@@ -35,12 +35,12 @@ public class AdminProductController {
     }
 
     @PutMapping("/{id}/approve")
-    public ResponseEntity<ProductResponseDTO> approveProduct(@PathVariable Long id) {
-        return ResponseEntity.ok(adminProductService.approveProduct(id));
+    public ResponseEntity<ProductResponseDTO> approveProduct(@PathVariable Long id, org.springframework.security.core.Authentication authentication) {
+        return ResponseEntity.ok(adminProductService.approveProduct(id, authentication.getName()));
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<ProductResponseDTO> rejectProduct(@PathVariable Long id, @RequestParam String reason) {
-        return ResponseEntity.ok(adminProductService.rejectProduct(id, reason));
+    public ResponseEntity<ProductResponseDTO> rejectProduct(@PathVariable Long id, @RequestParam String reason, org.springframework.security.core.Authentication authentication) {
+        return ResponseEntity.ok(adminProductService.rejectProduct(id, reason, authentication.getName()));
     }
 }

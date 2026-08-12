@@ -18,10 +18,17 @@ public class AdminProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final com.petzoe.api.repository.AuditLogRepository auditLogRepository;
+    private final com.petzoe.api.repository.UserRepository userRepository;
 
-    public AdminProductService(ProductRepository productRepository, ProductMapper productMapper) {
+    public AdminProductService(ProductRepository productRepository, 
+                               ProductMapper productMapper,
+                               com.petzoe.api.repository.AuditLogRepository auditLogRepository,
+                               com.petzoe.api.repository.UserRepository userRepository) {
         this.productRepository = productRepository;
         this.productMapper = productMapper;
+        this.auditLogRepository = auditLogRepository;
+        this.userRepository = userRepository;
     }
 
     public Page<ProductSummaryDTO> getAllProducts(int page, int size, String sortBy) {
@@ -35,25 +42,39 @@ public class AdminProductService {
     }
 
     @Transactional
-    public ProductResponseDTO approveProduct(Long id) {
+    public ProductResponseDTO approveProduct(Long id, String adminEmail) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+        com.petzoe.api.entity.User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                
         product.setStatus(ProductStatus.APPROVED);
         product.setApproved(true); // backward compatibility
         product.setRejectionReason(null);
-        return productMapper.toResponseDTO(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        
+        auditLogRepository.save(new com.petzoe.api.entity.AuditLog(admin, "APPROVED_PRODUCT", "Product", saved.getId(), "Approved product: " + saved.getName()));
+        
+        return productMapper.toResponseDTO(saved);
     }
 
     @Transactional
-    public ProductResponseDTO rejectProduct(Long id, String reason) {
+    public ProductResponseDTO rejectProduct(Long id, String reason, String adminEmail) {
         if (reason == null || reason.trim().isEmpty()) {
             throw new IllegalArgumentException("Rejection reason must be provided.");
         }
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+        com.petzoe.api.entity.User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                
         product.setStatus(ProductStatus.REJECTED);
         product.setApproved(false);
         product.setRejectionReason(reason);
-        return productMapper.toResponseDTO(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        
+        auditLogRepository.save(new com.petzoe.api.entity.AuditLog(admin, "REJECTED_PRODUCT", "Product", saved.getId(), "Rejected product: " + saved.getName() + ". Reason: " + reason));
+        
+        return productMapper.toResponseDTO(saved);
     }
 }
