@@ -19,6 +19,8 @@ import VetDashboard from '../pages/dashboard/VetDashboard';
 import ShelterDashboard from '../pages/dashboard/ShelterDashboard';
 import AdminLayout from '../layouts/AdminLayout';
 import AdminDashboardHome from '../pages/dashboard/admin/AdminDashboardHome';
+import VeterinarianManagement from '../pages/dashboard/admin/VeterinarianManagement';
+import VeterinarianReview from '../pages/dashboard/admin/VeterinarianReview';
 import VerificationQueue from '../pages/dashboard/admin/VerificationQueue';
 import UserManagement from '../pages/dashboard/admin/UserManagement';
 import ProductModeration from '../pages/dashboard/admin/ProductModeration';
@@ -119,7 +121,8 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminDashboardHome /> },
           { path: 'users', element: <UserManagement /> },
-          { path: 'vets', element: <VerificationQueue entityType="Veterinarian" title="Veterinarian Verification" /> },
+          { path: 'veterinarians', element: <VeterinarianManagement /> },
+          { path: 'veterinarians/:id', element: <VeterinarianReview /> },
           { path: 'shelters', element: <VerificationQueue entityType="Shelter Manager" title="Shelter Verification" /> },
           { path: 'sellers', element: <VerificationQueue entityType="Marketplace Seller" title="Seller Verification" /> },
           { path: 'products', element: <ProductModeration /> },
