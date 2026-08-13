@@ -33,36 +33,12 @@ public class AdminService {
         
         stats.setTotalUsers(userRepository.count());
         
-        long totalOwners = userRepository.findAll().stream()
-                .filter(u -> "Pet Owner".equalsIgnoreCase(u.getRole()))
-                .count();
-        stats.setTotalPetOwners(totalOwners);
-
-        long pendingVets = userRepository.findAll().stream()
-                .filter(u -> "Veterinarian".equalsIgnoreCase(u.getRole()) && u.getVerificationStatus() == VerificationStatus.PENDING)
-                .count();
-        stats.setPendingVets(pendingVets);
-
-        long verifiedVets = userRepository.findAll().stream()
-                .filter(u -> "Veterinarian".equalsIgnoreCase(u.getRole()) && u.getVerificationStatus() == VerificationStatus.APPROVED)
-                .count();
-        stats.setVerifiedVets(verifiedVets);
-
-        long pendingShelters = userRepository.findAll().stream()
-                .filter(u -> "Shelter Manager".equalsIgnoreCase(u.getRole()) && u.getVerificationStatus() == VerificationStatus.PENDING)
-                .count();
-        stats.setPendingShelters(pendingShelters);
-
-        long pendingSellers = userRepository.findAll().stream()
-                .filter(u -> ("Marketplace Seller".equalsIgnoreCase(u.getRole()) || "Seller".equalsIgnoreCase(u.getRole())) 
-                             && u.getVerificationStatus() == VerificationStatus.PENDING)
-                .count();
-        stats.setPendingSellers(pendingSellers);
-
-        long pendingProducts = productRepository.findAll().stream()
-                .filter(p -> p.getStatus() == ProductStatus.PENDING_REVIEW)
-                .count();
-        stats.setPendingProducts(pendingProducts);
+        stats.setTotalPetOwners(userRepository.countByRoleIgnoreCase("Pet Owner"));
+        stats.setPendingVets(userRepository.countByRoleIgnoreCaseAndVerificationStatus("Veterinarian", VerificationStatus.PENDING));
+        stats.setVerifiedVets(userRepository.countByRoleIgnoreCaseAndVerificationStatus("Veterinarian", VerificationStatus.APPROVED));
+        stats.setPendingShelters(userRepository.countByRoleIgnoreCaseAndVerificationStatus("Shelter Manager", VerificationStatus.PENDING));
+        stats.setPendingSellers(userRepository.countPendingSellers(VerificationStatus.PENDING));
+        stats.setPendingProducts(productRepository.countByStatus(ProductStatus.PENDING_REVIEW));
 
         long activeAdoptionPets = adoptionPetRepository.findByVerificationStatus(VerificationStatus.APPROVED, Pageable.unpaged()).getTotalElements();
         stats.setActiveAdoptionPets(activeAdoptionPets);

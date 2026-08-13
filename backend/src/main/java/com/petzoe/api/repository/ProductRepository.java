@@ -28,6 +28,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     /** Find all products listed by a specific seller. */
     List<Product> findBySeller(User seller);
 
+    /** Find all products listed by a specific seller. */
+    List<Product> findBySellerId(Long sellerId);
+
+    /** Count products by status. */
+    long countByStatus(com.petzoe.api.entity.ProductStatus status);
+
     /** Search approved products by name or brand (case-insensitive). */
     @Query("SELECT p FROM Product p WHERE p.approved = true AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
