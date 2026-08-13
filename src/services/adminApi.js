@@ -18,6 +18,18 @@ export const adminApi = {
   approveAdoptionPet: (id) => api.put(`/admin/adoptions/pets/${id}/approve`),
   rejectAdoptionPet: (id, reason) => api.put(`/admin/adoptions/pets/${id}/reject?reason=${encodeURIComponent(reason)}`),
 
+  // Veterinarians
+  getVeterinarians: () => api.get('/admin/veterinarians'),
+  getVeterinarianDetail: (id) => api.get(`/admin/veterinarians/${id}`),
+  reviewVeterinarian: (id) => api.put(`/admin/veterinarians/${id}/review`),
+  approveVeterinarianProfile: (id) => api.put(`/admin/veterinarians/${id}/approve`),
+  rejectVeterinarianProfile: (id, reason) => api.put(`/admin/veterinarians/${id}/reject`, { reason }),
+  requestResubmissionVeterinarian: (id, reason) => api.put(`/admin/veterinarians/${id}/request-resubmission`, { reason }),
+  reviewVeterinarianDocument: (docId, status, reason) => api.put(`/admin/veterinarians/documents/${docId}/review`, null, { params: { status, reason } }),
+  
+  // Dashboard Activity
+  getRecentActivity: () => api.get('/admin/dashboard/activity'),
+
   // Settings
   changePassword: (data) => api.put('/users/me/password', data)
 };
