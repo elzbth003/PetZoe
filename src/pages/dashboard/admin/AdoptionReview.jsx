@@ -55,7 +55,7 @@ export default function AdoptionReview() {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-        <Heart className="text-rose-500" /> Adoption Reviews
+        <Heart className="text-slate-500" /> Adoption Reviews
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -114,7 +114,7 @@ export default function AdoptionReview() {
                       <div className="flex gap-2">
                         <button 
                           onClick={() => handleReject(pet.id)}
-                          className="flex-1 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg transition-colors text-sm"
+                          className="flex-1 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg transition-colors text-sm"
                         >
                           Confirm
                         </button>
@@ -130,13 +130,13 @@ export default function AdoptionReview() {
                     <div className="flex gap-3">
                       <button 
                         onClick={() => handleApprove(pet.id)}
-                        className="flex-1 py-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                        className="flex-1 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
                       >
                         <CheckCircle size={18}/> Approve
                       </button>
                       <button 
                         onClick={() => setActivePetId(pet.id)}
-                        className="flex-1 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                        className="flex-1 py-2.5 bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
                       >
                         <XCircle size={18}/> Reject
                       </button>

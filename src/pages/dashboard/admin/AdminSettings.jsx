@@ -43,7 +43,7 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3 text-slate-800">
-        <Settings size={24} className="text-purple-600" />
+        <Settings size={24} className="text-slate-600" />
         <h2 className="text-xl font-bold">Account Settings</h2>
       </div>
 
@@ -61,7 +61,7 @@ export default function AdminSettings() {
             <input
               type="password"
               {...register('oldPassword', { required: 'Current password is required' })}
-              className={`w-full px-4 py-3 border ${errors.oldPassword ? 'border-red-500' : 'border-slate-200 focus:border-purple-500'} rounded-xl bg-slate-50 focus:bg-white outline-none transition-colors`}
+              className={`w-full px-4 py-3 border ${errors.oldPassword ? 'border-red-500' : 'border-slate-200 focus:border-slate-500'} rounded-xl bg-slate-50 focus:bg-white outline-none transition-colors`}
               placeholder="••••••••"
             />
             {errors.oldPassword && <p className="mt-1 text-sm text-red-500 flex items-center gap-1"><AlertCircle size={14}/>{errors.oldPassword.message}</p>}
@@ -75,7 +75,7 @@ export default function AdminSettings() {
                 required: 'New password is required',
                 minLength: { value: 8, message: 'Password must be at least 8 characters' }
               })}
-              className={`w-full px-4 py-3 border ${errors.newPassword ? 'border-red-500' : 'border-slate-200 focus:border-purple-500'} rounded-xl bg-slate-50 focus:bg-white outline-none transition-colors`}
+              className={`w-full px-4 py-3 border ${errors.newPassword ? 'border-red-500' : 'border-slate-200 focus:border-slate-500'} rounded-xl bg-slate-50 focus:bg-white outline-none transition-colors`}
               placeholder="••••••••"
             />
             {errors.newPassword && <p className="mt-1 text-sm text-red-500 flex items-center gap-1"><AlertCircle size={14}/>{errors.newPassword.message}</p>}
@@ -89,7 +89,7 @@ export default function AdminSettings() {
                 required: 'Please confirm your new password',
                 validate: value => value === newPassword || 'Passwords do not match'
               })}
-              className={`w-full px-4 py-3 border ${errors.confirmPassword ? 'border-red-500' : 'border-slate-200 focus:border-purple-500'} rounded-xl bg-slate-50 focus:bg-white outline-none transition-colors`}
+              className={`w-full px-4 py-3 border ${errors.confirmPassword ? 'border-red-500' : 'border-slate-200 focus:border-slate-500'} rounded-xl bg-slate-50 focus:bg-white outline-none transition-colors`}
               placeholder="••••••••"
             />
             {errors.confirmPassword && <p className="mt-1 text-sm text-red-500 flex items-center gap-1"><AlertCircle size={14}/>{errors.confirmPassword.message}</p>}
@@ -99,7 +99,7 @@ export default function AdminSettings() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center gap-2"
+              className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center gap-2"
             >
               {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
               Update Password

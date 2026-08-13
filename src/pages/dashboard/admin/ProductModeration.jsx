@@ -89,7 +89,7 @@ export default function ProductModeration() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold">
+                        <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
                           {product.categoryName}
                         </span>
                       </td>
@@ -103,14 +103,14 @@ export default function ProductModeration() {
                         <div className="flex justify-end gap-2">
                           <button 
                             onClick={() => handleApprove(product.id)}
-                            className="p-2 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                            className="p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                             title="Approve"
                           >
                             <CheckCircle size={18}/>
                           </button>
                           <button 
                             onClick={() => setActiveProductId(activeProductId === product.id ? null : product.id)}
-                            className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
+                            className="p-2 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                             title="Reject"
                           >
                             <XCircle size={18}/>
@@ -119,7 +119,7 @@ export default function ProductModeration() {
                       </td>
                     </tr>
                     {activeProductId === product.id && (
-                      <tr className="bg-rose-50/50">
+                      <tr className="bg-slate-50">
                         <td colSpan="5" className="p-4">
                           <div className="flex gap-2">
                             <input 
@@ -131,7 +131,7 @@ export default function ProductModeration() {
                             />
                             <button 
                               onClick={() => handleReject(product.id)}
-                              className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg transition-colors"
+                              className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg transition-colors"
                             >
                               Confirm Rejection
                             </button>

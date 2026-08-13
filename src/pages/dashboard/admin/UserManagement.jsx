@@ -17,7 +17,7 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     try {
       const res = await adminApi.getUsers();
-      setUsers(res.data);
+      setUsers(res.data.filter(u => u.role !== 'Admin'));
     } catch (err) {
       showToast("Failed to fetch users", "error");
     } finally {
@@ -36,7 +36,7 @@ export default function UserManagement() {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'All' || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -51,21 +51,21 @@ export default function UserManagement() {
             placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none"
           />
         </div>
         
         <select 
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="w-full md:w-48 px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+          className="w-full md:w-48 px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none bg-white"
         >
           <option value="All">All Roles</option>
           <option value="Pet Owner">Pet Owner</option>
           <option value="Veterinarian">Veterinarian</option>
           <option value="Shelter Manager">Shelter Manager</option>
           <option value="Marketplace Seller">Marketplace Seller</option>
-          <option value="Admin">Admin</option>
+
         </select>
       </div>
 
@@ -106,21 +106,21 @@ export default function UserManagement() {
                     </td>
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                        user.verificationStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
-                        user.verificationStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                        user.verificationStatus === 'NOT_SUBMITTED' ? 'bg-slate-100 text-slate-500' :
-                        'bg-red-100 text-red-700'
+                        user.verificationStatus === 'APPROVED' ? 'bg-slate-200 text-slate-700' :
+                        user.verificationStatus === 'PENDING' ? 'bg-slate-150 text-slate-600' :
+                        (!user.verificationStatus || user.verificationStatus === 'NOT_SUBMITTED') ? 'bg-slate-100 text-slate-500' :
+                        'bg-slate-200 text-slate-600'
                       }`}>
-                        {user.verificationStatus.replace('_', ' ')}
+                        {(user.verificationStatus ?? 'NOT_SUBMITTED').replace('_', ' ')}
                       </span>
                     </td>
                     <td className="p-4">
                       {user.enabled ? (
-                        <span className="flex items-center gap-1 text-emerald-600 text-xs font-bold">
+                        <span className="flex items-center gap-1 text-slate-600 text-xs font-bold">
                           <CheckCircle size={14} /> Active
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-rose-600 text-xs font-bold">
+                        <span className="flex items-center gap-1 text-slate-500 text-xs font-bold">
                           <XCircle size={14} /> Inactive
                         </span>
                       )}
@@ -131,8 +131,8 @@ export default function UserManagement() {
                           onClick={() => toggleStatus(user.id, user.enabled)}
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
                             user.enabled 
-                              ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' 
-                              : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' 
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
                           {user.enabled ? 'Deactivate' : 'Activate'}

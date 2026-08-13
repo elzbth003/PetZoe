@@ -70,7 +70,7 @@ export default function VerificationQueue({ entityType, title }) {
                 <div 
                   key={req.id}
                   onClick={() => setSelectedRequest(req)}
-                  className={`p-4 rounded-2xl cursor-pointer border transition-all ${selectedRequest?.id === req.id ? 'border-purple-500 bg-purple-50' : 'border-slate-100 hover:border-purple-300'}`}
+                  className={`p-4 rounded-2xl cursor-pointer border transition-all ${selectedRequest?.id === req.id ? 'border-slate-400 bg-slate-50' : 'border-slate-100 hover:border-slate-300'}`}
                 >
                   <p className="font-bold text-slate-800">{req.user.name}</p>
                   <p className="text-xs text-slate-500">{req.user.email}</p>
@@ -107,7 +107,7 @@ export default function VerificationQueue({ entityType, title }) {
                       <div className="p-8 text-center flex flex-col items-center justify-center">
                          <FileText size={48} className="text-slate-400 mb-2"/>
                          <p className="text-slate-600 mb-4">Document available</p>
-                         <a href={selectedRequest.documentBase64} download="verification_document" className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg flex items-center gap-2 text-sm font-bold">
+                         <a href={selectedRequest.documentBase64} download="verification_document" className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg flex items-center gap-2 text-sm font-bold">
                            <Download size={16}/> Download File
                          </a>
                       </div>
@@ -123,7 +123,7 @@ export default function VerificationQueue({ entityType, title }) {
                 <div className="flex gap-4">
                   <button 
                     onClick={() => handleApprove(selectedRequest.id)}
-                    className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
                   >
                     <CheckCircle size={18}/> Approve
                   </button>
@@ -137,7 +137,7 @@ export default function VerificationQueue({ entityType, title }) {
                     />
                     <button 
                       onClick={() => handleReject(selectedRequest.id)}
-                      className="w-full py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                      className="w-full py-2 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
                     >
                       <XCircle size={16}/> Reject
                     </button>
