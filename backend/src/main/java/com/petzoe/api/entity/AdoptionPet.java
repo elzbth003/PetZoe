@@ -40,13 +40,13 @@ public class AdoptionPet {
     @Column(name = "verification_status")
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
-    @Column(name = "medical_documents_base64", columnDefinition = "LONGTEXT")
+    @Column(name = "medical_documents_base64", columnDefinition = "TEXT")
     private String medicalDocumentsBase64;
 
-    @Column(name = "vaccination_records_base64", columnDefinition = "LONGTEXT")
+    @Column(name = "vaccination_records_base64", columnDefinition = "TEXT")
     private String vaccinationRecordsBase64;
 
-    @Column(name = "pet_image_base64", columnDefinition = "LONGTEXT")
+    @Column(name = "pet_image_base64", columnDefinition = "TEXT")
     private String petImageBase64;
 
     @Column(nullable = false)

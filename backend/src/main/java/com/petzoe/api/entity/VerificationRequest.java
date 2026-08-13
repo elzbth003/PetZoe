@@ -25,10 +25,10 @@ public class VerificationRequest {
     @Column(name = "reviewer_notes", length = 1000)
     private String reviewerNotes;
 
-    @Column(name = "document_base64", columnDefinition = "LONGTEXT")
+    @Column(name = "document_base64", columnDefinition = "TEXT")
     private String documentBase64; // Storing the main verification document
 
-    @Column(name = "additional_documents_base64", columnDefinition = "LONGTEXT")
+    @Column(name = "additional_documents_base64", columnDefinition = "TEXT")
     private String additionalDocumentsBase64;
 
     @Column(name = "submitted_at", nullable = false)

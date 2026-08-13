@@ -123,7 +123,7 @@ public class User implements UserDetails {
         return authorities;
     }
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean enabled = true;
 
     @Override
