@@ -27,8 +27,9 @@ export const adminApi = {
   requestResubmissionVeterinarian: (id, reason) => api.put(`/admin/veterinarians/${id}/request-resubmission`, { reason }),
   reviewVeterinarianDocument: (docId, status, reason) => api.put(`/admin/veterinarians/documents/${docId}/review`, null, { params: { status, reason } }),
   
-  // Dashboard Activity
+  // Dashboard Activity & Analytics
   getRecentActivity: () => api.get('/admin/dashboard/activity'),
+  getAnalytics: () => api.get('/admin/dashboard/analytics'),
 
   // Settings
   changePassword: (data) => api.put('/users/me/password', data)

@@ -1,17 +1,124 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Shield, Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope, ShoppingBag, Bell, Settings, Menu, X } from 'lucide-react';
+import { notificationService } from '../services/notificationService';
+import { useToast } from '../hooks/useToast';
+import { Shield, Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope, ShoppingBag, Bell, Settings, Menu, X, Check, Trash2, Loader2 } from 'lucide-react';
+
+function timeAgo(dateString) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+}
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useToast();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Notification state
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifError, setNotifError] = useState(null);
+  const notifRef = useRef(null);
+  const pollingRef = useRef(false); // Guard against overlapping polls
 
   const handleLogout = () => {
     logout();
     navigate('/admin-login');
+  };
+
+  // Fetch unread count
+  const fetchUnreadCount = useCallback(async () => {
+    if (pollingRef.current) return; // Skip if previous request is still in flight
+    pollingRef.current = true;
+    try {
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
+    } catch {
+      // Degrade gracefully — don't break the layout
+    } finally {
+      pollingRef.current = false;
+    }
+  }, []);
+
+  // Initial fetch + 30s polling
+  useEffect(() => {
+    if (!user) return;
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [user, fetchUnreadCount]);
+
+  // Fetch full notifications when dropdown opens
+  const openNotifDropdown = async () => {
+    setNotifOpen(true);
+    setNotifLoading(true);
+    setNotifError(null);
+    try {
+      const data = await notificationService.getNotifications();
+      setNotifications(data);
+      // Refresh unread count after fetch
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (err) {
+      setNotifError(err.response?.data?.message || err.message || 'Failed to load notifications');
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const toggleNotifDropdown = () => {
+    if (notifOpen) {
+      setNotifOpen(false);
+    } else {
+      openNotifDropdown();
+    }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Mark as read
+  const handleMarkRead = async (id) => {
+    try {
+      const updated = await notificationService.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to mark as read', 'error');
+    }
+  };
+
+  // Delete notification
+  const handleDelete = async (id) => {
+    try {
+      await notificationService.deleteNotification(id);
+      const wasUnread = notifications.find(n => n.id === id && !n.isRead);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      if (wasUnread) setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to delete notification', 'error');
+    }
   };
 
   const navItems = [
@@ -109,10 +216,102 @@ export default function AdminLayout() {
             <h1 className="text-xl font-black text-slate-900 hidden sm:block">Administrator Console</h1>
           </div>
           <div className="flex items-center gap-4">
-            <button className="p-2 text-slate-400 hover:text-slate-600 relative">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-slate-500 rounded-full border border-white"></span>
-            </button>
+            {/* Notification Bell */}
+            <div className="relative" ref={notifRef}>
+              <button 
+                className="p-2 text-slate-400 hover:text-slate-600 relative"
+                onClick={toggleNotifDropdown}
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-rose-500 text-white text-[10px] font-black rounded-full border-2 border-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {notifOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
+                      <p className="text-[10px] text-slate-400 font-semibold">{unreadCount} unread</p>
+                    </div>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifLoading ? (
+                      <div className="py-12 flex items-center justify-center">
+                        <Loader2 className="animate-spin text-slate-400" size={24} />
+                      </div>
+                    ) : notifError ? (
+                      <div className="p-6 text-center">
+                        <p className="text-rose-600 text-xs font-semibold">Failed to load notifications</p>
+                        <p className="text-slate-400 text-[10px] mt-1">{notifError}</p>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Bell size={28} className="text-slate-200 mx-auto mb-2" />
+                        <p className="text-slate-500 text-xs font-semibold">No new notifications</p>
+                      </div>
+                    ) : (
+                      notifications.slice(0, 15).map((notif) => (
+                        <div 
+                          key={notif.id} 
+                          className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50/50 transition-colors flex items-start gap-3 ${
+                            !notif.isRead ? 'bg-blue-50/30' : ''
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={`text-xs leading-snug ${!notif.isRead ? 'font-bold text-slate-900' : 'font-semibold text-slate-600'}`}>
+                                {notif.title}
+                              </p>
+                              {!notif.isRead && (
+                                <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{notif.message}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-1">{timeAgo(notif.createdAt)}</p>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            {!notif.isRead && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleMarkRead(notif.id); }}
+                                title="Mark as read"
+                                className="h-6 w-6 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-500 flex items-center justify-center transition-colors"
+                              >
+                                <Check size={12} />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(notif.id); }}
+                              title="Dismiss"
+                              className="h-6 w-6 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-colors"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {notifications.length > 0 && (
+                    <div className="p-3 border-t border-slate-100 bg-slate-50">
+                      <button 
+                        onClick={() => { setNotifOpen(false); navigate('/dashboard/admin/settings'); }}
+                        className="w-full text-center text-xs font-bold text-slate-600 hover:text-slate-800 transition-colors py-1"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">
                 {user?.name?.charAt(0) || 'A'}

@@ -1,6 +1,7 @@
 package com.petzoe.api.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -53,6 +54,16 @@ public class User implements UserDetails {
     @Column(name = "verification_status")
     private VerificationStatus verificationStatus = VerificationStatus.NOT_SUBMITTED;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+    }
+
     public User() {
     }
 
@@ -100,6 +111,9 @@ public class User implements UserDetails {
 
     public VerificationStatus getVerificationStatus() { return verificationStatus; }
     public void setVerificationStatus(VerificationStatus verificationStatus) { this.verificationStatus = verificationStatus; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
