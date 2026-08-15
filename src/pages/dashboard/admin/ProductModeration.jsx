@@ -57,10 +57,10 @@ export default function ProductModeration() {
       <h2 className="text-xl font-bold text-slate-800">Product Moderation</h2>
       
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider">
+            <thead className="sticky top-0 z-10 bg-slate-50 shadow-sm">
+              <tr className="text-slate-500 text-xs uppercase tracking-wider">
                 <th className="p-4 font-semibold">Product</th>
                 <th className="p-4 font-semibold">Category</th>
                 <th className="p-4 font-semibold">Seller</th>

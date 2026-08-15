@@ -99,6 +99,10 @@ export const router = createBrowserRouter([
     ]
   },
   {
+    path: '/admin-login',
+    element: <AdminLogin />
+  },
+  {
     path: '/dashboard',
     element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Admin', 'Marketplace Seller']} />,
     children: [

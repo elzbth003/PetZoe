@@ -140,10 +140,10 @@ export default function SellerDashboard() {
             ) : products.length === 0 ? (
               <div className="text-center py-12 text-slate-500">No products found. Start by adding one!</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
                 <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider">
+                  <thead className="sticky top-0 z-10 bg-white shadow-sm">
+                    <tr className="border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider bg-white">
                       <th className="py-3 px-4">Product</th>
                       <th className="py-3 px-4">Price</th>
                       <th className="py-3 px-4">Stock</th>
@@ -215,7 +215,7 @@ export default function SellerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen overflow-hidden bg-slate-50 flex">
       {/* Sidebar Navigation */}
       <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6 shrink-0 shadow-xl border-r border-slate-800">
         <div className="space-y-8">
@@ -257,8 +257,8 @@ export default function SellerDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 space-y-6 overflow-y-auto max-h-screen">
-        <header className="flex justify-between items-center border-b border-slate-200 pb-5">
+      <main className="flex-1 overflow-y-auto bg-slate-50">
+        <header className="sticky top-0 z-10 bg-slate-50 flex justify-between items-center border-b border-slate-200 px-8 py-5">
           <div className="text-left">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">{activeTab}</h1>
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5">
@@ -267,7 +267,7 @@ export default function SellerDashboard() {
           </div>
         </header>
 
-        <div className="pb-10">
+        <div className="p-8 pb-10 space-y-6">
           {renderTabContent()}
         </div>
       </main>

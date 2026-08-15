@@ -13,7 +13,7 @@ export default function VetDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen overflow-hidden bg-slate-50 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6">
         <div className="space-y-8">
@@ -49,8 +49,8 @@ export default function VetDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-10 space-y-8 overflow-y-auto">
-        <header className="flex justify-between items-center border-b border-slate-200 pb-5">
+      <main className="flex-1 overflow-y-auto bg-slate-50">
+        <header className="sticky top-0 z-10 bg-slate-50 flex justify-between items-center border-b border-slate-200 px-10 py-5">
           <div>
             <h1 className="text-2xl font-black text-slate-900">Veterinarian Portal</h1>
             <p className="text-slate-500 text-xs mt-0.5">Welcome back, {user?.name}. Managing your consultations and schedules.</p>
@@ -58,7 +58,8 @@ export default function VetDashboard() {
         </header>
 
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-10 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4">
             <div className="h-12 w-12 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600">
               <Calendar size={22} />
@@ -88,7 +89,7 @@ export default function VetDashboard() {
               <h3 className="text-2xl font-black text-slate-800">3</h3>
             </div>
           </div>
-        </div>
+          </div>
 
         {/* Schedule preview */}
         <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
@@ -114,6 +115,7 @@ export default function VetDashboard() {
               </div>
               <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold">11:30 AM</span>
             </div>
+          </div>
           </div>
         </div>
       </main>

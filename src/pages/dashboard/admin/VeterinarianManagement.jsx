@@ -92,10 +92,10 @@ export default function VeterinarianManagement() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+            <thead className="sticky top-0 z-10 bg-slate-50 shadow-sm">
+              <tr className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
                 <th className="p-4 border-b border-slate-100">Veterinarian</th>
                 <th className="p-4 border-b border-slate-100">Specialization</th>
                 <th className="p-4 border-b border-slate-100">Experience</th>

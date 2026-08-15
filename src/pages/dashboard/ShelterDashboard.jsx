@@ -13,7 +13,7 @@ export default function ShelterDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen overflow-hidden bg-slate-50 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6">
         <div className="space-y-8">
@@ -49,8 +49,8 @@ export default function ShelterDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-10 space-y-8 overflow-y-auto">
-        <header className="flex justify-between items-center border-b border-slate-200 pb-5">
+      <main className="flex-1 overflow-y-auto bg-slate-50">
+        <header className="sticky top-0 z-10 bg-slate-50 flex justify-between items-center border-b border-slate-200 px-10 py-5">
           <div>
             <h1 className="text-2xl font-black text-slate-900">Shelter & Adoption Hub</h1>
             <p className="text-slate-500 text-xs mt-0.5">Welcome back, {user?.name}. Managing intakes and adoption checks.</p>
@@ -58,7 +58,8 @@ export default function ShelterDashboard() {
         </header>
 
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-10 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4">
             <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
               <Home size={22} />
@@ -90,10 +91,11 @@ export default function ShelterDashboard() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm text-center py-12 space-y-3">
-          <Heart className="mx-auto text-slate-300" size={48} />
-          <h3 className="font-bold text-slate-800 text-sm">Adoption Matching System Ready</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">This dashboard serves as a functional placeholder for Shelter Managers to manage background checks and pet listings.</p>
+          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm text-center py-12 space-y-3">
+            <Heart className="mx-auto text-slate-300" size={48} />
+            <h3 className="font-bold text-slate-800 text-sm">Adoption Matching System Ready</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">This dashboard serves as a functional placeholder for Shelter Managers to manage background checks and pet listings.</p>
+          </div>
         </div>
       </main>
     </div>

@@ -310,7 +310,7 @@ export default function OwnerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen overflow-hidden bg-slate-50 flex">
       
       {/* Sidebar Navigation */}
       <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6 shrink-0 shadow-xl border-r border-slate-800">
@@ -378,10 +378,10 @@ export default function OwnerDashboard() {
       </aside>
 
       {/* Main Dashboard Portal Panel */}
-      <main className="flex-1 p-8 space-y-6 overflow-y-auto max-h-screen">
+      <main className="flex-1 overflow-y-auto bg-slate-50">
         
         {/* Header Panel */}
-        <header className="flex justify-between items-center border-b border-slate-200 pb-5">
+        <header className="sticky top-0 z-10 bg-slate-50 flex justify-between items-center border-b border-slate-200 px-8 py-5">
           <div className="text-left">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">{activeTab}</h1>
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5">
@@ -419,7 +419,7 @@ export default function OwnerDashboard() {
         </header>
 
         {/* Main Content Area */}
-        <div className="pb-10">
+        <div className="p-8 pb-10">
           {renderTabContent()}
         </div>
 
