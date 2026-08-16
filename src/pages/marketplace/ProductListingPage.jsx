@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import ProductCard from '../../components/marketplace/ProductCard';
 
@@ -23,6 +23,13 @@ export default function ProductListingPage() {
   const [searchQuery, setSearchQuery] = useState(initialSearch || '');
   const [sortBy, setSortBy] = useState('createdAt'); // createdAt, price, averageRating
   const [showFilters, setShowFilters] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+
+  const sortOptions = [
+    { value: 'createdAt', label: 'Newest First' },
+    { value: 'price', label: 'Price: Low to High' },
+    { value: 'averageRating', label: 'Highest Rated' }
+  ];
 
   useEffect(() => {
     fetchCategories();
@@ -107,17 +114,39 @@ export default function ProductListingPage() {
               <Filter size={18} /> Filters
             </button>
             
-            <div className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-2xl shadow-sm flex-1 md:flex-none">
-              <SlidersHorizontal size={16} className="text-slate-400" />
-              <select 
-                value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent font-bold text-slate-700 outline-none cursor-pointer py-1"
+            <div className="relative flex-1 md:flex-none z-20">
+              <button 
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                onBlur={() => setTimeout(() => setShowSortDropdown(false), 200)}
+                className="w-full flex items-center justify-between gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-2xl shadow-sm text-slate-700 font-bold hover:border-slate-300 transition-colors"
               >
-                <option value="createdAt">Newest First</option>
-                <option value="price">Price: Low to High</option>
-                <option value="averageRating">Highest Rated</option>
-              </select>
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal size={16} className="text-slate-400" />
+                  <span>{sortOptions.find(opt => opt.value === sortBy)?.label}</span>
+                </div>
+                <ChevronDown size={16} className={`text-slate-400 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showSortDropdown && (
+                <div className="absolute top-full mt-2 left-0 right-0 md:w-56 bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                        sortBy === option.value 
+                          ? 'bg-primary-50 text-primary-600' 
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
