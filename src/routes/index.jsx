@@ -24,6 +24,7 @@ import VeterinarianReview from '../pages/dashboard/admin/VeterinarianReview';
 import VerificationQueue from '../pages/dashboard/admin/VerificationQueue';
 import UserManagement from '../pages/dashboard/admin/UserManagement';
 import ProductModeration from '../pages/dashboard/admin/ProductModeration';
+import ShelterVerificationReview from '../pages/dashboard/admin/ShelterVerificationReview';
 import AdoptionReview from '../pages/dashboard/admin/AdoptionReview';
 import AdminSettings from '../pages/dashboard/admin/AdminSettings';
 import SellerDashboard from '../pages/dashboard/SellerDashboard';
@@ -61,17 +62,17 @@ export const router = createBrowserRouter([
       // Protected Marketplace Routes (require login but any role can buy)
       {
         path: 'marketplace/cart',
-        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Admin', 'Marketplace Seller']} />,
+        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager']} />,
         children: [{ index: true, element: <CartPage /> }]
       },
       {
         path: 'marketplace/wishlist',
-        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Admin', 'Marketplace Seller']} />,
+        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager']} />,
         children: [{ index: true, element: <WishlistPage /> }]
       },
       {
         path: 'marketplace/orders',
-        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Admin', 'Marketplace Seller']} />,
+        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager']} />,
         children: [{ index: true, element: <OrderHistoryPage /> }]
       }
     ]
@@ -127,7 +128,7 @@ export const router = createBrowserRouter([
           { path: 'users', element: <UserManagement /> },
           { path: 'veterinarians', element: <VeterinarianManagement /> },
           { path: 'veterinarians/:id', element: <VeterinarianReview /> },
-          { path: 'shelters', element: <VerificationQueue entityType="Shelter Manager" title="Shelter Verification" /> },
+          { path: 'shelters', element: <ShelterVerificationReview /> },
           { path: 'sellers', element: <VerificationQueue entityType="Marketplace Seller" title="Seller Verification" /> },
           { path: 'products', element: <ProductModeration /> },
           { path: 'adoptions', element: <AdoptionReview /> },
