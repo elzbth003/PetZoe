@@ -14,6 +14,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isBuyer = user && ['Pet Owner', 'Veterinarian', 'Shelter Manager'].includes(user.role);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 15);
@@ -23,13 +25,13 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (isBuyer) {
       fetchCartCount();
       // Listen for custom event when cart is updated
       window.addEventListener('cart-updated', fetchCartCount);
       return () => window.removeEventListener('cart-updated', fetchCartCount);
     }
-  }, [user]);
+  }, [isBuyer]);
 
   const fetchCartCount = async () => {
     try {
@@ -96,14 +98,16 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-4">
-              <Link to="/marketplace/cart" className="relative p-2 text-slate-600 hover:text-primary-600 transition-colors">
-                <ShoppingCart size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
-              </Link>
+              {isBuyer && (
+                <Link to="/marketplace/cart" className="relative p-2 text-slate-600 hover:text-primary-600 transition-colors">
+                  <ShoppingCart size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               <div className="flex items-center gap-3 bg-slate-100/80 px-4 py-2 rounded-full border border-slate-200 shadow-sm">
                 <Link to={`/dashboard/${user.role === 'Pet Owner' ? 'owner' : user.role === 'Veterinarian' ? 'vet' : user.role === 'Shelter Manager' ? 'shelter' : user.role === 'Marketplace Seller' ? 'seller' : 'admin'}`} className="flex items-center gap-2">
                   <div className="p-1 bg-primary-100 rounded-full text-primary-600">
@@ -137,7 +141,7 @@ export default function Navbar() {
 
         {/* Mobile menu button */}
         <div className="md:hidden flex items-center gap-3">
-          {user && (
+          {isBuyer && (
             <Link to="/marketplace/cart" className="relative p-2 text-slate-600">
               <ShoppingCart size={20} />
               {cartCount > 0 && (

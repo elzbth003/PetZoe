@@ -26,8 +26,8 @@ export default function AdminLogin() {
       const user = await login(data.email, data.password);
       if (user.role !== 'Admin') {
         showToast('Unauthorized access. Admin privileges required.', 'error');
-        localStorage.removeItem('petzoe_token');
-        localStorage.removeItem('petzoe_user');
+        sessionStorage.removeItem('petzoe_token');
+        sessionStorage.removeItem('petzoe_user');
         window.dispatchEvent(new Event('auth-change'));
         navigate('/');
         return;

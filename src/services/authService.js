@@ -17,14 +17,14 @@ export const authService = {
   login: async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
     if (response.data && response.data.token) {
-      localStorage.setItem('petzoe_token', response.data.token);
+      sessionStorage.setItem('petzoe_token', response.data.token);
       const user = {
         name: response.data.name,
         email: response.data.email,
         role: response.data.role,
         profileImage: response.data.profileImage || null,
       };
-      localStorage.setItem('petzoe_user', JSON.stringify(user));
+      sessionStorage.setItem('petzoe_user', JSON.stringify(user));
       return user;
     }
     throw new Error("Authentication failed. No token received.");
@@ -34,14 +34,14 @@ export const authService = {
   googleLogin: async (credential) => {
     const response = await api.post('/auth/google', { token: credential });
     if (response.data && response.data.token) {
-      localStorage.setItem('petzoe_token', response.data.token);
+      sessionStorage.setItem('petzoe_token', response.data.token);
       const user = {
         name: response.data.name,
         email: response.data.email,
         role: response.data.role,
         profileImage: response.data.profileImage || null,
       };
-      localStorage.setItem('petzoe_user', JSON.stringify(user));
+      sessionStorage.setItem('petzoe_user', JSON.stringify(user));
       return user;
     }
     throw new Error("Google authentication failed. No token received.");
@@ -55,13 +55,13 @@ export const authService = {
 
   // Logout
   logout: () => {
-    localStorage.removeItem('petzoe_token');
-    localStorage.removeItem('petzoe_user');
+    sessionStorage.removeItem('petzoe_token');
+    sessionStorage.removeItem('petzoe_user');
   },
 
   // Get current user session
   getCurrentUser: () => {
-    const userJson = localStorage.getItem('petzoe_user');
+    const userJson = sessionStorage.getItem('petzoe_user');
     return userJson ? JSON.parse(userJson) : null;
   }
 };

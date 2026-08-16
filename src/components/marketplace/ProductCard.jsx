@@ -14,9 +14,11 @@ export default function ProductCard({ product, onWishlistUpdate }) {
 
   const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
   const currentPrice = hasDiscount ? product.discountPrice : product.price;
-  const discountPercent = hasDiscount 
+  const discountPercent = hasDiscount
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
     : 0;
+
+  const isSeller = user?.role === 'Marketplace Seller';
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -24,7 +26,11 @@ export default function ProductCard({ product, onWishlistUpdate }) {
       showToast('Please login to add items to cart', 'error');
       return;
     }
-    
+    if (isSeller) {
+      showToast('Marketplace sellers cannot purchase products', 'error');
+      return;
+    }
+
     try {
       setIsAddingToCart(true);
       await marketplaceService.addToCart(product.id, 1);
@@ -42,6 +48,10 @@ export default function ProductCard({ product, onWishlistUpdate }) {
     e.preventDefault();
     if (!user) {
       showToast('Please login to add to wishlist', 'error');
+      return;
+    }
+    if (isSeller) {
+      showToast('Marketplace sellers cannot purchase products', 'error');
       return;
     }
 
@@ -82,16 +92,18 @@ export default function ProductCard({ product, onWishlistUpdate }) {
       </div>
 
       {/* Quick Actions (Hover) */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-        <button 
-          onClick={handleAddToWishlist}
-          disabled={isAddingToWishlist}
-          className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-slate-500 hover:text-rose-500 shadow-sm hover:shadow transition-colors"
-          title="Add to Wishlist"
-        >
-          {isAddingToWishlist ? <Check size={16} /> : <Heart size={16} />}
-        </button>
-      </div>
+      {!isSeller && (
+        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+          <button
+            onClick={handleAddToWishlist}
+            disabled={isAddingToWishlist}
+            className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-slate-500 hover:text-rose-500 shadow-sm hover:shadow transition-colors"
+            title="Add to Wishlist"
+          >
+            {isAddingToWishlist ? <Check size={16} /> : <Heart size={16} />}
+          </button>
+        </div>
+      )}
 
       {/* Image Container */}
       <div className="relative aspect-square w-full bg-slate-50 overflow-hidden">
@@ -131,18 +143,20 @@ export default function ProductCard({ product, onWishlistUpdate }) {
             </div>
           </div>
           
-          <button
-            onClick={handleAddToCart}
-            disabled={isAddingToCart || product.stockQuantity === 0}
-            className={`p-2.5 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-              product.stockQuantity === 0 
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white'
-            }`}
-            title={product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-          >
-            {isAddingToCart ? <Check size={20} /> : <ShoppingCart size={20} />}
-          </button>
+          {!isSeller && (
+            <button
+              onClick={handleAddToCart}
+              disabled={isAddingToCart || product.stockQuantity === 0}
+              className={`p-2.5 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                product.stockQuantity === 0
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white'
+              }`}
+              title={product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+            >
+              {isAddingToCart ? <Check size={20} /> : <ShoppingCart size={20} />}
+            </button>
+          )}
         </div>
       </div>
     </Link>

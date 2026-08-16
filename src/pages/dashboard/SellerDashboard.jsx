@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import marketplaceService from '../../services/marketplaceService';
+import verificationService from '../../services/verificationService';
 import { useToast } from '../../hooks/useToast';
 import AddProductWizard from '../../components/dashboard/AddProductWizard';
 
@@ -19,6 +20,11 @@ export default function SellerDashboard() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [verification, setVerification] = useState(null);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [verificationFile, setVerificationFile] = useState(null);
+  const [submittingVerification, setSubmittingVerification] = useState(false);
+
   useEffect(() => {
     if (user?.role !== 'Marketplace Seller' && user?.role !== 'Admin') {
       navigate('/login');
@@ -29,7 +35,49 @@ export default function SellerDashboard() {
     if (activeTab === 'My Products') {
       fetchMyProducts();
     }
+    if (activeTab === 'Settings') {
+      fetchVerification();
+    }
   }, [activeTab]);
+
+  const fetchVerification = async () => {
+    try {
+      setVerificationLoading(true);
+      const res = await verificationService.getMyVerification();
+      setVerification(res.data);
+    } catch (err) {
+      console.error("Failed to fetch verification status", err);
+    } finally {
+      setVerificationLoading(false);
+    }
+  };
+
+  const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleSubmitVerification = async (e) => {
+    e.preventDefault();
+    if (!verificationFile) {
+      showToast('Please choose a document to upload', 'error');
+      return;
+    }
+    try {
+      setSubmittingVerification(true);
+      const documentBase64 = await fileToBase64(verificationFile);
+      const res = await verificationService.submitVerification(documentBase64);
+      setVerification(res.data);
+      setVerificationFile(null);
+      showToast('Verification request submitted', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to submit verification request', 'error');
+    } finally {
+      setSubmittingVerification(false);
+    }
+  };
 
   const fetchMyProducts = async () => {
     try {
@@ -198,6 +246,74 @@ export default function SellerDashboard() {
             )}
           </div>
         );
+      case 'Settings': {
+        const status = verification?.status || 'NOT_SUBMITTED';
+        const canSubmit = ['NOT_SUBMITTED', 'REJECTED', 'CHANGES_REQUIRED', 'RESUBMISSION_REQUIRED'].includes(status);
+        const statusStyles = {
+          NOT_SUBMITTED: 'bg-slate-100 text-slate-600',
+          PENDING: 'bg-amber-50 text-amber-600',
+          UNDER_REVIEW: 'bg-amber-50 text-amber-600',
+          APPROVED: 'bg-emerald-50 text-emerald-600',
+          REJECTED: 'bg-rose-50 text-rose-600',
+          CHANGES_REQUIRED: 'bg-rose-50 text-rose-600',
+          RESUBMISSION_REQUIRED: 'bg-rose-50 text-rose-600',
+          SUSPENDED: 'bg-rose-50 text-rose-600',
+        };
+
+        return (
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm max-w-xl">
+            <h2 className="text-lg font-bold text-slate-800 mb-1">Seller Verification</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              You must be verified before you can submit products for review.
+            </p>
+
+            {verificationLoading ? (
+              <div className="py-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div></div>
+            ) : (
+              <>
+                <span className={`inline-block text-xs font-bold px-3 py-1.5 rounded-md mb-4 ${statusStyles[status] || 'bg-slate-100 text-slate-600'}`}>
+                  Status: {status.replace(/_/g, ' ')}
+                </span>
+
+                {status === 'REJECTED' && verification?.reviewerNotes && (
+                  <div className="mb-4 text-sm text-rose-600 bg-rose-50 p-3 rounded-xl">
+                    Reason: {verification.reviewerNotes}
+                  </div>
+                )}
+
+                {canSubmit ? (
+                  <form onSubmit={handleSubmitVerification} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                        Verification Document (ID proof, business license, etc.)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => setVerificationFile(e.target.files?.[0] || null)}
+                        className="block w-full text-sm text-slate-600"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={submittingVerification}
+                      className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50"
+                    >
+                      {submittingVerification ? 'Submitting...' : 'Submit for Verification'}
+                    </button>
+                  </form>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    {status === 'APPROVED'
+                      ? 'Your seller account is verified.'
+                      : 'Your request is being reviewed by our team.'}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        );
+      }
       default:
         return (
           <div className="bg-white p-12 text-center rounded-3xl border border-slate-100 shadow-sm text-slate-500">

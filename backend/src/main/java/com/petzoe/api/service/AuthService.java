@@ -28,18 +28,20 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final NotificationService notificationService;
+    private final VerificationService verificationService;
 
     @Value("${petzoe.google.client-id:}")
     private String googleClientId;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        JwtService jwtService, AuthenticationManager authenticationManager,
-                       NotificationService notificationService) {
+                       NotificationService notificationService, VerificationService verificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.notificationService = notificationService;
+        this.verificationService = verificationService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -58,11 +60,22 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         String jwtToken = jwtService.generateToken(savedUser);
 
-        // Send welcome notification
-        notificationService.createNotification(savedUser,
-                "Welcome to PetZoe! 🐾",
-                "Your account has been created successfully. Start by adding your pets!",
-                "SYSTEM");
+        if ("Marketplace Seller".equalsIgnoreCase(savedUser.getRole())) {
+            // Open a pending verification request immediately so it lands in the
+            // admin's queue without the seller needing a separate submission step.
+            verificationService.autoCreateOnRegistration(savedUser);
+            notificationService.createNotification(savedUser,
+                    "Welcome to PetZoe! 🐾",
+                    "Your seller account has been created and is pending admin verification. " +
+                            "You'll be notified once it's reviewed.",
+                    "SYSTEM");
+        } else {
+            // Send welcome notification
+            notificationService.createNotification(savedUser,
+                    "Welcome to PetZoe! 🐾",
+                    "Your account has been created successfully. Start by adding your pets!",
+                    "SYSTEM");
+        }
 
         return new AuthResponse(jwtToken, savedUser.getEmail(), savedUser.getName(),
                 savedUser.getRole(), savedUser.getProfileImage());

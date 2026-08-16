@@ -23,6 +23,8 @@ export default function ProductDetailPage() {
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
 
+  const isSeller = user?.role === 'Marketplace Seller';
+
   useEffect(() => {
     fetchProductDetails();
     window.scrollTo(0, 0);
@@ -54,6 +56,10 @@ export default function ProductDetailPage() {
       showToast('Please login to add items to cart', 'error');
       return;
     }
+    if (isSeller) {
+      showToast('Marketplace sellers cannot purchase products', 'error');
+      return;
+    }
     try {
       setIsAddingToCart(true);
       await marketplaceService.addToCart(product.id, quantity);
@@ -71,6 +77,10 @@ export default function ProductDetailPage() {
       showToast('Please login to add to wishlist', 'error');
       return;
     }
+    if (isSeller) {
+      showToast('Marketplace sellers cannot purchase products', 'error');
+      return;
+    }
     try {
       setIsAddingToWishlist(true);
       await marketplaceService.addToWishlist(product.id);
@@ -86,6 +96,10 @@ export default function ProductDetailPage() {
     e.preventDefault();
     if (!user) {
       showToast('Please login to review', 'error');
+      return;
+    }
+    if (isSeller) {
+      showToast('Marketplace sellers cannot write reviews', 'error');
       return;
     }
     try {
@@ -198,42 +212,48 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Actions */}
-            <div className="mt-auto flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center border border-slate-200 rounded-2xl bg-white overflow-hidden h-14">
-                  <button 
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    disabled={product.stockQuantity === 0}
-                    className="px-4 h-full text-slate-500 hover:bg-slate-50 font-bold disabled:opacity-50"
-                  >-</button>
-                  <span className="w-12 text-center font-bold text-slate-800">{quantity}</span>
-                  <button 
-                    onClick={() => setQuantity(q => Math.min(product.stockQuantity, q + 1))}
-                    disabled={product.stockQuantity === 0}
-                    className="px-4 h-full text-slate-500 hover:bg-slate-50 font-bold disabled:opacity-50"
-                  >+</button>
+            {isSeller ? (
+              <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 font-medium">
+                Marketplace seller accounts cannot purchase products.
+              </div>
+            ) : (
+              <div className="mt-auto flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center border border-slate-200 rounded-2xl bg-white overflow-hidden h-14">
+                    <button
+                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                      disabled={product.stockQuantity === 0}
+                      className="px-4 h-full text-slate-500 hover:bg-slate-50 font-bold disabled:opacity-50"
+                    >-</button>
+                    <span className="w-12 text-center font-bold text-slate-800">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(q => Math.min(product.stockQuantity, q + 1))}
+                      disabled={product.stockQuantity === 0}
+                      className="px-4 h-full text-slate-500 hover:bg-slate-50 font-bold disabled:opacity-50"
+                    >+</button>
+                  </div>
+
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isAddingToCart || product.stockQuantity === 0}
+                    className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isAddingToCart ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div> : <ShoppingCart size={20} />}
+                    Add to Cart
+                  </button>
                 </div>
-                
-                <button 
-                  onClick={handleAddToCart}
-                  disabled={isAddingToCart || product.stockQuantity === 0}
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+
+                <button
+                  onClick={handleAddToWishlist}
+                  disabled={isAddingToWishlist}
+                  className="w-full h-14 rounded-2xl font-bold flex items-center justify-center gap-2 border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
                 >
-                  {isAddingToCart ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div> : <ShoppingCart size={20} />}
-                  Add to Cart
+                  <Heart size={20} className={isAddingToWishlist ? 'fill-rose-500 text-rose-500' : ''} />
+                  Save to Wishlist
                 </button>
               </div>
-              
-              <button 
-                onClick={handleAddToWishlist}
-                disabled={isAddingToWishlist}
-                className="w-full h-14 rounded-2xl font-bold flex items-center justify-center gap-2 border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
-              >
-                <Heart size={20} className={isAddingToWishlist ? 'fill-rose-500 text-rose-500' : ''} />
-                Save to Wishlist
-              </button>
-            </div>
-            
+            )}
+
           </div>
         </div>
 
@@ -305,7 +325,11 @@ export default function ProductDetailPage() {
                   
                   <div className="md:w-2/3">
                     <h3 className="font-bold text-lg text-slate-800 mb-4">Write a Review</h3>
-                    {user ? (
+                    {isSeller ? (
+                      <div className="p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 font-medium">
+                        Marketplace seller accounts cannot write reviews.
+                      </div>
+                    ) : user ? (
                       <form onSubmit={submitReview} className="space-y-4">
                         <div className="flex items-center gap-2">
                           <label className="font-bold text-slate-700">Rating:</label>

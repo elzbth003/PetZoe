@@ -12,7 +12,7 @@ const api = axios.create({
 // Add request interceptor to append JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('petzoe_token');
+    const token = sessionStorage.getItem('petzoe_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,8 +28,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('petzoe_token');
-      localStorage.removeItem('petzoe_user');
+      sessionStorage.removeItem('petzoe_token');
+      sessionStorage.removeItem('petzoe_user');
       window.dispatchEvent(new Event('auth-change'));
     }
     return Promise.reject(error);

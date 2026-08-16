@@ -88,9 +88,9 @@ export default function ProfileManagement() {
     try {
       const updated = await profileService.updateProfile(data);
       setProfile(updated);
-      // Update localStorage user info
-      const stored = JSON.parse(localStorage.getItem('petzoe_user') || '{}');
-      localStorage.setItem('petzoe_user', JSON.stringify({ ...stored, name: updated.name, profileImage: updated.profileImage }));
+      // Update stored session user info
+      const stored = JSON.parse(sessionStorage.getItem('petzoe_user') || '{}');
+      sessionStorage.setItem('petzoe_user', JSON.stringify({ ...stored, name: updated.name, profileImage: updated.profileImage }));
       showToast('Profile updated successfully!', 'success');
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to update profile.', 'error');
