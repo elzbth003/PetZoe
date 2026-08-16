@@ -68,48 +68,4 @@ public class ProductController {
         return ResponseEntity.ok(productService.getNewArrivals());
     }
 
-    /** Create a new product (seller, requires authentication). */
-    @PostMapping
-    public ResponseEntity<ProductResponse> createProduct(
-            @RequestBody ProductDTO dto, Authentication auth) {
-        return ResponseEntity.ok(productService.createProduct(dto, auth.getName()));
-    }
-
-    /** Update a product (seller, can only update own products). */
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductResponse> updateProduct(
-            @PathVariable Long id, @RequestBody ProductDTO dto, Authentication auth) {
-        return ResponseEntity.ok(productService.updateProduct(id, dto, auth.getName()));
-    }
-
-    /** Delete a product (seller or admin). */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id, Authentication auth) {
-        productService.deleteProduct(id, auth.getName());
-        return ResponseEntity.ok().build();
-    }
-
-    /** Approve a product (admin only). */
-    @PutMapping("/{id}/approve")
-    public ResponseEntity<ProductResponse> approveProduct(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.approveProduct(id));
-    }
-
-    /** Toggle featured status (admin only). */
-    @PutMapping("/{id}/featured")
-    public ResponseEntity<ProductResponse> toggleFeatured(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.toggleFeatured(id));
-    }
-
-    /** Get unapproved products (admin review queue). */
-    @GetMapping("/unapproved")
-    public ResponseEntity<List<ProductResponse>> getUnapprovedProducts() {
-        return ResponseEntity.ok(productService.getUnapprovedProducts());
-    }
-
-    /** Get seller's own products (seller dashboard). */
-    @GetMapping("/my-products")
-    public ResponseEntity<List<ProductResponse>> getMyProducts(Authentication auth) {
-        return ResponseEntity.ok(productService.getSellerProducts(auth.getName()));
-    }
 }

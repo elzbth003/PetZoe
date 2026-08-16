@@ -24,6 +24,12 @@ public class Notification {
     @Column(nullable = false)
     private String type; // "APPOINTMENT", "VACCINATION", "PROFILE", "SYSTEM"
 
+    @Column(length = 2000)
+    private String reason;
+
+    @Column(name = "reference_id")
+    private Long referenceId;
+
     @Column(name = "is_read", nullable = false)
     private boolean isRead = false;
 
@@ -37,6 +43,17 @@ public class Notification {
         this.title = title;
         this.message = message;
         this.type = type;
+        this.isRead = false;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Notification(User user, String title, String message, String type, String reason, Long referenceId) {
+        this.user = user;
+        this.title = title;
+        this.message = message;
+        this.type = type;
+        this.reason = reason;
+        this.referenceId = referenceId;
         this.isRead = false;
         this.createdAt = LocalDateTime.now();
     }
@@ -61,4 +78,10 @@ public class Notification {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getReason() { return reason; }
+    public void setReason(String reason) { this.reason = reason; }
+
+    public Long getReferenceId() { return referenceId; }
+    public void setReferenceId(Long referenceId) { this.referenceId = referenceId; }
 }

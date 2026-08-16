@@ -24,24 +24,28 @@ public class OrderController {
 
     /** Place a new order from the user's cart. */
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
     public ResponseEntity<Order> placeOrder(Authentication auth) {
         return ResponseEntity.ok(orderService.placeOrder(auth.getName()));
     }
 
     /** Get the authenticated user's order history. */
     @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
     public ResponseEntity<List<Order>> getUserOrders(Authentication auth) {
         return ResponseEntity.ok(orderService.getUserOrders(auth.getName()));
     }
 
     /** Get a specific order by ID. */
     @GetMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id, Authentication auth) {
         return ResponseEntity.ok(orderService.getOrderById(id, auth.getName()));
     }
 
     /** Update order status (admin only). */
     @PutMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Order> updateOrderStatus(
             @PathVariable Long id, @RequestBody Map<String, String> body) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id, body.get("status")));
@@ -49,6 +53,7 @@ public class OrderController {
 
     /** Get all orders (admin only). */
     @GetMapping("/all")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }

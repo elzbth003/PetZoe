@@ -108,6 +108,11 @@ public class VendorProductService {
     @Transactional
     public ProductResponseDTO submitForReview(Long id, String sellerEmail) {
         Product product = getProductForVendor(id, sellerEmail);
+        
+        if (product.getSeller().getVerificationStatus() != VerificationStatus.APPROVED) {
+            throw new IllegalStateException("Your seller account must be verified and approved before you can submit products for review.");
+        }
+        
         if (product.getStatus() != ProductStatus.DRAFT && product.getStatus() != ProductStatus.REJECTED) {
             throw new RuntimeException("Only Draft or Rejected products can be submitted for review.");
         }
@@ -129,10 +134,9 @@ public class VendorProductService {
     }
 
     private Product getProductForVendor(Long id, String sellerEmail) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-        if (!product.getSeller().getEmail().equals(sellerEmail)) {
-            throw new RuntimeException("Access denied. You do not own this product.");
+        Product product = productRepository.findById(id).orElse(null);
+        if (product == null || !product.getSeller().getEmail().equals(sellerEmail)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied.");
         }
         return product;
     }

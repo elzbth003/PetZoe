@@ -15,6 +15,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/marketplace/cart")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
 public class CartController {
 
     private final CartService cartService;

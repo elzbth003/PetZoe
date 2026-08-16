@@ -30,6 +30,7 @@ public class ReviewController {
 
     /** Submit a review for a product (requires authentication). */
     @PostMapping("/{productId}/reviews")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
     public ResponseEntity<Review> addReview(
             @PathVariable Long productId,
             @RequestBody ReviewDTO dto,

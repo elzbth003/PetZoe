@@ -7,6 +7,8 @@ public record NotificationDTO(
     String title,
     String message,
     String type,
+    String reason,
+    Long referenceId,
     boolean isRead,
     LocalDateTime createdAt
 ) {}

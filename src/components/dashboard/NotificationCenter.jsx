@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Bell, Calendar, Shield, User, Settings, Trash2,
-  Check, CheckCheck, Loader2, Sparkles, X
+  Check, CheckCheck, Loader2, Sparkles, X, CheckCircle, XCircle
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { useToast } from '../../hooks/useToast';
@@ -35,6 +35,34 @@ const TYPE_CONFIG = {
     bg: 'bg-slate-50',
     border: 'border-slate-100',
     label: 'System',
+  },
+  ACCOUNT_APPROVED: {
+    icon: CheckCircle,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-100',
+    label: 'Account',
+  },
+  ACCOUNT_REJECTED: {
+    icon: XCircle,
+    color: 'text-rose-600',
+    bg: 'bg-rose-50',
+    border: 'border-rose-100',
+    label: 'Account',
+  },
+  PRODUCT_APPROVED: {
+    icon: CheckCircle,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-100',
+    label: 'Product',
+  },
+  PRODUCT_REJECTED: {
+    icon: XCircle,
+    color: 'text-rose-600',
+    bg: 'bg-rose-50',
+    border: 'border-rose-100',
+    label: 'Product',
   },
 };
 
@@ -212,6 +240,12 @@ export default function NotificationCenter() {
                       )}
                     </div>
                     <p className="text-[11px] text-slate-500 leading-relaxed">{notif.message}</p>
+                    {notif.reason && (
+                      <div className="mt-1 p-2 rounded-lg bg-rose-50 border border-rose-100">
+                        <p className="text-[10px] font-bold text-rose-700">Rejection Reason:</p>
+                        <p className="text-[11px] text-rose-600">{notif.reason}</p>
+                      </div>
+                    )}
                     <div className="flex items-center gap-3 pt-1">
                       <span className="text-[10px] text-slate-400 font-semibold">{timeAgo(notif.createdAt)}</span>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>

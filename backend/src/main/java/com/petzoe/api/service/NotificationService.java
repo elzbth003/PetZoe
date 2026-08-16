@@ -32,6 +32,14 @@ public class NotificationService {
     }
 
     /**
+     * Internal method to create a notification with a reason and reference ID.
+     */
+    public void createNotification(User user, String title, String message, String type, String reason, Long referenceId) {
+        Notification notification = new Notification(user, title, message, type, reason, referenceId);
+        notificationRepository.save(notification);
+    }
+
+    /**
      * Get all notifications for a user, ordered newest first.
      */
     public List<NotificationDTO> getNotifications(String email) {
@@ -92,6 +100,8 @@ public class NotificationService {
                 n.getTitle(),
                 n.getMessage(),
                 n.getType(),
+                n.getReason(),
+                n.getReferenceId(),
                 n.isRead(),
                 n.getCreatedAt()
         );

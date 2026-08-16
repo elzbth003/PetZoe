@@ -27,6 +27,8 @@ export default function ProtectedRoute({ allowedRoles }) {
         return <Navigate to="/dashboard/vet" replace />;
       case 'Shelter Manager':
         return <Navigate to="/dashboard/shelter" replace />;
+      case 'Marketplace Seller':
+        return <Navigate to="/dashboard/seller" replace />;
       case 'Admin':
         return <Navigate to="/dashboard/admin" replace />;
       default:

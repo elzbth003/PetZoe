@@ -20,15 +20,18 @@ public class AdminProductService {
     private final ProductMapper productMapper;
     private final com.petzoe.api.repository.AuditLogRepository auditLogRepository;
     private final com.petzoe.api.repository.UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public AdminProductService(ProductRepository productRepository, 
                                ProductMapper productMapper,
                                com.petzoe.api.repository.AuditLogRepository auditLogRepository,
-                               com.petzoe.api.repository.UserRepository userRepository) {
+                               com.petzoe.api.repository.UserRepository userRepository,
+                               NotificationService notificationService) {
         this.productRepository = productRepository;
         this.productMapper = productMapper;
         this.auditLogRepository = auditLogRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public Page<ProductSummaryDTO> getAllProducts(int page, int size, String sortBy) {
@@ -55,6 +58,15 @@ public class AdminProductService {
         
         auditLogRepository.save(new com.petzoe.api.entity.AuditLog(admin, "APPROVED_PRODUCT", "Product", saved.getId(), "Approved product: " + saved.getName()));
         
+        notificationService.createNotification(
+                saved.getSeller(),
+                "Product Approved",
+                "Your product '" + saved.getName() + "' has been approved and is now live.",
+                "PRODUCT_APPROVED",
+                null,
+                saved.getId()
+        );
+        
         return productMapper.toResponseDTO(saved);
     }
 
@@ -74,6 +86,15 @@ public class AdminProductService {
         Product saved = productRepository.save(product);
         
         auditLogRepository.save(new com.petzoe.api.entity.AuditLog(admin, "REJECTED_PRODUCT", "Product", saved.getId(), "Rejected product: " + saved.getName() + ". Reason: " + reason));
+        
+        notificationService.createNotification(
+                saved.getSeller(),
+                "Product Rejected",
+                "Your product '" + saved.getName() + "' was rejected during review.",
+                "PRODUCT_REJECTED",
+                reason,
+                saved.getId()
+        );
         
         return productMapper.toResponseDTO(saved);
     }
