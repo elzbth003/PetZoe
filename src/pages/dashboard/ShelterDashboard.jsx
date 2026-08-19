@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, PawPrint, Heart, Settings, LogOut,
-  CheckCircle, XCircle, Clock, FileText, Trash2, Upload
+  CheckCircle, XCircle, Clock, FileText, Trash2, Upload, Menu, X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import shelterService from '../../services/shelterService';
 import { useToast } from '../../hooks/useToast';
 import ShelterAnimalsPanel from '../../components/dashboard/ShelterAnimalsPanel';
+import ShelterApplicationsPanel from '../../components/dashboard/ShelterApplicationsPanel';
 
 const ORG_TYPES = ['NGO', 'TRUST', 'GOVERNMENT', 'INDIVIDUAL', 'COMPANY', 'OTHER'];
 
@@ -37,6 +38,7 @@ function fileToBase64(file) {
 }
 
 export default function ShelterDashboard() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('Dashboard');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -183,12 +185,12 @@ export default function ShelterDashboard() {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Shelter Name</label>
                   <input required value={form.shelterName} onChange={(e) => setForm({ ...form, shelterName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Organization Type</label>
                   <select required value={form.organizationType} onChange={(e) => setForm({ ...form, organizationType: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150">
                     <option value="" disabled>Select type</option>
                     {ORG_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -198,50 +200,50 @@ export default function ShelterDashboard() {
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Description</label>
                 <textarea required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-24 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-24 resize-none" />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Registration Number</label>
                 <input required value={form.registrationNumber} onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Address</label>
                 <input required value={form.addressLine} onChange={(e) => setForm({ ...form, addressLine: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">City</label>
                   <input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">State</label>
                   <input required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pincode</label>
                   <input value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Capacity (max animals)</label>
                 <input required type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Veterinary Care Arrangements</label>
                 <textarea value={form.veterinaryCareArrangements} onChange={(e) => setForm({ ...form, veterinaryCareArrangements: e.target.value })}
                   placeholder="e.g. On-call arrangement with Dr. X Clinic, in-house vet, partnership with hospital..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-20 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-20 resize-none" />
               </div>
 
               <div>
@@ -253,7 +255,7 @@ export default function ShelterDashboard() {
 
             {canEdit && (
               <button type="submit" disabled={saving}
-                className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50">
+                className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed">
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>
             )}
@@ -274,7 +276,7 @@ export default function ShelterDashboard() {
                     <FileText size={16} className="text-slate-400" />
                     <span className="font-medium text-slate-700">{doc.documentType.replace(/_/g, ' ')}</span>
                   </div>
-                  <button onClick={() => handleRemoveDocument(doc.id)} className="text-slate-400 hover:text-rose-600">
+                  <button onClick={() => handleRemoveDocument(doc.id)} className="text-slate-400 hover:text-rose-600 transition-colors duration-150 cursor-pointer">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -283,7 +285,7 @@ export default function ShelterDashboard() {
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <select value={docType} onChange={(e) => setDocType(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 text-sm">
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 text-sm">
               <option value="REGISTRATION_CERTIFICATE">Registration Certificate</option>
               <option value="ID_PROOF">ID Proof</option>
               <option value="ADDRESS_PROOF">Address Proof</option>
@@ -292,7 +294,7 @@ export default function ShelterDashboard() {
             <input type="file" accept="image/*,.pdf" onChange={(e) => setDocFile(e.target.files?.[0] || null)}
               className="text-sm text-slate-600 flex-1" />
             <button onClick={handleUploadDocument} disabled={uploadingDoc}
-              className="flex items-center gap-2 bg-slate-800 text-white font-bold px-4 py-2 rounded-xl hover:bg-slate-900 disabled:opacity-50 text-sm">
+              className="flex items-center gap-2 bg-slate-800 text-white font-bold px-4 py-2 rounded-xl hover:bg-slate-900 disabled:opacity-50 text-sm transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed">
               <Upload size={14} /> {uploadingDoc ? 'Uploading...' : 'Upload'}
             </button>
           </div>
@@ -306,7 +308,7 @@ export default function ShelterDashboard() {
             <p className="text-sm text-slate-500">Once submitted, your profile will be reviewed by an admin.</p>
           </div>
           <button onClick={handleSubmitForVerification} disabled={submitting}
-            className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50 shrink-0">
+            className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50 shrink-0 transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed">
             {submitting ? 'Submitting...' : 'Submit for Verification'}
           </button>
         </div>
@@ -323,7 +325,7 @@ export default function ShelterDashboard() {
   const renderDashboardTab = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4">
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
             <Building2 size={22} />
           </div>
@@ -332,7 +334,7 @@ export default function ShelterDashboard() {
             <h3 className="text-lg font-black text-slate-800">{status.replace(/_/g, ' ')}</h3>
           </div>
         </div>
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4">
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="h-12 w-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500">
             <PawPrint size={22} />
           </div>
@@ -341,7 +343,7 @@ export default function ShelterDashboard() {
             <h3 className="text-lg font-black text-slate-800">{shelter?.capacity ?? '—'}</h3>
           </div>
         </div>
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4">
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
             {status === 'APPROVED' ? <CheckCircle size={22} /> : status === 'REJECTED' || status === 'SUSPENDED' ? <XCircle size={22} /> : <Clock size={22} />}
           </div>
@@ -359,7 +361,7 @@ export default function ShelterDashboard() {
             <h3 className="text-xl font-bold text-slate-800 mb-2">Your shelter is verified</h3>
             <p className="text-slate-500">You can now record animal intakes. Medical records and adoption listing management are coming in the next phase.</p>
             <button onClick={() => setActiveTab('Animals')}
-              className="mt-6 bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700">
+              className="mt-6 bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer">
               Go to Animals
             </button>
           </>
@@ -369,7 +371,7 @@ export default function ShelterDashboard() {
             <h3 className="text-xl font-bold text-slate-800 mb-2">Get your shelter verified</h3>
             <p className="text-slate-500">Complete your shelter profile and submit it for admin review before you can list animals for adoption.</p>
             <button onClick={() => setActiveTab('Shelter Profile')}
-              className="mt-6 bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700">
+              className="mt-6 bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer">
               Go to Shelter Profile
             </button>
           </>
@@ -382,6 +384,7 @@ export default function ShelterDashboard() {
     if (activeTab === 'Shelter Profile') return renderProfileTab();
     if (activeTab === 'Dashboard') return renderDashboardTab();
     if (activeTab === 'Animals') return <ShelterAnimalsPanel shelterVerified={status === 'APPROVED'} />;
+    if (activeTab === 'Adoptions') return <ShelterApplicationsPanel />;
     return (
       <div className="bg-white p-12 text-center rounded-3xl border border-slate-100 shadow-sm text-slate-500">
         Coming Soon
@@ -399,9 +402,17 @@ export default function ShelterDashboard() {
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 flex">
-      <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6 shrink-0">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 z-20 md:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6 shrink-0 fixed md:relative inset-y-0 left-0 z-30 h-screen transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="space-y-8">
-          <div className="flex items-center gap-1.5 select-none">
+          <div className="flex items-center justify-between gap-1.5 select-none">
             <span className="font-display font-black text-xl text-white flex items-center">
               PetZ
               <span className="inline-block hover:rotate-12 transition-transform duration-300">
@@ -409,6 +420,12 @@ export default function ShelterDashboard() {
               </span>
               e
             </span>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="md:hidden text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
           </div>
 
           <nav className="space-y-1">
@@ -418,9 +435,9 @@ export default function ShelterDashboard() {
               return (
                 <button
                   key={item.name}
-                  onClick={() => setActiveTab(item.name)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                    isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  onClick={() => { setActiveTab(item.name); setIsSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                    isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:translate-x-0.5'
                   }`}
                 >
                   <Icon size={16} /> {item.name}
@@ -438,17 +455,25 @@ export default function ShelterDashboard() {
         </button>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-slate-50">
-        <header className="sticky top-0 z-10 bg-slate-50 flex justify-between items-center border-b border-slate-200 px-8 py-5">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900">{activeTab}</h1>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5">
-              Shelter & Adoption Hub • {user?.name}
-            </p>
+      <main className="flex-1 overflow-y-auto bg-slate-50 w-full">
+        <header className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm flex justify-between items-center border-b border-slate-200 px-4 sm:px-8 py-5 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-black text-slate-900 truncate">{activeTab}</h1>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5 hidden sm:block">
+                Shelter & Adoption Hub • {user?.name}
+              </p>
+            </div>
           </div>
         </header>
 
-        <div className="p-8 pb-10 space-y-6">
+        <div className="p-4 sm:p-8 pb-10 space-y-6 animate-in fade-in duration-300">
           {renderTabContent()}
         </div>
       </main>

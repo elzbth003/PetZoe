@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, Heart, Calendar, FileText, ShoppingBag, 
+import {
+  LayoutDashboard, Heart, Calendar, FileText, ShoppingBag,
   Bell, User, LogOut, Sparkles, ShieldAlert, CalendarDays,
-  Plus, ArrowRight, Activity, Clock, PawPrint
+  Plus, ArrowRight, Activity, Clock, PawPrint, Menu, X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import PetList from '../../components/dashboard/PetList';
@@ -11,12 +11,21 @@ import AppointmentList from '../../components/dashboard/AppointmentList';
 import ProfileManagement from '../../components/dashboard/ProfileManagement';
 import NotificationCenter from '../../components/dashboard/NotificationCenter';
 import ShopDashboard from '../../components/dashboard/ShopDashboard';
+import AdopterProfilePanel from '../../components/dashboard/AdopterProfilePanel';
 import { notificationService } from '../../services/notificationService';
 import marketplaceService from '../../services/marketplaceService';
 import api from '../../services/api';
 
 export default function OwnerDashboard() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const jumpTo = sessionStorage.getItem('petzoe_owner_tab');
+    if (jumpTo) {
+      sessionStorage.removeItem('petzoe_owner_tab');
+      return jumpTo;
+    }
+    return 'Dashboard';
+  });
   const [petsCount, setPetsCount] = useState(0);
   const [upcomingAppointments, setUpcomingAppointments] = useState(0);
   const [vaccineAlerts, setVaccineAlerts] = useState(0);
@@ -103,7 +112,7 @@ export default function OwnerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
               {/* Total Pets Widget */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className="h-12 w-12 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600">
                   <Heart size={22} />
                 </div>
@@ -114,7 +123,7 @@ export default function OwnerDashboard() {
               </div>
 
               {/* Upcoming Appointments Widget */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
                   <CalendarDays size={22} />
                 </div>
@@ -125,7 +134,7 @@ export default function OwnerDashboard() {
               </div>
 
               {/* Vaccine Alerts Widget */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${
                   vaccineAlerts > 0 ? 'bg-amber-50 text-amber-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'
                 }`}>
@@ -161,15 +170,15 @@ export default function OwnerDashboard() {
                       Manage vaccinations, coordinate with local certified veterinarians, and keep clinical journals secure in our digital patient vaults.
                     </p>
                     <div className="pt-2 flex flex-wrap gap-3">
-                      <button 
+                      <button
                         onClick={() => setActiveTab('My Pets')}
-                        className="px-4 py-2.5 rounded-xl bg-[#38BDF8] hover:bg-[#32abdf] text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1"
+                        className="px-4 py-2.5 rounded-xl bg-[#38BDF8] hover:bg-[#32abdf] text-white font-bold text-xs shadow-sm transition-all duration-200 cursor-pointer flex items-center gap-1 hover:shadow-md hover:-translate-y-0.5 active:scale-95"
                       >
                         <Plus size={14} /> Add First Pet
                       </button>
-                      <button 
+                      <button
                         onClick={() => setActiveTab('Appointments')}
-                        className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-all duration-200 cursor-pointer flex items-center gap-1.5 hover:-translate-y-0.5 active:scale-95"
                       >
                         Book Appointment <ArrowRight size={14} />
                       </button>
@@ -273,6 +282,8 @@ export default function OwnerDashboard() {
         return <AppointmentList onAppointmentsUpdated={setUpcomingAppointments} />;
       case 'My Shop':
         return <ShopDashboard />;
+      case 'Adoptions':
+        return <AdopterProfilePanel />;
       case 'Notifications':
         return <NotificationCenter />;
       case 'Profile':
@@ -304,6 +315,7 @@ export default function OwnerDashboard() {
     { name: 'My Pets', icon: Heart },
     { name: 'Appointments', icon: Calendar },
     { name: 'My Shop', icon: ShoppingBag, badge: cartItemCount },
+    { name: 'Adoptions', icon: Heart },
     { name: 'Medical Records', icon: FileText },
     { name: 'Notifications', icon: Bell, badge: unreadNotifications },
     { name: 'Profile', icon: User }
@@ -311,13 +323,21 @@ export default function OwnerDashboard() {
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 flex">
-      
+
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 z-20 md:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6 shrink-0 shadow-xl border-r border-slate-800">
-        
+      <aside className={`w-64 bg-slate-900 text-slate-200 flex flex-col justify-between p-6 shrink-0 shadow-xl border-r border-slate-800 fixed md:relative inset-y-0 left-0 z-30 h-screen transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+
         {/* Brand Header */}
         <div className="space-y-8">
-          <div className="flex items-center gap-1.5 px-2 select-none">
+          <div className="flex items-center justify-between gap-1.5 px-2 select-none">
             <span className="font-display font-black text-xl text-white flex items-center">
               PetZ
               <span className="inline-block hover:rotate-12 transition-transform duration-300">
@@ -325,6 +345,12 @@ export default function OwnerDashboard() {
               </span>
               e
             </span>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="md:hidden text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
           </div>
 
           {/* User Avatar in Sidebar */}
@@ -346,17 +372,18 @@ export default function OwnerDashboard() {
                   key={item.name}
                   onClick={() => {
                     setActiveTab(item.name);
+                    setIsSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                    isActive 
-                      ? 'bg-[#1E3A5F] text-white border-l-4 border-[#38BDF8]' 
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-[#1E3A5F] text-white border-l-4 border-[#38BDF8]'
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:translate-x-0.5'
                   }`}
                 >
                   <Icon size={16} />
                   <span className="flex-1 text-left">{item.name}</span>
                   {item.badge > 0 && (
-                    <span className="h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                    <span className="h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse">
                       {item.badge > 9 ? '9+' : item.badge}
                     </span>
                   )}
@@ -378,21 +405,29 @@ export default function OwnerDashboard() {
       </aside>
 
       {/* Main Dashboard Portal Panel */}
-      <main className="flex-1 overflow-y-auto bg-slate-50">
-        
+      <main className="flex-1 overflow-y-auto bg-slate-50 w-full">
+
         {/* Header Panel */}
-        <header className="sticky top-0 z-10 bg-slate-50 flex justify-between items-center border-b border-slate-200 px-8 py-5">
-          <div className="text-left">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">{activeTab}</h1>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5">
-              Secure Pet Owner Workspace • {user?.name}
-            </p>
+        <header className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm flex justify-between items-center border-b border-slate-200 px-4 sm:px-8 py-5 gap-3">
+          <div className="flex items-center gap-3 text-left min-w-0">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight truncate">{activeTab}</h1>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-0.5 hidden sm:block">
+                Secure Pet Owner Workspace • {user?.name}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {cartItemCount > 0 && (
               <button
                 onClick={() => setActiveTab('My Shop')}
-                className="relative p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-[#1E3A5F] hover:border-[#38BDF8] transition-all cursor-pointer shadow-sm"
+                className="relative p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-[#1E3A5F] hover:border-[#38BDF8] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shadow-sm active:scale-95"
                 title="View Cart"
               >
                 <ShoppingBag size={16} />
@@ -404,7 +439,7 @@ export default function OwnerDashboard() {
             {unreadNotifications > 0 && (
               <button
                 onClick={() => setActiveTab('Notifications')}
-                className="relative p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-[#1E3A5F] hover:border-[#38BDF8] transition-all cursor-pointer shadow-sm"
+                className="relative p-2 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-[#1E3A5F] hover:border-[#38BDF8] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shadow-sm active:scale-95"
               >
                 <Bell size={16} />
                 <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
@@ -412,14 +447,14 @@ export default function OwnerDashboard() {
                 </span>
               </button>
             )}
-            <span className="text-slate-500 text-xs font-semibold bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
+            <span className="hidden sm:inline text-slate-500 text-xs font-semibold bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
               🔑 {user?.role}
             </span>
           </div>
         </header>
 
         {/* Main Content Area */}
-        <div className="p-8 pb-10">
+        <div className="p-4 sm:p-8 pb-10">
           {renderTabContent()}
         </div>
 
