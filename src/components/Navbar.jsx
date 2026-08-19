@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { PawPrint, Menu, X, LogOut, User, ShoppingCart, Store } from 'lucide-react';
+import { PawPrint, Menu, X, LogOut, User, ShoppingCart, Store, Heart } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import marketplaceService from '../services/marketplaceService';
@@ -15,6 +15,7 @@ export default function Navbar() {
   const location = useLocation();
 
   const isBuyer = user && ['Pet Owner', 'Veterinarian', 'Shelter Manager'].includes(user.role);
+  const canBrowseAdopt = !user || user.role !== 'Marketplace Seller';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,6 +93,11 @@ export default function Navbar() {
           <Link to="/marketplace" className="flex items-center gap-1.5 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full hover:bg-primary-100 transition-colors">
             <Store size={14} /> Shop Now
           </Link>
+          {canBrowseAdopt && (
+            <Link to="/adopt" className="flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full hover:bg-rose-100 transition-colors">
+              <Heart size={14} /> Adopt
+            </Link>
+          )}
         </div>
 
         {/* Auth Actions / Profile Card */}
@@ -176,6 +182,16 @@ export default function Navbar() {
         >
           <Store size={18} /> Shop Products
         </Link>
+
+        {canBrowseAdopt && (
+          <Link
+            to="/adopt"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2 text-rose-600 bg-rose-50 px-4 py-3 rounded-2xl font-bold"
+          >
+            <Heart size={18} /> Adopt a Pet
+          </Link>
+        )}
 
         {['features', 'services', 'why-us', 'testimonials', 'faq'].map((section) => (
           <button

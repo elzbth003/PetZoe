@@ -68,9 +68,12 @@ public class VendorProductService {
     @Transactional
     public ProductResponseDTO updateProduct(Long id, ProductRequestDTO request, String sellerEmail) {
         Product product = getProductForVendor(id, sellerEmail);
-        
-        if (product.getStatus() == ProductStatus.APPROVED || product.getStatus() == ProductStatus.PENDING_REVIEW) {
-            throw new RuntimeException("Cannot edit a product that is approved or pending review. Change status to Draft first.");
+
+        if (product.getStatus() == ProductStatus.PENDING_REVIEW) {
+            throw new IllegalStateException("Cannot edit a product while it is pending admin review.");
+        }
+        if (product.getStatus() == ProductStatus.DISCONTINUED) {
+            throw new IllegalStateException("Cannot edit a discontinued product.");
         }
 
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -90,9 +93,18 @@ public class VendorProductService {
         product.setSku(request.getSku());
         product.setStockQuantity(request.getStockQuantity());
         product.setCategory(category);
-        
+
         // Update details based on new logic...
-        
+
+        // Editing a live listing invalidates the admin's prior approval — it must go
+        // back through review before it can be sold again, rather than silently
+        // publishing unreviewed changes under the old approval.
+        if (product.getStatus() == ProductStatus.APPROVED || product.getStatus() == ProductStatus.OUT_OF_STOCK) {
+            product.setStatus(ProductStatus.DRAFT);
+            product.setApproved(false);
+            product.setRejectionReason(null);
+        }
+
         return productMapper.toResponseDTO(productRepository.save(product));
     }
 
@@ -100,7 +112,7 @@ public class VendorProductService {
     public void deleteProduct(Long id, String sellerEmail) {
         Product product = getProductForVendor(id, sellerEmail);
         if (product.getStatus() == ProductStatus.APPROVED) {
-            throw new RuntimeException("Cannot delete an approved product. Disable or discontinue it instead.");
+            throw new IllegalStateException("Cannot delete an approved product. Disable or discontinue it instead.");
         }
         productRepository.delete(product);
     }
@@ -114,7 +126,7 @@ public class VendorProductService {
         }
         
         if (product.getStatus() != ProductStatus.DRAFT && product.getStatus() != ProductStatus.REJECTED) {
-            throw new RuntimeException("Only Draft or Rejected products can be submitted for review.");
+            throw new IllegalStateException("Only Draft or Rejected products can be submitted for review.");
         }
         product.setStatus(ProductStatus.PENDING_REVIEW);
         return productMapper.toResponseDTO(productRepository.save(product));

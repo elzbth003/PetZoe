@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Heart, ChevronRight, Check, AlertCircle } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
+import { vendorProductService } from '../../services/vendorProductService';
 import StarRating from '../../components/marketplace/StarRating';
 import ProductCard from '../../components/marketplace/ProductCard';
+import SellerProductEditPanel from '../../components/marketplace/SellerProductEditPanel';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 
@@ -11,17 +13,20 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const { showToast } = useToast();
-  
+
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description'); // description, specs, reviews
-  
+
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+
+  const [ownVendorProduct, setOwnVendorProduct] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   const isSeller = user?.role === 'Marketplace Seller';
 
@@ -35,7 +40,7 @@ export default function ProductDetailPage() {
       setLoading(true);
       const res = await marketplaceService.getProductById(id);
       setProduct(res.data);
-      
+
       // Fetch related products (same category)
       const relatedRes = await marketplaceService.getProductsByCategory(res.data.categoryId, 0, 4);
       setRelatedProducts(relatedRes.data.content.filter(p => p.id !== res.data.id).slice(0, 4));
@@ -43,11 +48,28 @@ export default function ProductDetailPage() {
       // Fetch reviews
       const reviewsRes = await marketplaceService.getProductReviews(id);
       setReviews(reviewsRes.data);
-      
+
+      if (user?.role === 'Marketplace Seller') {
+        checkOwnership(res.data.id);
+      }
     } catch (err) {
       console.error("Failed to fetch product details", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkOwnership = async (productId) => {
+    try {
+      const [ownRes, categoriesRes] = await Promise.all([
+        vendorProductService.getProductById(productId),
+        marketplaceService.getCategories(),
+      ]);
+      setOwnVendorProduct(ownRes);
+      setCategories(categoriesRes.data);
+    } catch (err) {
+      // 403/404 means this isn't the seller's own product — keep the buy-blocked message.
+      setOwnVendorProduct(null);
     }
   };
 
@@ -213,9 +235,17 @@ export default function ProductDetailPage() {
 
             {/* Actions */}
             {isSeller ? (
-              <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 font-medium">
-                Marketplace seller accounts cannot purchase products.
-              </div>
+              ownVendorProduct ? (
+                <SellerProductEditPanel
+                  vendorProduct={ownVendorProduct}
+                  categories={categories}
+                  onUpdated={(updated) => setOwnVendorProduct(updated)}
+                />
+              ) : (
+                <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 font-medium">
+                  Marketplace seller accounts cannot purchase products.
+                </div>
+              )
             ) : (
               <div className="mt-auto flex flex-col gap-4">
                 <div className="flex items-center gap-4">
