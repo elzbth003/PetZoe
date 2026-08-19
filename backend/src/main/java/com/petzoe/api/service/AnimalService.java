@@ -1,6 +1,7 @@
 package com.petzoe.api.service;
 
 import com.petzoe.api.dto.AnimalResponseDTO;
+import com.petzoe.api.dto.AnimalStatusUpdateRequestDTO;
 import com.petzoe.api.dto.AnimalSummaryDTO;
 import com.petzoe.api.dto.InitialAssessmentRequestDTO;
 import com.petzoe.api.dto.AnimalIntakeRequestDTO;
@@ -11,11 +12,15 @@ import com.petzoe.api.repository.AnimalRepository;
 import com.petzoe.api.repository.MedicalDocumentRepository;
 import com.petzoe.api.repository.ShelterRepository;
 import com.petzoe.api.repository.UserRepository;
+import com.petzoe.api.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +30,16 @@ import java.util.stream.Collectors;
  */
 @Service
 public class AnimalService {
+
+    /** Statuses a shelter may set directly. Readiness statuses (ADOPTION_REVIEW,
+     * READY_FOR_ADOPTION) and handover statuses (ADOPTION_PENDING, ADOPTED) are
+     * driven by the listing-submission and admin-review/handover flows instead. */
+    private static final Set<AnimalStatus> SHELTER_SETTABLE_STATUSES = EnumSet.of(
+            AnimalStatus.IN_SHELTER_CARE, AnimalStatus.UNDER_MEDICAL_CARE, AnimalStatus.MEDICAL_REVIEW,
+            AnimalStatus.AWAITING_DOCUMENTS, AnimalStatus.ON_HOLD, AnimalStatus.WITHDRAWN);
+
+    private static final Set<AnimalStatus> LOCKED_STATUSES = EnumSet.of(
+            AnimalStatus.ADOPTION_PENDING, AnimalStatus.ADOPTED);
 
     private final AnimalRepository animalRepository;
     private final AnimalIntakeRepository animalIntakeRepository;
@@ -64,6 +79,16 @@ public class AnimalService {
         if (request.intakeType() == null) {
             throw new IllegalArgumentException("Intake type is required.");
         }
+        if (request.intakeDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Intake date cannot be in the future.");
+        }
+        if (request.estimatedAgeMonths() != null && request.estimatedAgeMonths() < 0) {
+            throw new IllegalArgumentException("Estimated age cannot be negative.");
+        }
+        if (request.weightKg() != null && request.weightKg() < 0) {
+            throw new IllegalArgumentException("Weight cannot be negative.");
+        }
+        ValidationUtils.requireBase64WithinLimit(request.primaryPhotoBase64(), "Photograph");
 
         Animal animal = new Animal();
         animal.setShelter(shelter);
@@ -103,6 +128,10 @@ public class AnimalService {
     public AnimalResponseDTO recordInitialAssessment(String email, Long animalId, InitialAssessmentRequestDTO request) {
         User manager = getManager(email);
         Animal animal = getOwnedAnimal(manager, animalId);
+
+        if (request.weightKg() != null && request.weightKg() < 0) {
+            throw new IllegalArgumentException("Weight cannot be negative.");
+        }
 
         animal.setGeneralCondition(blankToNull(request.generalCondition()));
         if (request.weightKg() != null) {
@@ -150,6 +179,7 @@ public class AnimalService {
         if (request.documentBase64() == null || request.documentBase64().isBlank()) {
             throw new IllegalArgumentException("Document content is required.");
         }
+        ValidationUtils.requireBase64WithinLimit(request.documentBase64(), "Document");
 
         MedicalDocument doc = new MedicalDocument();
         doc.setAnimal(animal);
@@ -165,7 +195,34 @@ public class AnimalService {
         return animalResponseAssembler.assemble(animal);
     }
 
-    private Animal getOwnedAnimal(User manager, Long animalId) {
+    @Transactional
+    public AnimalResponseDTO updateAnimalStatus(String email, Long animalId, AnimalStatusUpdateRequestDTO request) {
+        User manager = getManager(email);
+        Animal animal = getOwnedAnimal(manager, animalId);
+
+        if (request.status() == null) {
+            throw new IllegalArgumentException("A status is required.");
+        }
+        if (LOCKED_STATUSES.contains(animal.getStatus()) && request.status() != AnimalStatus.WITHDRAWN) {
+            throw new IllegalStateException("Cannot change status once adoption is pending or completed.");
+        }
+        if (!SHELTER_SETTABLE_STATUSES.contains(request.status())) {
+            throw new IllegalArgumentException("Shelters cannot set status to " + request.status()
+                    + "; that transition happens automatically through the adoption listing or handover flow.");
+        }
+
+        AnimalStatus previous = animal.getStatus();
+        animal.setStatus(request.status());
+        animal.setUpdatedAt(LocalDateTime.now());
+        Animal saved = animalRepository.save(animal);
+
+        adoptionAuditService.log(manager, "ANIMAL_STATUS_CHANGED", "Animal", saved.getId(),
+                previous.name(), request.status().name(), request.notes());
+
+        return animalResponseAssembler.assemble(saved);
+    }
+
+    Animal getOwnedAnimal(User manager, Long animalId) {
         Animal animal = animalRepository.findById(animalId)
                 .orElseThrow(() -> new RuntimeException("Animal not found"));
         if (!animal.getShelter().getManager().getId().equals(manager.getId())) {

@@ -3,11 +3,15 @@ package com.petzoe.api.service;
 import com.petzoe.api.dto.*;
 import com.petzoe.api.entity.*;
 import com.petzoe.api.repository.*;
+import com.petzoe.api.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -23,6 +27,15 @@ import java.util.stream.Collectors;
  */
 @Service
 public class MedicalRecordService {
+
+    /** Statuses a veterinarian may set directly — their professional call on
+     * whether an animal needs ongoing medical care before it can be considered
+     * for adoption readiness. */
+    private static final Set<AnimalStatus> VET_SETTABLE_STATUSES = EnumSet.of(
+            AnimalStatus.UNDER_MEDICAL_CARE, AnimalStatus.MEDICAL_REVIEW, AnimalStatus.IN_SHELTER_CARE);
+
+    private static final Set<AnimalStatus> LOCKED_STATUSES = EnumSet.of(
+            AnimalStatus.ADOPTION_PENDING, AnimalStatus.ADOPTED, AnimalStatus.WITHDRAWN);
 
     private final AnimalRepository animalRepository;
     private final MedicalRecordRepository medicalRecordRepository;
@@ -76,6 +89,16 @@ public class MedicalRecordService {
         if (request.healthStatus() == null || request.healthStatus().isBlank()) {
             throw new IllegalArgumentException("Health status is required.");
         }
+        if (request.examinationDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Examination date cannot be in the future.");
+        }
+        if (request.weightKg() != null && request.weightKg() < 0) {
+            throw new IllegalArgumentException("Weight cannot be negative.");
+        }
+        if (request.followUpRequired() && request.followUpDate() != null
+                && request.followUpDate().isBefore(request.examinationDate())) {
+            throw new IllegalArgumentException("Follow-up date cannot be before the examination date.");
+        }
 
         MedicalRecord record = new MedicalRecord();
         record.setAnimal(animal);
@@ -125,6 +148,12 @@ public class MedicalRecordService {
         if (request.dateAdministered() == null) {
             throw new IllegalArgumentException("Date administered is required.");
         }
+        if (request.dateAdministered().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Date administered cannot be in the future.");
+        }
+        if (request.nextDueDate() != null && request.nextDueDate().isBefore(request.dateAdministered())) {
+            throw new IllegalArgumentException("Next due date cannot be before the date administered.");
+        }
 
         Vaccination vaccination = new Vaccination();
         vaccination.setAnimal(animal);
@@ -156,6 +185,12 @@ public class MedicalRecordService {
         if (request.dateAdministered() == null) {
             throw new IllegalArgumentException("Date administered is required.");
         }
+        if (request.dateAdministered().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Date administered cannot be in the future.");
+        }
+        if (request.nextDueDate() != null && request.nextDueDate().isBefore(request.dateAdministered())) {
+            throw new IllegalArgumentException("Next due date cannot be before the date administered.");
+        }
 
         PreventiveCareRecord record = new PreventiveCareRecord();
         record.setAnimal(animal);
@@ -184,6 +219,7 @@ public class MedicalRecordService {
         if (request.documentBase64() == null || request.documentBase64().isBlank()) {
             throw new IllegalArgumentException("Document content is required.");
         }
+        ValidationUtils.requireBase64WithinLimit(request.documentBase64(), "Document");
 
         MedicalDocument doc = new MedicalDocument();
         doc.setAnimal(animal);
@@ -220,6 +256,37 @@ public class MedicalRecordService {
                 previous.name(), request.status().name(), request.notes());
 
         return animalResponseAssembler.assemble(doc.getAnimal());
+    }
+
+    @Transactional
+    public AnimalResponseDTO updateAnimalStatus(String email, Long animalId, AnimalStatusUpdateRequestDTO request) {
+        User vet = requireVerifiedVet(email);
+        Animal animal = getAnimalOrThrow(animalId);
+
+        if (request.status() == null) {
+            throw new IllegalArgumentException("A status is required.");
+        }
+        if (LOCKED_STATUSES.contains(animal.getStatus())) {
+            throw new IllegalStateException("Cannot change status once adoption is pending, completed, or withdrawn.");
+        }
+        if (!VET_SETTABLE_STATUSES.contains(request.status())) {
+            throw new IllegalArgumentException("Veterinarians can only flag medical-care status (UNDER_MEDICAL_CARE, "
+                    + "MEDICAL_REVIEW) or clear it back to IN_SHELTER_CARE.");
+        }
+
+        AnimalStatus previous = animal.getStatus();
+        animal.setStatus(request.status());
+        animal.setUpdatedAt(LocalDateTime.now());
+        Animal saved = animalRepository.save(animal);
+
+        adoptionAuditService.log(vet, "ANIMAL_STATUS_CHANGED", "Animal", saved.getId(),
+                previous.name(), request.status().name(), request.notes());
+
+        notifyShelter(animal, "Animal Medical Status Updated",
+                "Dr. " + vet.getName() + " set " + displayName(animal) + "'s status to "
+                        + request.status().name().replace('_', ' ') + ".");
+
+        return animalResponseAssembler.assemble(saved);
     }
 
     private void notifyShelter(Animal animal, String title, String message) {

@@ -7,6 +7,7 @@ import com.petzoe.api.entity.VerificationRequest;
 import com.petzoe.api.entity.VerificationStatus;
 import com.petzoe.api.repository.UserRepository;
 import com.petzoe.api.repository.VerificationRequestRepository;
+import com.petzoe.api.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,8 @@ public class VerificationService {
         if (request.documentBase64() == null || request.documentBase64().isBlank()) {
             throw new IllegalArgumentException("A verification document is required.");
         }
+        ValidationUtils.requireBase64WithinLimit(request.documentBase64(), "Verification document");
+        ValidationUtils.requireBase64WithinLimit(request.additionalDocumentsBase64(), "Additional documents");
 
         String entityType = user.getRole();
         Optional<VerificationRequest> existing = verificationRequestRepository.findByUserIdAndEntityType(user.getId(), entityType);

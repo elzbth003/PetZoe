@@ -7,6 +7,7 @@ import com.petzoe.api.repository.ShelterDocumentRepository;
 import com.petzoe.api.repository.ShelterRepository;
 import com.petzoe.api.repository.UserRepository;
 import com.petzoe.api.repository.VerificationRequestRepository;
+import com.petzoe.api.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,6 +76,11 @@ public class ShelterService {
                     + shelter.getVerificationStatus() + ".");
         }
 
+        if (request.capacity() != null && request.capacity() <= 0) {
+            throw new IllegalArgumentException("Capacity must be a positive number.");
+        }
+        ValidationUtils.requireBase64WithinLimit(request.primaryImageBase64(), "Shelter image");
+
         shelter.setShelterName(request.shelterName());
         shelter.setDescription(request.description());
         shelter.setOrganizationType(request.organizationType());
@@ -108,6 +114,7 @@ public class ShelterService {
         if (documentBase64 == null || documentBase64.isBlank()) {
             throw new IllegalArgumentException("Document content is required.");
         }
+        ValidationUtils.requireBase64WithinLimit(documentBase64, "Document");
 
         ShelterDocument doc = new ShelterDocument();
         doc.setShelter(shelter);
