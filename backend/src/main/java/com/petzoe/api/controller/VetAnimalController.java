@@ -21,8 +21,8 @@ public class VetAnimalController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AnimalSummaryDTO>> getWorklist() {
-        return ResponseEntity.ok(medicalRecordService.getAnimalWorklist());
+    public ResponseEntity<List<AnimalSummaryDTO>> getWorklist(Authentication authentication) {
+        return ResponseEntity.ok(medicalRecordService.getAnimalWorklist(authentication.getName()));
     }
 
     @GetMapping("/{id}")

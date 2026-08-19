@@ -5,7 +5,7 @@ import {
   Settings, LogOut, Plus, Edit, Trash2, CheckCircle, XCircle, Menu, X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import marketplaceService from '../../services/marketplaceService';
+import { vendorProductService } from '../../services/vendorProductService';
 import verificationService from '../../services/verificationService';
 import { useToast } from '../../hooks/useToast';
 import AddProductWizard from '../../components/dashboard/AddProductWizard';
@@ -83,10 +83,11 @@ export default function SellerDashboard() {
   const fetchMyProducts = async () => {
     try {
       setLoading(true);
-      const res = await marketplaceService.getMyProducts();
-      setProducts(res.data);
+      const res = await vendorProductService.getVendorProducts();
+      setProducts(res.content || []);
     } catch (err) {
       console.error("Failed to fetch seller products", err);
+      showToast(err.response?.data?.message || 'Failed to load your products', 'error');
     } finally {
       setLoading(false);
     }
@@ -100,11 +101,11 @@ export default function SellerDashboard() {
   const deleteProduct = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await marketplaceService.deleteProduct(id);
+        await vendorProductService.deleteProduct(id);
         setProducts(products.filter(p => p.id !== id));
         showToast('Product deleted successfully', 'success');
       } catch (err) {
-        showToast('Failed to delete product', 'error');
+        showToast(err.response?.data?.message || 'Failed to delete product', 'error');
       }
     }
   };
@@ -226,13 +227,21 @@ export default function SellerDashboard() {
                           {product.stockQuantity} units
                         </td>
                         <td className="py-3 px-4">
-                          {product.approved ? (
+                          {product.status === 'APPROVED' ? (
                             <span className="flex items-center gap-1 text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-1 rounded-md w-fit">
                               <CheckCircle size={12} /> Approved
                             </span>
-                          ) : (
+                          ) : product.status === 'REJECTED' ? (
+                            <span className="flex items-center gap-1 text-rose-600 text-xs font-bold bg-rose-50 px-2 py-1 rounded-md w-fit">
+                              <XCircle size={12} /> Rejected
+                            </span>
+                          ) : product.status === 'PENDING_REVIEW' ? (
                             <span className="flex items-center gap-1 text-amber-600 text-xs font-bold bg-amber-50 px-2 py-1 rounded-md w-fit">
                               <XCircle size={12} /> Pending Review
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-slate-600 text-xs font-bold bg-slate-100 px-2 py-1 rounded-md w-fit">
+                              {(product.status || 'DRAFT').replace(/_/g, ' ')}
                             </span>
                           )}
                         </td>

@@ -16,13 +16,16 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
 
     public OrderService(OrderRepository orderRepository,
                         CartItemRepository cartItemRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        ProductRepository productRepository) {
         this.orderRepository = orderRepository;
         this.cartItemRepository = cartItemRepository;
         this.userRepository = userRepository;
+        this.productRepository = productRepository;
     }
 
     /**
@@ -48,7 +51,16 @@ public class OrderService {
 
         // Convert each cart item into an order item
         for (CartItem cartItem : cartItems) {
-            Product product = cartItem.getProduct();
+            // Re-fetch with a row lock (not the stale entity off the cart item)
+            // so concurrent checkouts can't both oversell the same stock.
+            Product product = productRepository.findByIdForUpdate(cartItem.getProduct().getId())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+
+            if (product.getStockQuantity() < cartItem.getQuantity()) {
+                throw new IllegalStateException("Insufficient stock for '" + product.getName() + "'. Only "
+                        + product.getStockQuantity() + " left, " + cartItem.getQuantity() + " requested.");
+            }
+
             // Use discount price if available, otherwise use regular price
             double effectivePrice = product.getDiscountPrice() != null
                     ? product.getDiscountPrice()

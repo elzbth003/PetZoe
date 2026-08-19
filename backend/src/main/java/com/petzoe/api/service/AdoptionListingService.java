@@ -5,6 +5,7 @@ import com.petzoe.api.dto.AnimalResponseDTO;
 import com.petzoe.api.entity.*;
 import com.petzoe.api.repository.AdoptionListingRepository;
 import com.petzoe.api.repository.AnimalRepository;
+import com.petzoe.api.repository.MedicalRecordRepository;
 import com.petzoe.api.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,12 @@ public class AdoptionListingService {
             AnimalStatus.IN_SHELTER_CARE, AnimalStatus.AWAITING_DOCUMENTS, AnimalStatus.ON_HOLD,
             AnimalStatus.MEDICAL_REVIEW, AnimalStatus.UNDER_MEDICAL_CARE);
 
+    /** A vet has actively flagged the animal as needing care/review — it cannot
+     * be submitted for adoption while a vet's own status flag is still active,
+     * even though the listing content itself can still be drafted. */
+    private static final Set<AnimalStatus> SUBMISSION_BLOCKED_STATUSES = EnumSet.of(
+            AnimalStatus.UNDER_MEDICAL_CARE, AnimalStatus.MEDICAL_REVIEW);
+
     private final AdoptionListingRepository adoptionListingRepository;
     private final AnimalRepository animalRepository;
     private final UserRepository userRepository;
@@ -35,6 +42,7 @@ public class AdoptionListingService {
     private final AnimalResponseAssembler animalResponseAssembler;
     private final AdoptionAuditService adoptionAuditService;
     private final NotificationService notificationService;
+    private final MedicalRecordRepository medicalRecordRepository;
 
     public AdoptionListingService(AdoptionListingRepository adoptionListingRepository,
                                    AnimalRepository animalRepository,
@@ -42,7 +50,8 @@ public class AdoptionListingService {
                                    AnimalService animalService,
                                    AnimalResponseAssembler animalResponseAssembler,
                                    AdoptionAuditService adoptionAuditService,
-                                   NotificationService notificationService) {
+                                   NotificationService notificationService,
+                                   MedicalRecordRepository medicalRecordRepository) {
         this.adoptionListingRepository = adoptionListingRepository;
         this.animalRepository = animalRepository;
         this.userRepository = userRepository;
@@ -50,6 +59,7 @@ public class AdoptionListingService {
         this.animalResponseAssembler = animalResponseAssembler;
         this.adoptionAuditService = adoptionAuditService;
         this.notificationService = notificationService;
+        this.medicalRecordRepository = medicalRecordRepository;
     }
 
     @Transactional
@@ -103,12 +113,19 @@ public class AdoptionListingService {
         if (!EDITABLE_ANIMAL_STATUSES.contains(animal.getStatus())) {
             throw new IllegalStateException("Animal must be in shelter care (not on hold, withdrawn, or already listed) to submit for adoption review.");
         }
+        if (SUBMISSION_BLOCKED_STATUSES.contains(animal.getStatus())) {
+            throw new IllegalStateException("This animal is currently flagged by a veterinarian as " + animal.getStatus()
+                    + " and cannot be submitted for adoption until a vet clears it back to shelter care.");
+        }
 
         AdoptionListing listing = adoptionListingRepository.findByAnimalId(animal.getId())
                 .orElseThrow(() -> new IllegalStateException("Please complete the adoption listing details first."));
 
         List<String> missing = new ArrayList<>();
         if (animal.getInitialAssessmentRecordedAt() == null) missing.add("initial shelter assessment");
+        if (medicalRecordRepository.findByAnimalIdOrderByExaminationDateDesc(animal.getId()).isEmpty()) {
+            missing.add("veterinary assessment (a vet must examine this animal first)");
+        }
         if (listing.getPersonality() == null || listing.getPersonality().isBlank()) missing.add("personality description");
         if (listing.getListingDescription() == null || listing.getListingDescription().isBlank()) missing.add("listing description");
         if (!missing.isEmpty()) {

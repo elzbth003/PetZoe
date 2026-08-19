@@ -45,6 +45,10 @@ public class AdminVerificationService {
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
+        if (request.getStatus() != VerificationStatus.PENDING) {
+            throw new IllegalStateException("Only pending verification requests can be approved (current status: " + request.getStatus() + ").");
+        }
+
         request.setStatus(VerificationStatus.APPROVED);
         request.setReviewedAt(LocalDateTime.now());
         request.setReviewedBy(admin);
@@ -80,6 +84,10 @@ public class AdminVerificationService {
                 .orElseThrow(() -> new RuntimeException("Verification request not found"));
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (request.getStatus() != VerificationStatus.PENDING) {
+            throw new IllegalStateException("Only pending verification requests can be rejected (current status: " + request.getStatus() + ").");
+        }
 
         request.setStatus(VerificationStatus.REJECTED);
         request.setReviewerNotes(reason);

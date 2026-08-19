@@ -50,7 +50,11 @@ public class AdminProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         com.petzoe.api.entity.User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
-                
+
+        if (product.getStatus() != ProductStatus.PENDING_REVIEW) {
+            throw new IllegalStateException("Only products pending review can be approved (current status: " + product.getStatus() + ").");
+        }
+
         product.setStatus(ProductStatus.APPROVED);
         product.setApproved(true); // backward compatibility
         product.setRejectionReason(null);
@@ -79,7 +83,11 @@ public class AdminProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         com.petzoe.api.entity.User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
-                
+
+        if (product.getStatus() != ProductStatus.PENDING_REVIEW) {
+            throw new IllegalStateException("Only products pending review can be rejected (current status: " + product.getStatus() + ").");
+        }
+
         product.setStatus(ProductStatus.REJECTED);
         product.setApproved(false);
         product.setRejectionReason(reason);

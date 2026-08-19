@@ -81,6 +81,7 @@ export default function VetAnimalCarePanel() {
       setAnimals(res.data);
     } catch (err) {
       console.error('Failed to fetch animal worklist', err);
+      showToast(err.response?.data?.message || 'Failed to load animal worklist', 'error');
     } finally {
       setLoading(false);
     }

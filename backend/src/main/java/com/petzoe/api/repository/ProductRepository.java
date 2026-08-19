@@ -3,13 +3,16 @@ package com.petzoe.api.repository;
 import com.petzoe.api.entity.Product;
 import com.petzoe.api.entity.User;
 import com.petzoe.api.entity.Category;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for Product operations including search, filter, and pagination.
@@ -66,4 +69,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     /** Find all products by status (for admin review). */
     Page<Product> findByStatus(com.petzoe.api.entity.ProductStatus status, Pageable pageable);
+
+    /** Locks the row for the duration of the transaction so concurrent checkouts
+     * can't both read the same stock count before either one writes it back. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    Optional<Product> findByIdForUpdate(@Param("id") Long id);
 }

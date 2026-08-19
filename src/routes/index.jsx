@@ -124,39 +124,46 @@ export const router = createBrowserRouter([
   },
   {
     path: '/dashboard',
+    // Requiring login here is enough to redirect anonymous users to /login;
+    // each role's own dashboard below is still individually role-gated so a
+    // logged-in user of one role can't reach another role's dashboard by URL.
     element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Admin', 'Marketplace Seller']} />,
     children: [
       {
-        path: 'owner',
-        element: <OwnerDashboard />
+        element: <ProtectedRoute allowedRoles={['Pet Owner']} />,
+        children: [{ path: 'owner', element: <OwnerDashboard /> }]
       },
       {
-        path: 'vet',
-        element: <VetDashboard />
+        element: <ProtectedRoute allowedRoles={['Veterinarian']} />,
+        children: [{ path: 'vet', element: <VetDashboard /> }]
       },
       {
-        path: 'shelter',
-        element: <ShelterDashboard />
+        element: <ProtectedRoute allowedRoles={['Shelter Manager']} />,
+        children: [{ path: 'shelter', element: <ShelterDashboard /> }]
       },
-
       {
         path: 'admin',
-        element: <AdminLayout />,
+        element: <ProtectedRoute allowedRoles={['Admin']} />,
         children: [
-          { index: true, element: <AdminDashboardHome /> },
-          { path: 'users', element: <UserManagement /> },
-          { path: 'veterinarians', element: <VeterinarianManagement /> },
-          { path: 'veterinarians/:id', element: <VeterinarianReview /> },
-          { path: 'shelters', element: <ShelterVerificationReview /> },
-          { path: 'sellers', element: <VerificationQueue entityType="Marketplace Seller" title="Seller Verification" /> },
-          { path: 'products', element: <ProductModeration /> },
-          { path: 'adoptions', element: <AdoptionListingReview /> },
-          { path: 'settings', element: <AdminSettings /> }
+          {
+            element: <AdminLayout />,
+            children: [
+              { index: true, element: <AdminDashboardHome /> },
+              { path: 'users', element: <UserManagement /> },
+              { path: 'veterinarians', element: <VeterinarianManagement /> },
+              { path: 'veterinarians/:id', element: <VeterinarianReview /> },
+              { path: 'shelters', element: <ShelterVerificationReview /> },
+              { path: 'sellers', element: <VerificationQueue entityType="Marketplace Seller" title="Seller Verification" /> },
+              { path: 'products', element: <ProductModeration /> },
+              { path: 'adoptions', element: <AdoptionListingReview /> },
+              { path: 'settings', element: <AdminSettings /> }
+            ]
+          }
         ]
       },
       {
-        path: 'seller',
-        element: <SellerDashboard />
+        element: <ProtectedRoute allowedRoles={['Marketplace Seller']} />,
+        children: [{ path: 'seller', element: <SellerDashboard /> }]
       }
     ]
   }

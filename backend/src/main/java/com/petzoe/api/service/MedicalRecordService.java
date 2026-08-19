@@ -67,7 +67,8 @@ public class MedicalRecordService {
         this.animalResponseAssembler = animalResponseAssembler;
     }
 
-    public List<AnimalSummaryDTO> getAnimalWorklist() {
+    public List<AnimalSummaryDTO> getAnimalWorklist(String email) {
+        requireVerifiedVet(email);
         return animalRepository.findAll().stream()
                 .map(a -> new AnimalSummaryDTO(a, animalResponseAssembler.hasOverdueCare(a)))
                 .collect(Collectors.toList());
