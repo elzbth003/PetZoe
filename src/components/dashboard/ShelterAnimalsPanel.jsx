@@ -3,11 +3,16 @@ import { Plus, PawPrint, ClipboardList, X, Upload } from 'lucide-react';
 import animalService from '../../services/animalService';
 import { useToast } from '../../hooks/useToast';
 import AnimalMedicalHistory from './AnimalMedicalHistory';
+import AnimalStatusControl from './AnimalStatusControl';
+import AdoptionListingForm from './AdoptionListingForm';
 
 const MEDICAL_DOC_TYPES = [
   'VACCINATION_RECORD', 'EXAMINATION_REPORT', 'MEDICAL_CERTIFICATE', 'LAB_REPORT',
   'PRESCRIPTION', 'TREATMENT_DOCUMENT', 'STERILIZATION_RECORD', 'OTHER',
 ];
+
+const SHELTER_SETTABLE_STATUSES = ['IN_SHELTER_CARE', 'UNDER_MEDICAL_CARE', 'MEDICAL_REVIEW', 'AWAITING_DOCUMENTS', 'ON_HOLD', 'WITHDRAWN'];
+const LOCKED_ANIMAL_STATUSES = ['ADOPTION_PENDING', 'ADOPTED'];
 
 const SEX_OPTIONS = ['MALE', 'FEMALE', 'UNKNOWN'];
 const INTAKE_TYPES = ['RESCUE', 'STRAY', 'OWNER_SURRENDER', 'TRANSFER', 'ABANDONED', 'OTHER'];
@@ -143,6 +148,17 @@ export default function ShelterAnimalsPanel({ shelterVerified }) {
     }
   };
 
+  const handleUpdateStatus = async (status, notes) => {
+    try {
+      const res = await animalService.updateStatus(selectedId, status, notes);
+      setDetail(res.data);
+      fetchAnimals();
+      showToast('Status updated', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update status', 'error');
+    }
+  };
+
   const handleUploadMedicalDocument = async () => {
     if (!medDocFile) {
       showToast('Please choose a document to upload', 'error');
@@ -231,30 +247,30 @@ export default function ShelterAnimalsPanel({ shelterVerified }) {
                 <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Identification</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input placeholder="Name (if known)" value={intakeForm.name} onChange={e => setIntakeForm({ ...intakeForm, name: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   <input required placeholder="Species (e.g. Dog, Cat)" value={intakeForm.species} onChange={e => setIntakeForm({ ...intakeForm, species: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   <input placeholder="Breed (if known)" value={intakeForm.breed} onChange={e => setIntakeForm({ ...intakeForm, breed: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   <select value={intakeForm.sex} onChange={e => setIntakeForm({ ...intakeForm, sex: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150">
                     {SEX_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   <input type="number" min="0" placeholder="Estimated age (months)" value={intakeForm.estimatedAgeMonths}
                     onChange={e => setIntakeForm({ ...intakeForm, estimatedAgeMonths: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   <input placeholder="Colour" value={intakeForm.color} onChange={e => setIntakeForm({ ...intakeForm, color: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   <input type="number" step="0.1" min="0" placeholder="Weight (kg)" value={intakeForm.weightKg}
                     onChange={e => setIntakeForm({ ...intakeForm, weightKg: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   <input placeholder="Microchip number (if available)" value={intakeForm.microchipNumber}
                     onChange={e => setIntakeForm({ ...intakeForm, microchipNumber: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 </div>
                 <textarea placeholder="Distinguishing marks" value={intakeForm.distinguishingMarks}
                   onChange={e => setIntakeForm({ ...intakeForm, distinguishingMarks: e.target.value })}
-                  className="w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <div className="mt-3">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Photograph</label>
                   <input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] || null)} className="text-sm text-slate-600" />
@@ -266,23 +282,23 @@ export default function ShelterAnimalsPanel({ shelterVerified }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Intake Date</label>
-                    <input required type="date" value={intakeForm.intakeDate} onChange={e => setIntakeForm({ ...intakeForm, intakeDate: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    <input required type="date" max={new Date().toISOString().slice(0, 10)} value={intakeForm.intakeDate} onChange={e => setIntakeForm({ ...intakeForm, intakeDate: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Intake Type</label>
                     <select value={intakeForm.intakeType} onChange={e => setIntakeForm({ ...intakeForm, intakeType: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150">
                       {INTAKE_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
                     </select>
                   </div>
                 </div>
                 <textarea placeholder="Source / rescue information" value={intakeForm.sourceInfo}
                   onChange={e => setIntakeForm({ ...intakeForm, sourceInfo: e.target.value })}
-                  className="w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <textarea placeholder="Previous ownership information (if available)" value={intakeForm.previousOwnershipInfo}
                   onChange={e => setIntakeForm({ ...intakeForm, previousOwnershipInfo: e.target.value })}
-                  className="w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
               </div>
 
               <button type="submit" disabled={submitting}
@@ -317,6 +333,13 @@ export default function ShelterAnimalsPanel({ shelterVerified }) {
               {detail.distinguishingMarks && <p className="col-span-2 md:col-span-3"><strong>Marks:</strong> {detail.distinguishingMarks}</p>}
             </div>
 
+            <AnimalStatusControl
+              currentStatus={detail.status}
+              allowedStatuses={SHELTER_SETTABLE_STATUSES}
+              locked={LOCKED_ANIMAL_STATUSES.includes(detail.status)}
+              onUpdate={handleUpdateStatus}
+            />
+
             {detail.intakeHistory?.length > 0 && (
               <div>
                 <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><ClipboardList size={16} /> Intake Record</h4>
@@ -345,34 +368,34 @@ export default function ShelterAnimalsPanel({ shelterVerified }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input placeholder="General condition" value={assessmentForm.generalCondition}
                     onChange={e => setAssessmentForm({ ...assessmentForm, generalCondition: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   <input type="number" step="0.1" min="0" placeholder="Weight (kg)" value={assessmentForm.weightKg}
                     onChange={e => setAssessmentForm({ ...assessmentForm, weightKg: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 </div>
                 <textarea placeholder="Visible injuries" value={assessmentForm.visibleInjuries}
                   onChange={e => setAssessmentForm({ ...assessmentForm, visibleInjuries: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <textarea placeholder="Behaviour observations" value={assessmentForm.behaviourObservations}
                   onChange={e => setAssessmentForm({ ...assessmentForm, behaviourObservations: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <textarea placeholder="Immediate medical concerns" value={assessmentForm.immediateMedicalConcerns}
                   onChange={e => setAssessmentForm({ ...assessmentForm, immediateMedicalConcerns: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <textarea placeholder="Known allergies" value={assessmentForm.knownAllergies}
                     onChange={e => setAssessmentForm({ ...assessmentForm, knownAllergies: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                   <textarea placeholder="Known medical history" value={assessmentForm.knownMedicalHistory}
                     onChange={e => setAssessmentForm({ ...assessmentForm, knownMedicalHistory: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 </div>
                 <textarea placeholder="Parasite concerns" value={assessmentForm.parasiteConcerns}
                   onChange={e => setAssessmentForm({ ...assessmentForm, parasiteConcerns: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <textarea placeholder="Vaccination information (if available)" value={assessmentForm.vaccinationInfoAtIntake}
                   onChange={e => setAssessmentForm({ ...assessmentForm, vaccinationInfoAtIntake: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <button type="submit" disabled={savingAssessment}
                   className="bg-slate-800 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-slate-900 disabled:opacity-50">
                   {savingAssessment ? 'Saving...' : detail.initialAssessmentRecordedAt ? 'Update Assessment' : 'Save Initial Assessment'}
@@ -389,7 +412,7 @@ export default function ShelterAnimalsPanel({ shelterVerified }) {
                 <h5 className="font-bold text-slate-700 mb-2 text-sm">Upload Medical Document</h5>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select value={medDocType} onChange={e => setMedDocType(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 text-sm">
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 text-sm">
                     {MEDICAL_DOC_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
                   </select>
                   <input type="file" accept="image/*,.pdf" onChange={e => setMedDocFile(e.target.files?.[0] || null)}
@@ -401,6 +424,13 @@ export default function ShelterAnimalsPanel({ shelterVerified }) {
                 </div>
               </div>
             </div>
+
+            <AdoptionListingForm
+              animalId={detail.id}
+              animalStatus={detail.status}
+              listing={detail.listing}
+              onUpdated={(data) => { setDetail(data); fetchAnimals(); }}
+            />
           </div>
         ) : (
           <div className="h-full flex items-center justify-center text-slate-400 flex-col gap-3">

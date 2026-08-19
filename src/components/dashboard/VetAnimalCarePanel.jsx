@@ -3,6 +3,10 @@ import { PawPrint, Stethoscope, Syringe, Upload, ShieldPlus, AlertTriangle } fro
 import vetAnimalService from '../../services/vetAnimalService';
 import { useToast } from '../../hooks/useToast';
 import AnimalMedicalHistory from './AnimalMedicalHistory';
+import AnimalStatusControl from './AnimalStatusControl';
+
+const VET_SETTABLE_STATUSES = ['UNDER_MEDICAL_CARE', 'MEDICAL_REVIEW', 'IN_SHELTER_CARE'];
+const LOCKED_ANIMAL_STATUSES = ['ADOPTION_PENDING', 'ADOPTED', 'WITHDRAWN'];
 
 const STATUS_STYLES = {
   IN_SHELTER_CARE: 'bg-sky-50 text-sky-600',
@@ -96,6 +100,16 @@ export default function VetAnimalCarePanel() {
   const refreshDetail = (data) => {
     setDetail(data);
     fetchWorklist();
+  };
+
+  const handleUpdateStatus = async (status, notes) => {
+    try {
+      const res = await vetAnimalService.updateStatus(selectedId, status, notes);
+      refreshDetail(res.data);
+      showToast('Status updated', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update status', 'error');
+    }
   };
 
   const handleAddRecord = async (e) => {
@@ -246,6 +260,13 @@ export default function VetAnimalCarePanel() {
               </div>
             )}
 
+            <AnimalStatusControl
+              currentStatus={detail.status}
+              allowedStatuses={VET_SETTABLE_STATUSES}
+              locked={LOCKED_ANIMAL_STATUSES.includes(detail.status)}
+              onUpdate={handleUpdateStatus}
+            />
+
             <div className="flex gap-2 border-b border-slate-100 pb-3">
               <button onClick={() => setActiveForm('history')}
                 className={`text-xs font-bold px-3 py-1.5 rounded-lg ${activeForm === 'history' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}>
@@ -284,7 +305,7 @@ export default function VetAnimalCarePanel() {
                   <h5 className="font-bold text-slate-700 mb-2 text-sm">Upload Medical Document</h5>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <select value={docType} onChange={e => setDocType(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 text-sm">
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 text-sm">
                       {MEDICAL_DOC_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
                     </select>
                     <input type="file" accept="image/*,.pdf" onChange={e => setDocFile(e.target.files?.[0] || null)}
@@ -303,45 +324,45 @@ export default function VetAnimalCarePanel() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Examination Date</label>
-                    <input required type="date" value={recordForm.examinationDate}
+                    <input required type="date" max={new Date().toISOString().slice(0, 10)} value={recordForm.examinationDate}
                       onChange={e => setRecordForm({ ...recordForm, examinationDate: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   </div>
                   <input type="number" step="0.1" min="0" placeholder="Weight (kg)" value={recordForm.weightKg}
                     onChange={e => setRecordForm({ ...recordForm, weightKg: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 </div>
                 <input required placeholder="Health status (e.g. Healthy, Under treatment)" value={recordForm.healthStatus}
                   onChange={e => setRecordForm({ ...recordForm, healthStatus: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 <textarea placeholder="Diagnosis (where applicable)" value={recordForm.diagnosis}
                   onChange={e => setRecordForm({ ...recordForm, diagnosis: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <textarea placeholder="Treatment" value={recordForm.treatment}
                   onChange={e => setRecordForm({ ...recordForm, treatment: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <textarea placeholder="Medication" value={recordForm.medication}
                   onChange={e => setRecordForm({ ...recordForm, medication: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <textarea placeholder="Laboratory investigations" value={recordForm.labInvestigations}
                   onChange={e => setRecordForm({ ...recordForm, labInvestigations: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <textarea placeholder="Deworming" value={recordForm.dewormingInfo}
                     onChange={e => setRecordForm({ ...recordForm, dewormingInfo: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                   <textarea placeholder="Parasite control" value={recordForm.parasiteControlInfo}
                     onChange={e => setRecordForm({ ...recordForm, parasiteControlInfo: e.target.value })}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 </div>
                 <select value={recordForm.sterilizationStatus}
                   onChange={e => setRecordForm({ ...recordForm, sterilizationStatus: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150">
                   {STERILIZATION_OPTIONS.map(s => <option key={s} value={s}>{s ? s.replace(/_/g, ' ') : 'Sterilization status (unchanged)'}</option>)}
                 </select>
                 <textarea placeholder="Veterinary notes" value={recordForm.veterinaryNotes}
                   onChange={e => setRecordForm({ ...recordForm, veterinaryNotes: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <input type="checkbox" checked={recordForm.followUpRequired}
                     onChange={e => setRecordForm({ ...recordForm, followUpRequired: e.target.checked })} />
@@ -349,12 +370,12 @@ export default function VetAnimalCarePanel() {
                 </label>
                 {recordForm.followUpRequired && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <input type="date" value={recordForm.followUpDate}
+                    <input type="date" min={recordForm.examinationDate || undefined} value={recordForm.followUpDate}
                       onChange={e => setRecordForm({ ...recordForm, followUpDate: e.target.value })}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                     <input placeholder="Follow-up notes" value={recordForm.followUpNotes}
                       onChange={e => setRecordForm({ ...recordForm, followUpNotes: e.target.value })}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   </div>
                 )}
                 <button type="submit" disabled={savingRecord}
@@ -368,27 +389,27 @@ export default function VetAnimalCarePanel() {
               <form onSubmit={handleAddVaccination} className="space-y-3">
                 <input required placeholder="Vaccine name" value={vaccForm.vaccineName}
                   onChange={e => setVaccForm({ ...vaccForm, vaccineName: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Date Administered</label>
-                    <input required type="date" value={vaccForm.dateAdministered}
+                    <input required type="date" max={new Date().toISOString().slice(0, 10)} value={vaccForm.dateAdministered}
                       onChange={e => setVaccForm({ ...vaccForm, dateAdministered: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Next Due Date</label>
-                    <input type="date" value={vaccForm.nextDueDate}
+                    <input type="date" min={vaccForm.dateAdministered || undefined} value={vaccForm.nextDueDate}
                       onChange={e => setVaccForm({ ...vaccForm, nextDueDate: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   </div>
                 </div>
                 <input placeholder="Batch/Lot number" value={vaccForm.batchLotNumber}
                   onChange={e => setVaccForm({ ...vaccForm, batchLotNumber: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 <textarea placeholder="Notes" value={vaccForm.notes}
                   onChange={e => setVaccForm({ ...vaccForm, notes: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <button type="submit" disabled={savingVacc}
                   className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50">
                   {savingVacc ? 'Saving...' : 'Save Vaccination'}
@@ -399,30 +420,30 @@ export default function VetAnimalCarePanel() {
             {activeForm === 'preventive-care' && (
               <form onSubmit={handleAddPreventiveCare} className="space-y-3">
                 <select value={careForm.careType} onChange={e => setCareForm({ ...careForm, careType: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150">
                   <option value="DEWORMING">Deworming</option>
                   <option value="PARASITE_CONTROL">Parasite Control</option>
                 </select>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Date Administered</label>
-                    <input required type="date" value={careForm.dateAdministered}
+                    <input required type="date" max={new Date().toISOString().slice(0, 10)} value={careForm.dateAdministered}
                       onChange={e => setCareForm({ ...careForm, dateAdministered: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Next Due Date</label>
-                    <input type="date" value={careForm.nextDueDate}
+                    <input type="date" min={careForm.dateAdministered || undefined} value={careForm.nextDueDate}
                       onChange={e => setCareForm({ ...careForm, nextDueDate: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                   </div>
                 </div>
                 <input placeholder="Product / brand" value={careForm.product}
                   onChange={e => setCareForm({ ...careForm, product: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
                 <textarea placeholder="Notes" value={careForm.notes}
                   onChange={e => setCareForm({ ...careForm, notes: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 h-16 resize-none" />
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-16 resize-none" />
                 <button type="submit" disabled={savingCare}
                   className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50">
                   {savingCare ? 'Saving...' : 'Save Preventive Care'}
