@@ -1,6 +1,8 @@
 package com.petzoe.api.repository;
 
 import com.petzoe.api.entity.Animal;
+import com.petzoe.api.entity.AnimalStatus;
+import com.petzoe.api.entity.VerificationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +13,6 @@ import java.util.Optional;
 public interface AnimalRepository extends JpaRepository<Animal, Long> {
     List<Animal> findByShelterId(Long shelterId);
     Optional<Animal> findByAnimalCode(String animalCode);
+    long countByStatus(AnimalStatus status);
+    List<Animal> findByStatusAndShelter_VerificationStatus(AnimalStatus status, VerificationStatus shelterStatus);
 }

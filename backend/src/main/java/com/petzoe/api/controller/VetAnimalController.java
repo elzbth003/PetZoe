@@ -64,4 +64,11 @@ public class VetAnimalController {
                                                               Authentication authentication) {
         return ResponseEntity.ok(medicalRecordService.reviewDocument(authentication.getName(), documentId, request));
     }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<AnimalResponseDTO> updateStatus(@PathVariable Long id,
+                                                            @RequestBody AnimalStatusUpdateRequestDTO request,
+                                                            Authentication authentication) {
+        return ResponseEntity.ok(medicalRecordService.updateAnimalStatus(authentication.getName(), id, request));
+    }
 }

@@ -14,10 +14,6 @@ export const adminApi = {
   approveProduct: (id) => api.put(`/admin/products/${id}/approve`),
   rejectProduct: (id, reason) => api.put(`/admin/products/${id}/reject?reason=${encodeURIComponent(reason)}`),
   
-  getPendingAdoptionPets: () => api.get('/admin/adoptions/pending'),
-  approveAdoptionPet: (id) => api.put(`/admin/adoptions/pets/${id}/approve`),
-  rejectAdoptionPet: (id, reason) => api.put(`/admin/adoptions/pets/${id}/reject?reason=${encodeURIComponent(reason)}`),
-
   // Veterinarians
   getVeterinarians: () => api.get('/admin/veterinarians'),
   getVeterinarianDetail: (id) => api.get(`/admin/veterinarians/${id}`),

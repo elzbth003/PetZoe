@@ -114,6 +114,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/marketplace/categories/**").permitAll()
                         // Vets: allow public browsing of veterinarians
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/vets/**").permitAll()
+                        // Adoption: allow public browsing of approved adoption listings
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/adoption/**").permitAll()
                         // Admin: restricted to ADMIN role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()                // Secure everything else

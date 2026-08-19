@@ -25,7 +25,7 @@ import VerificationQueue from '../pages/dashboard/admin/VerificationQueue';
 import UserManagement from '../pages/dashboard/admin/UserManagement';
 import ProductModeration from '../pages/dashboard/admin/ProductModeration';
 import ShelterVerificationReview from '../pages/dashboard/admin/ShelterVerificationReview';
-import AdoptionReview from '../pages/dashboard/admin/AdoptionReview';
+import AdoptionListingReview from '../pages/dashboard/admin/AdoptionListingReview';
 import AdminSettings from '../pages/dashboard/admin/AdminSettings';
 import SellerDashboard from '../pages/dashboard/SellerDashboard';
 
@@ -36,6 +36,11 @@ import ProductDetailPage from '../pages/marketplace/ProductDetailPage';
 import CartPage from '../pages/marketplace/CartPage';
 import WishlistPage from '../pages/marketplace/WishlistPage';
 import OrderHistoryPage from '../pages/marketplace/OrderHistoryPage';
+
+// Adoption Pages
+import AdoptionListingsPage from '../pages/adoption/AdoptionListingsPage';
+import AdoptionDetailPage from '../pages/adoption/AdoptionDetailPage';
+import AdoptionApplicationPage from '../pages/adoption/AdoptionApplicationPage';
 
 export const router = createBrowserRouter([
   {
@@ -58,6 +63,20 @@ export const router = createBrowserRouter([
       {
         path: 'marketplace/products/:id',
         element: <ProductDetailPage />
+      },
+      // Public Adoption Routes
+      {
+        path: 'adopt',
+        element: <AdoptionListingsPage />
+      },
+      {
+        path: 'adopt/:id',
+        element: <AdoptionDetailPage />
+      },
+      {
+        path: 'adopt/:id/apply',
+        element: <ProtectedRoute allowedRoles={['Pet Owner']} />,
+        children: [{ index: true, element: <AdoptionApplicationPage /> }]
       },
       // Protected Marketplace Routes (require login but any role can buy)
       {
@@ -131,7 +150,7 @@ export const router = createBrowserRouter([
           { path: 'shelters', element: <ShelterVerificationReview /> },
           { path: 'sellers', element: <VerificationQueue entityType="Marketplace Seller" title="Seller Verification" /> },
           { path: 'products', element: <ProductModeration /> },
-          { path: 'adoptions', element: <AdoptionReview /> },
+          { path: 'adoptions', element: <AdoptionListingReview /> },
           { path: 'settings', element: <AdminSettings /> }
         ]
       },

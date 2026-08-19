@@ -42,6 +42,7 @@ public class AnimalResponseDTO {
     private List<VaccinationDTO> vaccinations;
     private List<MedicalDocumentDTO> medicalDocuments;
     private List<PreventiveCareDTO> preventiveCareRecords;
+    private AdoptionListingDTO listing;
 
     private LocalDate nextVaccinationDueDate;
     private int overdueVaccinationCount;
@@ -55,7 +56,8 @@ public class AnimalResponseDTO {
 
     public AnimalResponseDTO(Animal animal, List<AnimalIntakeDTO> intakeHistory,
                               List<MedicalRecordDTO> medicalRecords, List<VaccinationDTO> vaccinations,
-                              List<MedicalDocumentDTO> medicalDocuments, List<PreventiveCareDTO> preventiveCareRecords) {
+                              List<MedicalDocumentDTO> medicalDocuments, List<PreventiveCareDTO> preventiveCareRecords,
+                              AdoptionListingDTO listing) {
         this.id = animal.getId();
         this.animalCode = animal.getAnimalCode();
         this.shelterId = animal.getShelter().getId();
@@ -88,6 +90,7 @@ public class AnimalResponseDTO {
         this.vaccinations = vaccinations;
         this.medicalDocuments = medicalDocuments;
         this.preventiveCareRecords = preventiveCareRecords;
+        this.listing = listing;
         this.createdAt = animal.getCreatedAt();
         this.updatedAt = animal.getUpdatedAt();
 
@@ -202,6 +205,9 @@ public class AnimalResponseDTO {
 
     public List<PreventiveCareDTO> getPreventiveCareRecords() { return preventiveCareRecords; }
     public void setPreventiveCareRecords(List<PreventiveCareDTO> preventiveCareRecords) { this.preventiveCareRecords = preventiveCareRecords; }
+
+    public AdoptionListingDTO getListing() { return listing; }
+    public void setListing(AdoptionListingDTO listing) { this.listing = listing; }
 
     public LocalDate getNextVaccinationDueDate() { return nextVaccinationDueDate; }
     public void setNextVaccinationDueDate(LocalDate nextVaccinationDueDate) { this.nextVaccinationDueDate = nextVaccinationDueDate; }

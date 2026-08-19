@@ -10,6 +10,7 @@ const vetAnimalService = {
     api.post(`/vets/animals/${id}/documents`, { documentType, documentBase64, notes }),
   reviewDocument: (documentId, status, notes) =>
     api.put(`/vets/animals/documents/${documentId}/review`, { status, notes }),
+  updateStatus: (id, status, notes) => api.put(`/vets/animals/${id}/status`, { status, notes }),
 };
 
 export default vetAnimalService;
