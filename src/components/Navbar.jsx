@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { PawPrint, Menu, X, LogOut, User, ShoppingCart, Store, Heart } from 'lucide-react';
+import { PawPrint, Menu, X, LogOut, User, ShoppingCart, ShoppingBag, Heart } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import marketplaceService from '../services/marketplaceService';
@@ -14,8 +14,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isBuyer = user && ['Pet Owner', 'Veterinarian', 'Shelter Manager'].includes(user.role);
-  const canBrowseAdopt = !user || user.role !== 'Marketplace Seller';
+  const isBuyer = user && user.role === 'Pet Owner';
+  const canBrowseAdopt = !user || user.role === 'Pet Owner';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -64,15 +64,15 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${isScrolled ? 'glass-header shadow-md py-3' : 'bg-transparent py-5'}`}>
+    <nav className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 bg-white/95 backdrop-blur-md ${isScrolled ? 'shadow-md py-3' : 'shadow-sm py-4'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-1.5 group cursor-pointer">
+        <Link to="/" aria-label="PetZoe" className="flex items-center gap-1.5 group cursor-pointer">
           <span className="font-display font-black text-xl tracking-tight text-slate-900 flex items-center select-none">
             PetZ
-            <span className="inline-block hover:rotate-12 transition-transform duration-300">
-              <PawPrint size={20} className="fill-current text-primary-500 mx-0.5 animate-pulse" />
+            <span className="inline-block group-hover:rotate-12 transition-transform duration-300">
+              <PawPrint size={20} className="fill-current text-secondary-500 mx-0.5" />
             </span>
             e
           </span>
@@ -91,7 +91,7 @@ export default function Navbar() {
           ))}
           
           <Link to="/marketplace" className="flex items-center gap-1.5 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full hover:bg-primary-100 transition-colors">
-            <Store size={14} /> Shop Now
+            <ShoppingBag size={14} /> Shop Now
           </Link>
           {canBrowseAdopt && (
             <Link to="/adopt" className="flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full hover:bg-rose-100 transition-colors">
@@ -180,7 +180,7 @@ export default function Navbar() {
           onClick={() => setIsOpen(false)}
           className="flex items-center gap-2 text-primary-600 bg-primary-50 px-4 py-3 rounded-2xl font-bold"
         >
-          <Store size={18} /> Shop Products
+          <ShoppingBag size={18} /> Shop Products
         </Link>
 
         {canBrowseAdopt && (

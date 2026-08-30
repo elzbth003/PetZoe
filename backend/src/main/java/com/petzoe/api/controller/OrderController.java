@@ -24,21 +24,21 @@ public class OrderController {
 
     /** Place a new order from the user's cart. */
     @PostMapping
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PET_OWNER')")
     public ResponseEntity<Order> placeOrder(Authentication auth) {
         return ResponseEntity.ok(orderService.placeOrder(auth.getName()));
     }
 
     /** Get the authenticated user's order history. */
     @GetMapping
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PET_OWNER')")
     public ResponseEntity<List<Order>> getUserOrders(Authentication auth) {
         return ResponseEntity.ok(orderService.getUserOrders(auth.getName()));
     }
 
     /** Get a specific order by ID. */
     @GetMapping("/{id}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PET_OWNER')")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id, Authentication auth) {
         return ResponseEntity.ok(orderService.getOrderById(id, auth.getName()));
     }

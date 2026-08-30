@@ -3,6 +3,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { Stethoscope, Calendar, Users, LogOut, Activity, PawPrint, HeartPulse, Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import VetAnimalCarePanel from '../../components/dashboard/VetAnimalCarePanel';
+import VetAppointmentsPanel from '../../components/dashboard/VetAppointmentsPanel';
+import VetPatientsPanel from '../../components/dashboard/VetPatientsPanel';
 
 export default function VetDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -70,6 +72,8 @@ export default function VetDashboard() {
 
   const renderTabContent = () => {
     if (activeTab === 'Shelter Animals') return <VetAnimalCarePanel />;
+    if (activeTab === 'Appointments') return <VetAppointmentsPanel />;
+    if (activeTab === 'Patients') return <VetPatientsPanel />;
     if (activeTab === 'Overview') return renderOverview();
     return (
       <div className="bg-white p-12 text-center rounded-3xl border border-slate-100 shadow-sm text-slate-500 animate-in fade-in duration-300">

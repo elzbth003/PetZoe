@@ -18,7 +18,7 @@ export default function ProductCard({ product, onWishlistUpdate }) {
     ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
     : 0;
 
-  const isSeller = user?.role === 'Marketplace Seller';
+  const canBuy = !user || user.role === 'Pet Owner';
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -26,8 +26,8 @@ export default function ProductCard({ product, onWishlistUpdate }) {
       showToast('Please login to add items to cart', 'error');
       return;
     }
-    if (isSeller) {
-      showToast('Marketplace sellers cannot purchase products', 'error');
+    if (!canBuy) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
       return;
     }
 
@@ -50,8 +50,8 @@ export default function ProductCard({ product, onWishlistUpdate }) {
       showToast('Please login to add to wishlist', 'error');
       return;
     }
-    if (isSeller) {
-      showToast('Marketplace sellers cannot purchase products', 'error');
+    if (!canBuy) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
       return;
     }
 
@@ -92,7 +92,7 @@ export default function ProductCard({ product, onWishlistUpdate }) {
       </div>
 
       {/* Quick Actions (Hover) */}
-      {!isSeller && (
+      {canBuy && (
         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
           <button
             onClick={handleAddToWishlist}
@@ -143,7 +143,7 @@ export default function ProductCard({ product, onWishlistUpdate }) {
             </div>
           </div>
           
-          {!isSeller && (
+          {canBuy && (
             <button
               onClick={handleAddToCart}
               disabled={isAddingToCart || product.stockQuantity === 0}

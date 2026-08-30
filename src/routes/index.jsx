@@ -78,20 +78,20 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute allowedRoles={['Pet Owner']} />,
         children: [{ index: true, element: <AdoptionApplicationPage /> }]
       },
-      // Protected Marketplace Routes (require login but any role can buy)
+      // Protected Marketplace Routes (Pet Owner only)
       {
         path: 'marketplace/cart',
-        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager']} />,
+        element: <ProtectedRoute allowedRoles={['Pet Owner']} />,
         children: [{ index: true, element: <CartPage /> }]
       },
       {
         path: 'marketplace/wishlist',
-        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager']} />,
+        element: <ProtectedRoute allowedRoles={['Pet Owner']} />,
         children: [{ index: true, element: <WishlistPage /> }]
       },
       {
         path: 'marketplace/orders',
-        element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager']} />,
+        element: <ProtectedRoute allowedRoles={['Pet Owner']} />,
         children: [{ index: true, element: <OrderHistoryPage /> }]
       }
     ]

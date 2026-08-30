@@ -29,6 +29,7 @@ export default function ProductDetailPage() {
   const [categories, setCategories] = useState([]);
 
   const isSeller = user?.role === 'Marketplace Seller';
+  const isNonBuyer = !!user && user.role !== 'Pet Owner' && !isSeller;
 
   useEffect(() => {
     fetchProductDetails();
@@ -78,8 +79,8 @@ export default function ProductDetailPage() {
       showToast('Please login to add items to cart', 'error');
       return;
     }
-    if (isSeller) {
-      showToast('Marketplace sellers cannot purchase products', 'error');
+    if (isSeller || isNonBuyer) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
       return;
     }
     try {
@@ -99,8 +100,8 @@ export default function ProductDetailPage() {
       showToast('Please login to add to wishlist', 'error');
       return;
     }
-    if (isSeller) {
-      showToast('Marketplace sellers cannot purchase products', 'error');
+    if (isSeller || isNonBuyer) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
       return;
     }
     try {
@@ -120,8 +121,8 @@ export default function ProductDetailPage() {
       showToast('Please login to review', 'error');
       return;
     }
-    if (isSeller) {
-      showToast('Marketplace sellers cannot write reviews', 'error');
+    if (isSeller || isNonBuyer) {
+      showToast('Only Pet Owner accounts can write reviews', 'error');
       return;
     }
     try {
@@ -246,6 +247,10 @@ export default function ProductDetailPage() {
                   Marketplace seller accounts cannot purchase products.
                 </div>
               )
+            ) : isNonBuyer ? (
+              <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 font-medium">
+                Only Pet Owner accounts can purchase products.
+              </div>
             ) : (
               <div className="mt-auto flex flex-col gap-4">
                 <div className="flex items-center gap-4">
@@ -358,6 +363,10 @@ export default function ProductDetailPage() {
                     {isSeller ? (
                       <div className="p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 font-medium">
                         Marketplace seller accounts cannot write reviews.
+                      </div>
+                    ) : isNonBuyer ? (
+                      <div className="p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 font-medium">
+                        Only Pet Owner accounts can write reviews.
                       </div>
                     ) : user ? (
                       <form onSubmit={submitReview} className="space-y-4">

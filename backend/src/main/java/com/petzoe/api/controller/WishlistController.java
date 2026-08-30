@@ -14,7 +14,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/marketplace/wishlist")
-@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'SHELTER_MANAGER')")
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('PET_OWNER')")
 public class WishlistController {
 
     private final WishlistService wishlistService;

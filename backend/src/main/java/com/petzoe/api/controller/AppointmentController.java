@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -35,5 +36,19 @@ public class AppointmentController {
     public ResponseEntity<AppointmentDTO> cancelAppointment(@PathVariable Long id, Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(appointmentService.cancelAppointment(id, email));
+    }
+
+    @GetMapping("/vet")
+    public ResponseEntity<List<AppointmentDTO>> getVetAppointments(Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(appointmentService.getAppointmentsByVeterinarian(email));
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<AppointmentDTO> updateAppointmentStatus(@PathVariable Long id, @RequestBody Map<String, String> payload, Authentication authentication) {
+        String email = authentication.getName();
+        String status = payload.get("status");
+        String notes = payload.get("notes");
+        return ResponseEntity.ok(appointmentService.updateAppointmentStatus(id, status, notes, email));
     }
 }

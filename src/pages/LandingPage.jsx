@@ -1,13 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Heart, Shield, Video, Database, Clock, 
-  CheckCircle, ArrowRight, UserCheck, Star, Sparkles, MessageSquare,
-  ChevronRight, Stethoscope, ShieldAlert
+import {
+  Heart, Shield, Video, Database, Clock,
+  CheckCircle, ArrowRight, Star, Sparkles, MessageSquare,
+  ChevronRight, Stethoscope, ShieldAlert, ShoppingBag,
+  Lock, BadgeCheck, Users, CalendarCheck, PawPrint
 } from 'lucide-react';
 import Accordion from '../components/Accordion';
 import DashboardPreview from '../components/DashboardPreview';
+
+// Hero bottom feature strip
+const HERO_STRIP = [
+  {
+    icon: Database,
+    title: "Health Records",
+    subtitle: "All in One Place",
+    desc: "Store & access securely",
+    color: "bg-secondary-100 text-secondary-700"
+  },
+  {
+    icon: Stethoscope,
+    title: "Book Vet",
+    subtitle: "Consultations",
+    desc: "Connect with verified vets",
+    color: "bg-sky-100 text-sky-700"
+  },
+  {
+    icon: Heart,
+    title: "Adoption",
+    subtitle: "Pipelines",
+    desc: "Find, apply & adopt easily",
+    color: "bg-rose-100 text-rose-700"
+  },
+  {
+    icon: ShoppingBag,
+    title: "Wellness",
+    subtitle: "Marketplace",
+    desc: "Shop trusted pet products",
+    color: "bg-accent-100 text-accent-700"
+  }
+];
+
+// Hero trust features (under description)
+const HERO_TRUST_FEATURES = [
+  { icon: Lock, label: "Encrypted Records" },
+  { icon: BadgeCheck, label: "Certified Practitioners" },
+  { icon: Shield, label: "Secure & Private" },
+  { icon: Heart, label: "Adoption Made Easy" }
+];
 
 // Stats data
 const STATS = [
@@ -238,13 +279,6 @@ export default function LandingPage() {
     }
   };
 
-  const floatAnimationReverse = {
-    animate: {
-      y: [0, 8, 0],
-      transition: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }
-    }
-  };
-
   const staggerContainer = {
     hidden: { opacity: 1 },
     visible: {
@@ -258,86 +292,174 @@ export default function LandingPage() {
   const activeWidgetData = INTERACTIVE_PET_DATA[selectedPet].stages[selectedStage];
 
   return (
-    <div className="space-y-28 pb-20">
-      
+    <div className="space-y-20 pb-20">
+
       {/* 1. Hero Section */}
-      <section id="hero" className="relative min-h-[90vh] flex items-center pt-24 pb-16 overflow-hidden">
-        
-        {/* Full width background image with overlay */}
-        <motion.div 
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0 z-0 origin-center"
-        >
-          <img 
-            src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=1920" 
-            alt="Elegant Dog with veterinarian" 
-            className="w-full h-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-slate-900/70"></div>
-        </motion.div>
+      <section id="hero" className="relative bg-gradient-to-b from-secondary-50/70 via-white to-white pt-32 pb-4 overflow-hidden">
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10 w-full mt-10">
-          
-          {/* Hero Left Content */}
-          <motion.div 
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-            className="max-w-2xl text-left space-y-7"
-          >
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white backdrop-blur-md text-[10px] font-bold border border-white/20 uppercase tracking-wider shadow-sm">
-              <Sparkles size={12} className="text-secondary-300" />
-              The Next-Gen Pet Healthcare Ecosystem
-            </span>
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-              className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight tracking-tight drop-shadow-sm"
+        {/* Ambient decorative blobs */}
+        <div className="absolute -top-24 -right-24 w-[420px] h-[420px] bg-secondary-200/30 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-1/3 -left-32 w-[320px] h-[320px] bg-accent-200/25 rounded-full blur-3xl pointer-events-none"></div>
+
+        {/* Scattered paw prints */}
+        <PawPrint className="hidden lg:block absolute top-40 left-[42%] text-secondary-300/50 rotate-12" size={22} />
+        <PawPrint className="hidden lg:block absolute bottom-24 left-[38%] text-accent-300/50 -rotate-12" size={16} />
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+
+            {/* Hero Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+              className="text-left space-y-6"
             >
-              A Unified Portal for <br />
-              <motion.span 
-                initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                transition={{ duration: 0.8, delay: 0.5, ease: "backOut" }}
-                className="text-secondary-300 inline-block"
-              >
-                Digital Pet Care
-              </motion.span>
-            </motion.h1>
-            <p className="text-slate-200 text-sm sm:text-base leading-relaxed font-medium drop-shadow-sm">
-              PetZoe connects pet owners, certified vets, shelter networks, and wellness marketplaces. Chart health histories, request live telehealth support, and manage adoption pipelines in a secure, role-based dashboard.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-start gap-4">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Link
-                  to="/register"
-                  className="px-8 py-4 rounded-full font-bold bg-secondary-400 hover:bg-secondary-500 text-white shadow-lg shadow-secondary-500/20 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
-                >
-                  Get Started Now <ArrowRight size={14} />
-                </Link>
-              </motion.div>
-              <motion.a
-                href="#features"
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                className="px-8 py-4 rounded-full font-bold bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all duration-200 text-xs uppercase tracking-wider flex items-center justify-center"
-              >
-                Learn More
-              </motion.a>
-            </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50 text-primary-600 text-[11px] font-bold border border-primary-100 uppercase tracking-wider">
+                <Sparkles size={12} className="text-secondary-500" />
+                The Next-Gen Pet Healthcare Ecosystem
+              </span>
 
-            {/* Micro Badges */}
-            <div className="pt-6 flex flex-wrap justify-start gap-6 text-xs text-slate-300 font-bold border-t border-white/10">
-              <motion.div variants={floatAnimation} animate="animate" className="flex items-center gap-1.5">
-                <Shield className="text-secondary-300" size={16} /> Encrypted Records
-              </motion.div>
-              <motion.div variants={floatAnimationReverse} animate="animate" className="flex items-center gap-1.5">
-                <UserCheck className="text-accent-400" size={16} /> Certified Practitioners
-              </motion.div>
+              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl leading-[1.12] tracking-tight">
+                <span className="block text-primary-700">Better Care,</span>
+                <span className="block text-secondary-500">Happier Pets,</span>
+                <span className="block text-primary-700">Stronger Bonds.</span>
+              </h1>
+
+              <p className="text-slate-500 text-sm sm:text-base leading-relaxed font-medium max-w-lg">
+                PetZoe connects pet owners, certified vets, shelter networks, and wellness marketplaces. Access health records, book vet consultations, and manage adoption pipelines in one secure, role-based platform.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Link
+                    to="/register"
+                    className="px-7 py-3.5 rounded-full font-bold bg-secondary-500 hover:bg-secondary-600 text-white shadow-lg shadow-secondary-500/25 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider"
+                  >
+                    Get Started Now <ArrowRight size={14} />
+                  </Link>
+                </motion.div>
+                <motion.a
+                  href="#features"
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  className="px-7 py-3.5 rounded-full font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all duration-200 text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  Learn More <ChevronRight size={14} />
+                </motion.a>
+              </div>
+
+              {/* Trust Features */}
+              <div className="pt-5 flex flex-wrap justify-start gap-x-6 gap-y-2.5 text-[11px] text-slate-500 font-bold border-t border-slate-200">
+                {HERO_TRUST_FEATURES.map((tf, idx) => {
+                  const Icon = tf.icon;
+                  return (
+                    <div key={idx} className="flex items-center gap-1.5 pt-5">
+                      <Icon className="text-secondary-500" size={14} /> {tf.label}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* Hero Right Visual — background-removed HD cutouts */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+              className="relative flex justify-center lg:justify-end"
+            >
+              <div className="relative w-full max-w-[440px] aspect-[4/5]">
+                {/* Dashed ring behind subject */}
+                <div className="absolute inset-6 rounded-full border-2 border-dashed border-secondary-300/50"></div>
+                <div className="absolute inset-12 rounded-full bg-secondary-100/40"></div>
+
+                {/* Main cutout: golden retriever, background removed */}
+                <motion.img
+                  animate={{ y: [0, -12, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  src="https://pngimg.com/uploads/golden_retriever/golden_retriever_PNG51.png"
+                  alt="Golden retriever, background removed"
+                  className="absolute inset-0 w-full h-full object-contain object-bottom drop-shadow-2xl z-10"
+                />
+
+                {/* Secondary cutout: cat, background removed */}
+                <motion.img
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+                  src="https://pngimg.com/uploads/cat/cat_PNG50434.png"
+                  alt="Cat, background removed"
+                  className="hidden sm:block absolute bottom-0 left-[-8%] w-[38%] object-contain drop-shadow-xl z-20"
+                />
+
+                {/* Trust Card - top right */}
+                <motion.div
+                  variants={floatAnimation}
+                  animate="animate"
+                  className="absolute top-2 -right-2 sm:-right-8 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 w-48 z-30"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 rounded-full bg-secondary-100 text-secondary-600">
+                      <Users size={14} />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trusted by</span>
+                  </div>
+                  <p className="font-display font-black text-xl text-primary-600 leading-none">15K+</p>
+                  <p className="text-[10px] text-slate-500 font-semibold mb-2">Pet Parents</p>
+                  <div className="flex -space-x-2">
+                    {[
+                      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100&h=100",
+                      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100&h=100",
+                      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100"
+                    ].map((src, i) => (
+                      <img key={i} src={src} alt="Pet parent" className="w-6 h-6 rounded-full border-2 border-white object-cover" />
+                    ))}
+                    <span className="w-6 h-6 rounded-full bg-secondary-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">+</span>
+                  </div>
+                </motion.div>
+
+                {/* Quick Action Card - bottom right */}
+                <motion.div
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  className="absolute bottom-6 right-0 sm:-right-6 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 flex items-center gap-3 z-30"
+                >
+                  <div className="p-2.5 rounded-xl bg-secondary-500 text-white">
+                    <CalendarCheck size={18} />
+                  </div>
+                  <div className="text-left pr-2">
+                    <p className="text-xs font-bold text-slate-900 leading-tight">Book Vet<br />Consultation</p>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Feature Strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative z-20 mt-12 md:mt-16"
+          >
+            <div className="bg-white rounded-3xl border border-slate-200/70 shadow-lg shadow-slate-200/40 p-6 sm:p-8 grid grid-cols-2 lg:grid-cols-4 gap-6">
+              {HERO_STRIP.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <div key={idx} className="flex items-start gap-3 text-left">
+                    <div className={`p-3 rounded-2xl w-fit ${item.color}`}>
+                      <Icon size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900 leading-tight">{item.title}</p>
+                      <p className="text-sm font-bold text-slate-900 leading-tight">{item.subtitle}</p>
+                      <p className="text-[11px] text-slate-500 font-semibold mt-1">{item.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
-
         </div>
       </section>
 
@@ -354,12 +476,12 @@ export default function LandingPage() {
             <motion.div
               key={idx}
               variants={fadeInUp}
-              className="bg-white rounded-[24px] p-6 border border-slate-100 hover:border-slate-200 shadow-sm hover:shadow transition-all text-center space-y-1.5"
+              className="bg-white rounded-3xl p-6 border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow transition-all text-center space-y-1.5"
             >
               <p className={`font-display font-black text-3xl sm:text-4xl ${stat.color}`}>
                 {stat.value}
               </p>
-              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+              <p className="text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                 {stat.label}
               </p>
             </motion.div>
@@ -377,19 +499,17 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto mb-16 space-y-3"
         >
-          <h2 className="font-display font-black text-3xl sm:text-4xl text-slate-900 leading-tight">
+          <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-primary-700 leading-tight">
             Advanced Care Management, <br />
-            <span className="bg-gradient-to-r from-[#1E3A5F] via-[#38BDF8] to-[#F97360] bg-clip-text text-transparent">
-              Designed for Pets & Vets
-            </span>
+            <span className="text-secondary-500">Designed for Pets &amp; Vets</span>
           </h2>
-          <p className="text-slate-500 text-xs sm:text-sm font-semibold max-w-lg mx-auto">
+          <p className="text-slate-500 text-sm leading-relaxed font-medium max-w-lg mx-auto">
             Everything you need to monitor pet wellness, record clinical files, and consult veterinary practitioners in a unified network.
           </p>
         </motion.div>
 
         {/* Grid */}
-        <motion.div 
+        <motion.div
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -403,20 +523,16 @@ export default function LandingPage() {
                 key={idx}
                 variants={fadeInUp}
                 whileHover={{ y: -8 }}
-                className="group p-6 bg-white rounded-[24px] border border-slate-100 hover:border-[#38BDF8]/30 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left cursor-pointer"
+                className="group p-6 bg-white rounded-3xl border border-slate-200/70 hover:border-secondary-300 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between text-left cursor-pointer"
               >
                 <div className="space-y-4">
-                  <motion.div 
-                    whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-                    transition={{ duration: 0.5 }}
-                    className={`p-3 rounded-2xl w-fit ${feat.color} group-hover:scale-110 transition-transform duration-300`}
-                  >
+                  <div className={`p-3 rounded-2xl w-fit ${feat.color} group-hover:scale-110 transition-transform duration-300`}>
                     <Icon size={22} />
-                  </motion.div>
-                  <h3 className="font-display font-bold text-base text-slate-950 group-hover:text-[#1E3A5F] transition-colors">
+                  </div>
+                  <h3 className="font-display font-bold text-base text-slate-900 group-hover:text-primary-600 transition-colors">
                     {feat.title}
                   </h3>
-                  <p className="text-slate-500 text-xs leading-relaxed font-semibold">
+                  <p className="text-slate-500 text-sm leading-relaxed font-medium">
                     {feat.desc}
                   </p>
                 </div>
@@ -432,19 +548,19 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white border border-slate-100 rounded-[32px] p-8 md:p-12 shadow-md relative overflow-hidden space-y-8"
+          className="bg-white border border-slate-200/70 rounded-3xl p-8 md:p-12 shadow-md relative overflow-hidden space-y-8"
         >
-          <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-[#38BDF8]/5 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-secondary-100/60 rounded-full blur-2xl pointer-events-none"></div>
 
           {/* Widget Info Header */}
           <div className="text-center md:text-left space-y-2 border-b border-slate-100 pb-6 max-w-xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#38BDF8]/10 text-[#38BDF8] text-[9px] font-black uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-100 text-secondary-700 text-[10px] font-bold uppercase tracking-wider">
               <Stethoscope size={10} /> Interactive Planner
             </span>
-            <h3 className="font-display font-black text-2xl text-slate-900 leading-tight">
+            <h3 className="font-display font-bold text-2xl text-primary-700 leading-tight">
               Interactive Pet Wellness Planner
             </h3>
-            <p className="text-slate-400 text-xs font-semibold">
+            <p className="text-slate-500 text-sm font-medium">
               Select your pet type and life stage to dynamically display vital vaccination timelines, care advices, and clinical risk profiles.
             </p>
           </div>
@@ -464,7 +580,7 @@ export default function LandingPage() {
                       onClick={() => setSelectedPet(petKey)}
                       className={`py-3.5 rounded-2xl border text-center font-bold text-xs transition-all cursor-pointer ${
                         selectedPet === petKey
-                          ? 'bg-[#1E3A5F] border-[#1E3A5F] text-white shadow-md'
+                          ? 'bg-primary-600 border-primary-600 text-white shadow-md'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -489,7 +605,7 @@ export default function LandingPage() {
                       onClick={() => setSelectedStage(stage.id)}
                       className={`px-4 py-3 rounded-2xl border text-left font-bold text-xs transition-all cursor-pointer flex items-center justify-between ${
                         selectedStage === stage.id
-                          ? 'bg-[#38BDF8] border-[#38BDF8] text-white shadow-sm'
+                          ? 'bg-secondary-500 border-secondary-500 text-white shadow-sm'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -511,53 +627,53 @@ export default function LandingPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -15 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-slate-50/50 border border-slate-150 rounded-[24px] p-6 text-left space-y-5"
+                  className="bg-slate-50 border border-slate-200/70 rounded-2xl p-6 text-left space-y-5"
                 >
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h4 className="font-display font-black text-slate-800 text-base">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                    <h4 className="font-display font-bold text-slate-800 text-base">
                       {INTERACTIVE_PET_DATA[selectedPet].icon} {selectedPet} Care Blueprint
                     </h4>
-                    <span className="px-3 py-1 bg-white border border-slate-200 text-[#1E3A5F] text-[10px] font-bold rounded-full capitalize">
+                    <span className="px-3 py-1 bg-white border border-slate-200 text-primary-600 text-[11px] font-bold rounded-full capitalize">
                       Stage: {selectedStage}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
-                    
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+
                     {/* Vaccines column */}
                     <div className="space-y-2">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                         <CheckCircle size={12} className="text-emerald-500" /> Key Immunizations
                       </p>
                       <ul className="space-y-1.5 pl-1">
                         {activeWidgetData.vaccines.map((v, i) => (
-                          <li key={i} className="text-slate-700 font-semibold">• {v}</li>
+                          <li key={i} className="text-slate-700 font-medium">• {v}</li>
                         ))}
                       </ul>
                     </div>
 
                     {/* Risks Column */}
                     <div className="space-y-2">
-                      <p className="text-[10px] text-[#F97360] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <p className="text-[11px] text-rose-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                         <ShieldAlert size={12} /> Health Concerns
                       </p>
                       <ul className="space-y-1.5 pl-1">
                         {activeWidgetData.risks.map((r, i) => (
-                          <li key={i} className="text-slate-700 font-semibold">• {r}</li>
+                          <li key={i} className="text-slate-700 font-medium">• {r}</li>
                         ))}
                       </ul>
                     </div>
 
                   </div>
 
-                  <div className="border-t border-slate-100 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold">
+                  <div className="border-t border-slate-200 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm font-medium">
                     <div>
-                      <span className="block text-[9px] text-slate-400 font-bold uppercase">Weight Range</span>
+                      <span className="block text-[11px] text-slate-500 font-bold uppercase">Weight Range</span>
                       <span className="text-slate-700 font-bold">{activeWidgetData.weight}</span>
                     </div>
                     <div className="sm:col-span-2">
-                      <span className="block text-[9px] text-[#38BDF8] font-bold uppercase">Care & Nutrition Advice</span>
-                      <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">{activeWidgetData.advice}</p>
+                      <span className="block text-[11px] text-secondary-600 font-bold uppercase">Care &amp; Nutrition Advice</span>
+                      <p className="text-slate-500 text-xs leading-relaxed mt-0.5">{activeWidgetData.advice}</p>
                     </div>
                   </div>
 
@@ -584,16 +700,16 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center max-w-2xl mx-auto mb-16 space-y-3"
           >
-            <h2 className="font-display font-black text-3xl sm:text-4xl text-slate-900 leading-tight">
+            <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-primary-700 leading-tight">
               Professional Integrated Solutions
             </h2>
-            <p className="text-slate-500 text-xs sm:text-sm font-semibold">
+            <p className="text-slate-500 text-sm font-medium">
               We align medical databases, vet triage, and adoption centers under a single secure platform.
             </p>
           </motion.div>
 
           {/* Cards */}
-          <motion.div 
+          <motion.div
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
@@ -604,15 +720,15 @@ export default function LandingPage() {
               <motion.div
                 key={idx}
                 variants={fadeInUp}
-                className="bg-white rounded-[24px] p-6 border border-slate-100 hover:border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 text-left"
+                className="bg-white rounded-3xl p-6 border border-slate-200/70 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 text-left"
               >
-                <h3 className="font-display font-extrabold text-base text-slate-900 border-b border-slate-100 pb-3 mb-4">
+                <h3 className="font-display font-bold text-base text-slate-900 border-b border-slate-100 pb-3 mb-4">
                   {serv.title}
                 </h3>
                 <ul className="space-y-3">
                   {serv.details.map((detail, dIdx) => (
-                    <li key={dIdx} className="flex items-start gap-2 text-xs text-slate-600 font-semibold">
-                      <CheckCircle size={14} className="text-[#38BDF8] mt-0.5 flex-shrink-0" />
+                    <li key={dIdx} className="flex items-start gap-2 text-sm text-slate-600 font-medium">
+                      <CheckCircle size={14} className="text-secondary-500 mt-0.5 flex-shrink-0" />
                       <span>{detail}</span>
                     </li>
                   ))}
@@ -635,41 +751,41 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
             className="flex justify-center order-last lg:order-first"
           >
-            <div className="bg-gradient-to-tr from-[#1E3A5F] to-[#38BDF8] rounded-[32px] p-8 text-white space-y-6 w-full max-w-md shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-tr from-primary-700 to-primary-500 rounded-3xl p-8 text-white space-y-6 w-full max-w-md shadow-xl relative overflow-hidden">
               <div className="absolute top-[-10%] right-[-10%] w-[150px] h-[150px] bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-              
+
               <div className="flex items-center gap-2">
                 <div className="p-1 bg-white/20 rounded-lg">
                   <Shield size={16} />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider">Health Security Seal</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider">Health Security Seal</span>
               </div>
               <h3 className="font-display font-bold text-2xl">Bank-Grade Clinical Protection</h3>
-              <p className="text-xs text-slate-100 leading-relaxed font-semibold">
+              <p className="text-sm text-slate-100 leading-relaxed font-medium">
                 All consult reports and digital records are encrypted with AES-256 standards, aligning with modern animal patient safety and security guidelines.
               </p>
               <div className="pt-4 border-t border-white/20 flex gap-8">
                 <div>
                   <p className="text-xl font-black">256-bit</p>
-                  <p className="text-[10px] text-slate-200 font-bold uppercase">Encryption</p>
+                  <p className="text-[11px] text-slate-200 font-bold uppercase">Encryption</p>
                 </div>
                 <div>
                   <p className="text-xl font-black">100%</p>
-                  <p className="text-[10px] text-slate-200 font-bold uppercase">HIPAA Compliant</p>
+                  <p className="text-[11px] text-slate-200 font-bold uppercase">HIPAA Compliant</p>
                 </div>
               </div>
             </div>
           </motion.div>
 
           {/* Content Right */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
             className="space-y-6"
           >
-            <h2 className="font-display font-black text-3xl sm:text-4xl text-slate-900 leading-tight">
+            <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-primary-700 leading-tight">
               Veterinary Systems <br />
               Built on Complete Trust
             </h2>
@@ -678,21 +794,21 @@ export default function LandingPage() {
             </p>
             <div className="space-y-4">
               <div className="flex gap-3">
-                <div className="p-2.5 bg-sky-50 rounded-xl text-[#38BDF8] h-fit">
+                <div className="p-2.5 bg-secondary-50 rounded-xl text-secondary-600 h-fit">
                   <CheckCircle size={16} />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-900">Direct Doctor-to-Patient Channels</h4>
-                  <p className="text-xs text-slate-500 mt-0.5 font-semibold">Skip call hold lines. Message verified vets directly from your client hub.</p>
+                  <p className="text-sm text-slate-500 mt-0.5 font-medium">Skip call hold lines. Message verified vets directly from your client hub.</p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="p-2.5 bg-sky-50 rounded-xl text-[#38BDF8] h-fit">
+                <div className="p-2.5 bg-secondary-50 rounded-xl text-secondary-600 h-fit">
                   <CheckCircle size={16} />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-900">Multi-Role Support Panels</h4>
-                  <p className="text-xs text-slate-500 mt-0.5 font-semibold">Custom layout setups configured specifically for shelter logs, vet charts, and retail.</p>
+                  <p className="text-sm text-slate-500 mt-0.5 font-medium">Custom layout setups configured specifically for shelter logs, vet charts, and retail.</p>
                 </div>
               </div>
             </div>
@@ -710,10 +826,10 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center max-w-2xl mx-auto mb-16 space-y-3"
           >
-            <h2 className="font-display font-black text-3xl sm:text-4xl text-slate-900 leading-tight">
+            <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-primary-700 leading-tight">
               Trusted by 10,000+ Happy Families
             </h2>
-            <p className="text-slate-500 text-xs sm:text-sm font-semibold">
+            <p className="text-slate-500 text-sm font-medium">
               Read how pet owners and veterinarians enhance medical operations with PetZoe.
             </p>
           </motion.div>
@@ -727,16 +843,16 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-white rounded-[24px] p-8 border border-slate-100 shadow-sm flex flex-col justify-between text-left"
+                className="bg-white rounded-3xl p-8 border border-slate-200/70 shadow-sm flex flex-col justify-between text-left"
               >
                 <div className="space-y-4">
                   {/* Rating Stars */}
-                  <div className="flex text-amber-500">
+                  <div className="flex text-accent-500">
                     {[...Array(test.rating)].map((_, sIdx) => (
                       <Star key={sIdx} size={14} className="fill-current" />
                     ))}
                   </div>
-                  <p className="text-slate-600 text-xs sm:text-sm italic leading-relaxed font-semibold">
+                  <p className="text-slate-600 text-sm italic leading-relaxed font-medium">
                     "{test.text}"
                   </p>
                 </div>
@@ -766,10 +882,10 @@ export default function LandingPage() {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-16 space-y-3"
         >
-          <h2 className="font-display font-black text-3xl sm:text-4xl text-slate-900 leading-tight">
+          <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-primary-700 leading-tight">
             Frequently Asked Questions
           </h2>
-          <p className="text-slate-500 text-xs sm:text-sm font-semibold">
+          <p className="text-slate-500 text-sm font-medium">
             Got queries? Find answers for the most common platform questions below.
           </p>
         </motion.div>
@@ -780,17 +896,17 @@ export default function LandingPage() {
 
       {/* 10. Contact Section */}
       <section id="contact" className="max-w-4xl mx-auto px-6 pb-12">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white rounded-[32px] border border-slate-100 shadow-xl p-8 sm:p-12"
+          className="bg-white rounded-3xl border border-slate-200/70 shadow-xl p-8 sm:p-12"
         >
           <div className="text-center space-y-3 mb-8">
-            <h2 className="font-display font-black text-2xl sm:text-3xl text-slate-900 leading-tight">
+            <h2 className="font-display font-bold text-2xl sm:text-3xl text-primary-700 leading-tight">
               Need Help With Custom Setup?
             </h2>
-            <p className="text-slate-500 text-xs sm:text-sm font-semibold">
+            <p className="text-slate-500 text-sm font-medium">
               Our clinical integration support desk is available 24/7. Send us a message and we'll resolve it.
             </p>
           </div>
@@ -803,7 +919,7 @@ export default function LandingPage() {
                   type="text"
                   required
                   placeholder="Alex Carter"
-                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/25 text-xs font-semibold"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-secondary-400 focus:ring-1 focus:ring-secondary-400/25 text-sm font-medium"
                 />
               </div>
               <div>
@@ -812,7 +928,7 @@ export default function LandingPage() {
                   type="email"
                   required
                   placeholder="alex@petzoe.com"
-                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/25 text-xs font-semibold"
+                  className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-secondary-400 focus:ring-1 focus:ring-secondary-400/25 text-sm font-medium"
                 />
               </div>
             </div>
@@ -822,12 +938,12 @@ export default function LandingPage() {
                 required
                 rows="4"
                 placeholder="Write your question or request a demo here..."
-                className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#38BDF8] focus:ring-1 focus:ring-[#38BDF8]/25 text-xs font-semibold resize-none"
+                className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-secondary-400 focus:ring-1 focus:ring-secondary-400/25 text-sm font-medium resize-none"
               ></textarea>
             </div>
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl font-bold bg-[#1E3A5F] hover:bg-[#152a46] text-white shadow-lg shadow-blue-900/10 hover:shadow-blue-900/20 transition-all text-xs cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
+              className="w-full py-3.5 rounded-xl font-bold bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-900/10 hover:shadow-primary-900/20 transition-all text-xs cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
             >
               <MessageSquare size={16} /> Send Message
             </button>

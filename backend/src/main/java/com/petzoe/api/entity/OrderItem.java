@@ -1,5 +1,6 @@
 package com.petzoe.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 /**
@@ -23,9 +24,14 @@ public class OrderItem {
     @Column(name = "price_at_purchase", nullable = false)
     private Double priceAtPurchase;
 
-    /** The order this item belongs to. */
+    /**
+     * The order this item belongs to. Excluded from JSON serialization: without this,
+     * Order -> items -> order -> items -> ... recurses infinitely and blows Jackson's
+     * nesting-depth limit, corrupting the response the client receives.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
+    @JsonIgnore
     private Order order;
 
     /** The product that was purchased. */

@@ -37,6 +37,61 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    public List<AppointmentDTO> getAppointmentsByVeterinarian(String email) {
+        User veterinarian = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        
+        if (!"Veterinarian".equals(veterinarian.getRole())) {
+            throw new SecurityException("Unauthorized: User is not a veterinarian.");
+        }
+
+        return appointmentRepository.findByVeterinarian(veterinarian).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public AppointmentDTO updateAppointmentStatus(Long id, String status, String notes, String email) {
+        User veterinarian = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found with ID: " + id));
+
+        if (!appointment.getVeterinarian().getId().equals(veterinarian.getId())) {
+            throw new SecurityException("Unauthorized: You are not the veterinarian for this appointment.");
+        }
+
+        if (status != null && !status.isEmpty()) {
+            appointment.setStatus(status);
+        }
+        
+        if (notes != null) {
+            // Append notes if they exist, or set them
+            if (appointment.getNotes() == null || appointment.getNotes().isEmpty()) {
+                appointment.setNotes(notes);
+            } else {
+                appointment.setNotes(appointment.getNotes() + "\n[Vet Notes]: " + notes);
+            }
+        }
+
+        Appointment updatedAppointment = appointmentRepository.save(appointment);
+
+        // Notify owner if completed
+        if ("COMPLETED".equals(status)) {
+             notificationService.createNotification(appointment.getOwner(),
+                     "Appointment Completed ✅",
+                     "Your appointment for " + appointment.getPet().getName() + " with Dr. " + veterinarian.getName() + " is completed. Check the notes in your dashboard.",
+                     "APPOINTMENT");
+        } else if ("CANCELLED".equals(status)) {
+             notificationService.createNotification(appointment.getOwner(),
+                     "Appointment Cancelled ❌",
+                     "Your appointment for " + appointment.getPet().getName() + " with Dr. " + veterinarian.getName() + " was cancelled by the veterinarian.",
+                     "APPOINTMENT");
+        }
+
+        return convertToDTO(updatedAppointment);
+    }
+
     public AppointmentDTO bookAppointment(AppointmentDTO dto, String email) {
         User owner = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));

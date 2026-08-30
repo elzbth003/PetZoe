@@ -25,4 +25,14 @@ export const appointmentService = {
     const response = await api.get(`/vets/${id}`);
     return response.data;
   },
+
+  getVetAppointments: async () => {
+    const response = await api.get('/appointments/vet');
+    return response.data;
+  },
+
+  updateAppointmentStatus: async (id, data) => {
+    const response = await api.put(`/appointments/${id}/status`, data);
+    return response.data;
+  },
 };

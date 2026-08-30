@@ -33,7 +33,7 @@ export default function DashboardPreview() {
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer ${
                 activeTab === tab.id 
                   ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20' 
-                  : 'bg-slate-800 text-slate-350 hover:bg-slate-750 hover:text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               }`}
             >
               {tab.label.split(' ')[0]} {tab.label.split(' ').slice(1).join(' ')}
@@ -322,11 +322,11 @@ export default function DashboardPreview() {
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2.5 bg-slate-55 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src="https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=120" 
-                          alt="Leo" 
+                        <img
+                          src="https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=120"
+                          alt="Leo"
                           className="w-10 h-10 rounded-lg object-cover"
                         />
                         <div>
@@ -340,11 +340,11 @@ export default function DashboardPreview() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-2.5 bg-slate-55 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=120" 
-                          alt="Daisy" 
+                        <img
+                          src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=120"
+                          alt="Daisy"
                           className="w-10 h-10 rounded-lg object-cover"
                         />
                         <div>
