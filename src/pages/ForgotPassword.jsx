@@ -46,9 +46,14 @@ export default function ForgotPasswordPage() {
 
       {isSent ? (
         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 text-center space-y-4">
-          <div className="flex justify-center text-emerald-500">
-            <CheckCircle size={48} className="animate-bounce" />
-          </div>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: [0.8, 1.1, 1], opacity: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex justify-center text-emerald-500"
+          >
+            <CheckCircle size={48} />
+          </motion.div>
           <div className="space-y-1">
             <h4 className="font-bold text-slate-900 text-sm">Check your email</h4>
             <p className="text-xs text-slate-500 leading-relaxed">
@@ -67,12 +72,13 @@ export default function ForgotPasswordPage() {
           
           {/* Email input */}
           <div>
-            <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Email Address</label>
+            <label htmlFor="email" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Email Address</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
                 <Mail size={16} />
               </span>
               <input
+                id="email"
                 type="email"
                 placeholder="owner@petverse.com"
                 disabled={isSubmitting}

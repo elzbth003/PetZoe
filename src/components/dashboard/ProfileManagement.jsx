@@ -144,6 +144,16 @@ export default function ProfileManagement() {
     );
   }
 
+  const getButtonClass = (sectionId, isActive) => {
+    if (isActive) {
+      if (sectionId === 'danger') return 'bg-rose-600 text-white shadow-sm';
+      return 'bg-white text-slate-800 shadow-sm';
+    } else {
+      if (sectionId === 'danger') return 'text-rose-500 hover:bg-rose-50';
+      return 'text-slate-500 hover:text-slate-700';
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-200">
 
@@ -180,11 +190,7 @@ export default function ProfileManagement() {
           <button
             key={s.id}
             onClick={() => setActiveSection(s.id)}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeSection === s.id
-                ? s.id === 'danger' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm'
-                : s.id === 'danger' ? 'text-rose-500 hover:bg-rose-50' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${getButtonClass(s.id, activeSection === s.id)}`}
           >
             {s.label}
           </button>

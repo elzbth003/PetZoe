@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Heart, Calendar, FileText, ShoppingBag,
   Bell, User, LogOut, Sparkles, ShieldAlert, CalendarDays,
-  Plus, ArrowRight, Activity, Clock, PawPrint, Menu, X
+  Plus, ArrowRight, Activity, Clock, PawPrint, Menu, X, KeyRound
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import PetList from '../../components/dashboard/PetList';
@@ -376,7 +376,7 @@ export default function OwnerDashboard() {
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer active:scale-[0.98] ${
                     isActive
-                      ? 'bg-[#1E3A5F] text-white border-l-4 border-[#38BDF8]'
+                      ? 'bg-[#1E3A5F] text-white border-l-2 border-[#38BDF8]'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:translate-x-0.5'
                   }`}
                 >
@@ -396,7 +396,8 @@ export default function OwnerDashboard() {
         {/* Logout Footer */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-950/30 text-slate-400 hover:text-rose-400 font-bold text-xs transition-all cursor-pointer text-left w-full"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 font-bold text-xs transition-all cursor-pointer text-left w-full
+            hover:bg-rose-950/20 hover:text-rose-300`}
         >
           <LogOut size={16} />
           <span>Sign Out</span>
@@ -447,8 +448,8 @@ export default function OwnerDashboard() {
                 </span>
               </button>
             )}
-            <span className="hidden sm:inline text-slate-500 text-xs font-semibold bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
-              🔑 {user?.role}
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-slate-500 text-xs font-semibold bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
+              <KeyRound size={12} /> {user?.role}
             </span>
           </div>
         </header>

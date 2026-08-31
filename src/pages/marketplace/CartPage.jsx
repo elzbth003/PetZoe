@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, Lock } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
@@ -87,7 +87,7 @@ export default function CartPage() {
   if (loading) {
     return (
       <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-primary-600"></div>
       </div>
     );
   }
@@ -146,7 +146,7 @@ export default function CartPage() {
                 <div key={item.id} className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center gap-6">
                   {/* Image */}
                   <Link to={`/marketplace/products/${item.product.id}`} className="w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-slate-50 flex-shrink-0 border border-slate-100">
-                    <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                    <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                   </Link>
                   
                   {/* Details */}
@@ -185,7 +185,8 @@ export default function CartPage() {
                     
                     <button 
                       onClick={() => removeItem(item.id)}
-                      className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
+                      className={`p-3 text-slate-400 rounded-xl transition-colors
+                        hover:text-rose-500 hover:bg-rose-50`}
                       title="Remove Item"
                     >
                       <Trash2 size={20} />
@@ -232,14 +233,14 @@ export default function CartPage() {
                 className="w-full bg-primary-600 text-white font-bold py-4 rounded-2xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {processing ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"></div>
                 ) : (
                   <>Proceed to Checkout <ArrowRight size={20} /></>
                 )}
               </button>
               
-              <div className="mt-6 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-2">
-                🔒 Secure Checkout Placeholder
+              <div className="mt-6 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-1.5">
+                <Lock size={12} /> Secure Checkout Placeholder
               </div>
             </div>
           </div>

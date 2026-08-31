@@ -91,7 +91,7 @@ function CartTab() {
     setChecking(true);
     try {
       await marketplaceService.placeOrder();
-      showToast('🎉 Order placed successfully!', 'success');
+      showToast('Order placed successfully!', 'success');
       window.dispatchEvent(new Event('cart-updated'));
       setItems([]);
     } catch (err) {
@@ -173,7 +173,8 @@ function CartTab() {
               </span>
               <button
                 onClick={() => remove(item.id)}
-                className="h-8 w-8 rounded-xl hover:bg-rose-50 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                className={`h-8 w-8 rounded-xl text-slate-400 flex items-center justify-center transition-all cursor-pointer shrink-0
+                  hover:bg-rose-50 hover:text-rose-500`}
               >
                 <Trash2 size={14} />
               </button>
@@ -289,7 +290,8 @@ function WishlistTab() {
             {/* Remove */}
             <button
               onClick={() => remove(item.id)}
-              className="absolute top-3 right-3 z-10 h-7 w-7 bg-white/90 backdrop-blur-sm rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shadow-sm transition-all cursor-pointer"
+              className={`absolute top-3 right-3 z-10 h-7 w-7 bg-white/90 backdrop-blur-sm rounded-full text-slate-400 flex items-center justify-center shadow-sm transition-all cursor-pointer
+                hover:bg-rose-50 hover:text-rose-500`}
             >
               <Trash2 size={13} />
             </button>

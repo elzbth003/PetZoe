@@ -138,7 +138,7 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-primary-600"></div>
       </div>
     );
   }
@@ -273,7 +273,7 @@ export default function ProductDetailPage() {
                     disabled={isAddingToCart || product.stockQuantity === 0}
                     className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isAddingToCart ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div> : <ShoppingCart size={20} />}
+                    {isAddingToCart ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"></div> : <ShoppingCart size={20} />}
                     Add to Cart
                   </button>
                 </div>

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { 
-  Plus, Search, Filter, Edit2, Trash2, X, AlertTriangle, 
-  ShieldCheck, ShieldAlert, Shield, Loader2, Sparkles
+import {
+  Plus, Search, Filter, Edit2, Trash2, X, AlertTriangle,
+  ShieldCheck, ShieldAlert, Shield, Loader2, Sparkles, Palette
 } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -329,7 +329,11 @@ export default function PetList({ onPetsUpdated }) {
                     </span>
                   </h3>
                   <p className="text-[11px] text-slate-500 font-semibold">{pet.species} • {pet.breed}</p>
-                  {pet.color && <p className="text-[10px] text-slate-400 font-semibold">🎨 {pet.color}</p>}
+                  {pet.color && (
+                    <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                      <Palette size={11} /> {pet.color}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-3 text-xs text-slate-500 font-semibold">
@@ -347,7 +351,7 @@ export default function PetList({ onPetsUpdated }) {
                   <div className="border-t border-slate-50 pt-3 space-y-1.5">
                     {pet.allergies && (
                       <p className="text-[10px] text-rose-600 font-semibold flex gap-1">
-                        <span className="shrink-0">⚠️</span>
+                        <AlertTriangle size={12} className="shrink-0 mt-0.5" />
                         <span><strong>Allergies:</strong> {pet.allergies}</span>
                       </p>
                     )}

@@ -65,6 +65,7 @@ function ToastCard({ toast, onClose }) {
       <p className="text-xs font-semibold flex-grow leading-relaxed">{message}</p>
       <button
         onClick={onClose}
+        aria-label="Dismiss notification"
         className="text-slate-400 hover:text-slate-600 cursor-pointer flex-shrink-0 transition-colors"
       >
         <X size={14} />

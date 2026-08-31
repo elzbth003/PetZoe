@@ -1,0 +1,674 @@
+================================================================================
+ PETZOE — PROJECT OVERVIEW
+ Pet Healthcare, Adoption & Marketplace Platform
+================================================================================
+
+TECH STACK
+--------------------------------------------------------------------------------
+Frontend : React 19 + Vite + Tailwind CSS v4, React Router v7, React Hook Form,
+           Zod, Framer Motion, Recharts, Axios, @react-oauth/google
+Backend  : Spring Boot (Java), Spring Security + JWT, Spring Data JPA
+Database : PostgreSQL
+Auth     : Email/password (BCrypt + JWT) and Google Sign-In (ID token verified
+           server-side)
+
+USER ROLES
+--------------------------------------------------------------------------------
+The whole platform is built around five roles, stored as a free-text "role"
+field on the User table and enforced both by JWT-derived Spring Security
+authorities and by per-route guards on the frontend:
+
+  1. Pet Owner          - the default role for anyone who registers normally
+                           or signs in with Google for the first time
+  2. Veterinarian        - must be verified by an Admin before doing vet work
+  3. Shelter Manager     - runs one Shelter; must be verified before intake
+  4. Marketplace Seller  - must be verified before products can be approved
+  5. Admin               - reviews and approves/rejects everyone else
+
+================================================================================
+ 1. FRONTEND STRUCTURE & WORKFLOW
+================================================================================
+
+1.1  Routing (src/routes/index.jsx)
+--------------------------------------------------------------------------------
+- MainLayout (public site shell + Navbar/Footer)
+    /                                Landing page
+    /marketplace                     Marketplace home (public browsing)
+    /marketplace/products            Product listing / filters (public)
+    /marketplace/products/:id        Product detail (public)
+    /adopt                           Adoption listings (public)
+    /adopt/:id                       Adoption detail (public)
+    /adopt/:id/apply                 Adoption application  (Pet Owner only)
+    /marketplace/cart                Cart                  (Pet Owner only)
+    /marketplace/wishlist            Wishlist               (Pet Owner only)
+    /marketplace/orders              Order history          (Pet Owner only)
+
+- AuthLayout (split brand panel + white card)
+    /login                           LoginPage
+    /register                        RegisterPage
+    /forgot-password                 ForgotPasswordPage
+
+- Standalone
+    /admin-login                     AdminLogin (separate, full-page — not
+                                      inside AuthLayout, admin-only gate)
+
+- /dashboard  (any authenticated role; each branch is additionally
+   role-gated so one role can never reach another role's URL)
+    /dashboard/owner                 OwnerDashboard      (Pet Owner)
+    /dashboard/vet                   VetDashboard        (Veterinarian)
+    /dashboard/shelter               ShelterDashboard    (Shelter Manager)
+    /dashboard/seller                SellerDashboard     (Marketplace Seller)
+    /dashboard/admin/*               AdminLayout + pages (Admin)
+        (index)                      AdminDashboardHome
+        users                        UserManagement
+        veterinarians                VeterinarianManagement (list)
+        veterinarians/:id            VeterinarianReview      (detail)
+        shelters                     ShelterVerificationReview
+        sellers                      VerificationQueue (entityType=Seller)
+        products                     ProductModeration
+        adoptions                    AdoptionListingReview
+        settings                     AdminSettings
+
+1.2  Public-facing flow
+--------------------------------------------------------------------------------
+  Landing Page      -> hero, feature highlights, interactive pet-care planner,
+                        role-based dashboard preview, services, testimonials,
+                        FAQ, contact form
+  Marketplace       -> browse by category -> product listing/filter ->
+                        product detail -> add to cart / wishlist -> checkout
+                        (Pet Owner login required at cart/checkout)
+  Adoption          -> browse adoptable animals -> animal detail -> "Apply to
+                        Adopt" form (Pet Owner login required)
+  Auth              -> Register (role chosen at signup) / Login / Google
+                        Sign-In / Forgot Password / separate Admin Sign-In
+
+1.3  Pet Owner Dashboard (OwnerDashboard.jsx)
+--------------------------------------------------------------------------------
+  Dashboard        Overview widgets: pet count, upcoming appointments,
+                   vaccination alerts, notifications feed, account summary
+  My Pets          Add/edit/remove pets (PetList)
+  Appointments     Book/cancel vet appointments (AppointmentList)
+  My Shop          Cart + wishlist management, order shortcuts (ShopDashboard)
+  Adoptions        Adopter profile + track own adoption applications
+                   (AdopterProfilePanel)
+  Medical Records  Placeholder — planned for a later milestone
+  Notifications    NotificationCenter (mark read / delete)
+  Profile          ProfileManagement (edit profile, change password, delete
+                   account)
+
+1.4  Veterinarian Dashboard (VetDashboard.jsx)
+--------------------------------------------------------------------------------
+  Overview          Stat cards (today's visits, active patients, pending
+                    diagnostics)
+  Shelter Animals   VetAnimalCarePanel — the real clinical workflow: add
+                    medical records, vaccinations, preventive care records,
+                    upload/verify medical documents, move an animal between
+                    medical-care statuses
+  Appointments      VetAppointmentsPanel — view/manage booked appointments,
+                    mark completed/cancelled
+  Patients          VetPatientsPanel — patient list drawn from appointments
+
+1.5  Shelter Manager Dashboard (ShelterDashboard.jsx)
+--------------------------------------------------------------------------------
+  Dashboard         Verification-status card, capacity, call-to-action based
+                    on current approval state
+  Shelter Profile   Full editable shelter form (name, org type, description,
+                    registration number, address, capacity, vet-care
+                    arrangements, image, documents) + "Submit for
+                    Verification" (editable only while NOT_SUBMITTED /
+                    REJECTED / CHANGES_REQUIRED / RESUBMISSION_REQUIRED)
+  Animals           ShelterAnimalsPanel — intake new animals, record initial
+                    assessment, draft & submit adoption listings (only once
+                    the shelter itself is APPROVED)
+  Adoptions         ShelterApplicationsPanel — view incoming adoption
+                    applications for the shelter's animals (currently
+                    read-only; decisioning is a planned phase)
+
+1.6  Marketplace Seller Dashboard (SellerDashboard.jsx)
+--------------------------------------------------------------------------------
+  Dashboard         Stat cards: total products, orders today, revenue
+  My Products       Inventory table with status badges (Draft / Pending
+                    Review / Approved / Rejected), add via AddProductWizard,
+                    edit/delete
+  Orders            Placeholder ("Coming Soon")
+  Settings          Seller verification flow — status badge, rejection
+                    reason (if any), document upload + "Submit for
+                    Verification"
+
+1.7  Admin Console (AdminLayout.jsx + pages under dashboard/admin)
+--------------------------------------------------------------------------------
+  Sidebar           Live pending-review badge counts (Veterinarians,
+                    Shelters, Sellers, Products), notification bell
+  Dashboard         Key metrics (users, pet owners, verified vets, active
+                    adoptions), recent activity feed (from the audit log),
+                    analytics charts (registrations trend, role distribution,
+                    verification-status distribution)
+  User Management   List all users, enable/disable accounts
+  Veterinarians     List -> detail review: profile, verification history
+                    timeline, per-document approve/reject, mark under
+                    review / approve / reject / request resubmission
+  Shelter Verif.    Review shelter applications: approve / reject / request
+                    changes / suspend
+  Adoption Review   Review shelter-submitted adoption listings: approve /
+                    reject / request changes
+  Seller Verif.     Generic verification queue reused for sellers
+  Product Moderation Approve/reject products pending review (reason required
+                    on rejection)
+  Settings          Admin account settings
+
+================================================================================
+ 2. BACKEND MODULE WORKFLOWS
+================================================================================
+
+2.1  Auth  (AuthController "/api/auth" -> AuthService)
+--------------------------------------------------------------------------------
+  POST /register          Creates a User (password BCrypt-hashed). If role is
+                           "Marketplace Seller", a PENDING VerificationRequest
+                           is opened immediately and admins are notified;
+                           otherwise the user gets a welcome notification.
+  POST /login              Spring AuthenticationManager verifies credentials,
+                           JwtService issues a JWT.
+  POST /google             Verifies the Google ID token (GoogleIdTokenVerifier;
+                           audience check is skipped only if no client ID is
+                           configured — dev mode). Links to an existing user
+                           by googleId or email, or auto-registers a new
+                           "Pet Owner".
+  POST /forgot-password    Confirms the email exists; the reset email itself
+                           is currently simulated, not actually sent.
+
+2.2  User & Admin management
+--------------------------------------------------------------------------------
+  UserController        GET/PUT /api/users/me, password change, delete own
+                         account.
+  AdminUserController   GET /api/admin/users (list all), PUT
+                         /api/admin/users/{id}/status?enabled= (enable/
+                         disable any account).
+  AdminController       GET /api/admin/dashboard/stats (pending counts),
+                         /activity (last 50 audit-log rows), /analytics
+                         (30-day registration trend, role distribution,
+                         verification-status distribution).
+
+2.3  Marketplace — Products  (product lifecycle / state machine)
+--------------------------------------------------------------------------------
+  ProductController        Public browsing only — list/detail/search/by-
+                            category/featured/new-arrivals; only ever returns
+                            APPROVED products.
+  VendorProductController  Seller-owned CRUD on their own products.
+  AdminProductController   Admin approve/reject queue.
+
+  Status flow:  DRAFT -> (seller submits, requires seller's own account
+                already APPROVED) -> PENDING_REVIEW
+                PENDING_REVIEW -> admin approve -> APPROVED (seller notified)
+                PENDING_REVIEW -> admin reject (reason required) -> REJECTED
+                                  (seller notified, can edit & resubmit)
+                Editing a live APPROVED/OUT_OF_STOCK product resets it back
+                to DRAFT (must be re-reviewed).
+                Deleting is blocked once a product is APPROVED.
+                Stock hits 0        -> auto flips to OUT_OF_STOCK
+                Restocked from 0    -> auto flips back to APPROVED
+
+2.4  Marketplace — Cart / Wishlist / Orders / Reviews / Categories
+--------------------------------------------------------------------------------
+  CartController        Get/add/update-quantity/remove/clear (Pet Owner).
+  WishlistController     Get/add/remove/move-to-cart (Pet Owner).
+  OrderController/       placeOrder: reads the cart, row-locks each Product
+   OrderService          (findByIdForUpdate) to prevent overselling under
+                         concurrent checkout, validates stock, snapshots the
+                         price paid into OrderItem.priceAtPurchase, decrements
+                         stock, creates the Order ("Pending"), clears the
+                         cart. Admin can list all orders / update status.
+  ReviewController       Public GET reviews per product; Pet Owner can post
+                         exactly one review per product (DB-enforced unique
+                         constraint).
+  CategoryController     Public GET; CRUD endpoints exist for admin use.
+
+2.5  Adoption — Public browsing & applications
+--------------------------------------------------------------------------------
+  PublicAdoptionController   Unauthenticated search/browse of adoptable
+                              animals and animal detail.
+  AdoptionApplicationController / AdoptionApplicationService
+    saveDraft   Editable only while DRAFT or ADDITIONAL_INFORMATION_REQUIRED;
+                requires an existing AdopterProfile.
+    submit      Animal must be READY_FOR_ADOPTION and its shelter APPROVED;
+                adopter profile must be complete (address, housing type,
+                living arrangement, can-provide-food/housing, reason for
+                adoption). DRAFT/ADDITIONAL_INFORMATION_REQUIRED -> SUBMITTED,
+                shelter manager notified.
+    withdraw    Allowed from DRAFT, SUBMITTED, UNDER_REVIEW,
+                ADDITIONAL_INFORMATION_REQUIRED, HOUSE_CHECK_PENDING,
+                HOUSE_CHECK_COMPLETED, SHELTER_REVIEW -> WITHDRAWN.
+  ShelterApplicationController  Currently read-only on the shelter side —
+                              shelters can view applications for their
+                              animals; the approve/reject/house-check
+                              decision workflow is a planned later phase.
+  AdopterProfileController     Get/update the reusable one-per-user adopter
+                              profile.
+
+2.6  Adoption — Shelter-side listing & animal management
+--------------------------------------------------------------------------------
+  ShelterController      Get/update own Shelter profile, add/remove
+                         documents, submitForVerification (validates all
+                         required fields + at least one document) -> Shelter
+                         & manager User both go to PENDING, admins notified.
+  AnimalController /     createIntake (only if shelter is APPROVED) creates
+   AnimalService         an Animal (IN_SHELTER_CARE) + AnimalIntake row, and
+                         auto-generates an animalCode like "PZA-000123".
+                         recordInitialAssessment fills the shelter-observed
+                         health fields. uploadDocument attaches a
+                         MedicalDocument. updateAnimalStatus is restricted to
+                         shelter-settable statuses only (IN_SHELTER_CARE,
+                         UNDER_MEDICAL_CARE, MEDICAL_REVIEW,
+                         AWAITING_DOCUMENTS, ON_HOLD, WITHDRAWN) — a shelter
+                         can never directly mark an animal adopted.
+  AdoptionListingService  Shelter drafts listing content (personality,
+                         description, adoption fee, size, special-care
+                         notes) while the animal is in an editable status.
+                         submitForAdoptionReview requires: initial assessment
+                         done, at least one vet MedicalRecord exists,
+                         personality + description filled, and the animal
+                         is NOT currently UNDER_MEDICAL_CARE/MEDICAL_REVIEW.
+                         -> Animal: ADOPTION_REVIEW, Listing: PENDING, all
+                         admins notified.
+  AdminAdoptionListingService  approve (listing PENDING/UNDER_REVIEW ->
+                         APPROVED, animal -> READY_FOR_ADOPTION, now publicly
+                         visible), reject (-> REJECTED, animal -> ON_HOLD,
+                         reason required), requestChanges (-> CHANGES_
+                         REQUIRED, animal -> AWAITING_DOCUMENTS, reason
+                         required).
+  AdminShelterService     approve / reject / requestChanges / suspend — each
+                         syncs both the Shelter's and the manager User's
+                         verificationStatus together, updates the linked
+                         VerificationRequest, and notifies the manager.
+
+2.7  Veterinary — verification & clinical care
+--------------------------------------------------------------------------------
+  VerificationController   Generic self-submission endpoint used by roles
+                            like sellers (creates/updates a
+                            VerificationRequest, sets User.verificationStatus
+                            = PENDING).
+  AdminVeterinarianService  A richer, vet-specific verification pipeline
+   (separate from the generic one):
+      markUnderReview     PENDING/RESUBMISSION_REQUIRED -> UNDER_REVIEW
+      approveVeterinarian Only from UNDER_REVIEW, AND only if every uploaded
+                          VerificationDocument is individually APPROVED
+                          (rule-engine gate; at least one document required)
+      rejectVeterinarian /
+      requestResubmission Reason required for both
+      reviewDocument      Approve/reject an individual document with reason
+      Every transition writes a VerificationHistory row + an AuditLog row
+      and notifies the vet. User.verificationStatus is the single source of
+      truth for the vet's overall status.
+  VetAnimalController /     Vet's worklist of shelter animals: add
+   MedicalRecordService     MedicalRecord / Vaccination / PreventiveCareRecord
+                            entries, upload/verify MedicalDocuments, move an
+                            animal between medical-care statuses.
+  AppointmentController /   Pet Owner books an appointment for their own pet
+   AppointmentService       with a Veterinarian user (status "UPCOMING"), can
+                            cancel their own appointments; the vet views
+                            their appointments and marks them
+                            COMPLETED/CANCELLED (owner is notified either way).
+  VetController /           Public vet directory search; Pet Owner CRUD on
+   PetController            their own pet profiles.
+
+2.8  Notifications
+--------------------------------------------------------------------------------
+  NotificationController / NotificationService — list, mark-as-read, delete,
+  unread-count. Used everywhere across the backend (registration,
+  verification transitions, product approval/rejection, order events,
+  appointment completion/cancellation, every step of the adoption workflow)
+  via a single notificationService.createNotification(user, title, message,
+  type, [reason], [referenceId]) call.
+
+2.9  Admin dashboard stats / analytics / audit
+--------------------------------------------------------------------------------
+  AdminController -> AdminService / AdminAnalyticsService:
+    dashboard/stats     pendingVets, pendingShelters, pendingSellers,
+                        pendingProducts, totalUsers, totalPetOwners,
+                        verifiedVets, activeAdoptionPets (drives the admin
+                        sidebar badges and dashboard metric cards)
+    dashboard/activity  last 50 AuditLog rows (admin actions only)
+    dashboard/analytics 30-day daily user-registration counts, role
+                        distribution, verification-status distribution
+                        (all computed via grouped SQL queries)
+
+================================================================================
+ 3. DATABASE SCHEMA
+================================================================================
+(PostgreSQL, via Spring Data JPA. FK = @ManyToOne/@OneToOne foreign key.
+ "1:1 shared PK" = @OneToOne with @MapsId, i.e. the child's primary key IS
+ the parent's foreign key.)
+
+--------------------------------------------------------------------------------
+3.1  USER & AUTH
+--------------------------------------------------------------------------------
+users                              (User)
+  id                PK
+  name              not null
+  email             not null, unique
+  password          nullable (Google-only accounts have none)
+  phone
+  role              not null       "Pet Owner" | "Veterinarian" |
+                                    "Shelter Manager" | "Marketplace Seller" |
+                                    "Admin"
+  googleId          unique
+  profileImage      (1024 chars)
+  bio               (500 chars)
+  address
+  specialization                   (vet-specific)
+  verificationStatus enum VerificationStatus, default NOT_SUBMITTED
+  createdAt
+  enabled           boolean, default true
+
+audit_logs                         (AuditLog)  — admin-only action log
+  id                PK
+  adminUser         FK -> users, not null
+  action
+  targetEntity
+  targetId
+  details           (2000 chars)
+  timestamp
+
+verification_requests              (VerificationRequest) — generic
+                                    verification record (e.g. sellers)
+  id                PK
+  user              FK -> users
+  entityType                        role string
+  status            enum VerificationStatus, default PENDING
+  reviewerNotes
+  documentBase64
+  additionalDocumentsBase64
+  submittedAt
+  reviewedAt
+  reviewedBy        FK -> users
+
+Enum VerificationStatus:
+  NOT_SUBMITTED, PENDING, UNDER_REVIEW, APPROVED, REJECTED,
+  CHANGES_REQUIRED, RESUBMISSION_REQUIRED, SUSPENDED
+
+--------------------------------------------------------------------------------
+3.2  MARKETPLACE
+--------------------------------------------------------------------------------
+categories                         (Category)
+  id                PK
+  name              unique, not null
+  description       (500 chars)
+  imageUrl          (512 chars)
+
+products                           (Product)
+  id                PK
+  name, brand, price, sku (unique, not null), stockQuantity (not null)
+  shortDescription (500) / description (2000)
+  mrp, discountPrice
+  lowStockThreshold  default 5
+  imageUrl          (512, legacy)
+  averageRating / reviewCount   default 0
+  status            enum ProductStatus, default DRAFT
+  rejectionReason
+  featured          default false
+  createdAt / updatedAt
+  category          FK -> categories, not null
+  subcategory, petType, lifeStage
+  seller            FK -> users, not null
+  weight, packageLength/Width/Height, returnEligible, replacementEligible
+  Relationships:
+    images    1:N -> product_images   (cascade ALL, orphanRemoval)
+    variants  1:N -> product_variants (cascade ALL, orphanRemoval)
+    healthDetails / foodDetails / toyDetails / groomingDetails /
+      accessoryDetails   1:1 shared-PK extension tables (cascade ALL)
+
+product_images                     (ProductImage)
+  id PK; product FK -> products (not null); imageUrl (512, not null);
+  isPrimary (default false); sortOrder (default 0)
+
+product_variants                   (ProductVariant)
+  id PK; product FK -> products (not null); sku (unique, not null);
+  size, color, flavor; price (not null); stockQuantity (not null); imageUrl
+
+health_product_details / food_product_details / toy_product_details /
+grooming_product_details / accessory_product_details
+  1:1 with products, sharing the products' PK as their own PK (product_id).
+  Health:    dosage, activeIngredients, prescriptionRequired, expiry/
+             manufacturing dates, batch number
+  Food:      foodType, nutritionalInformation, guaranteedAnalysis, expiry
+             dates
+  Toy:       toyType, interactive, chewResistant, washable
+  Grooming:  productType, coatType, usageInstructions
+  Accessory: accessoryType + type-specific fields (neckSizeRange,
+             fillingMaterial, chestMeasurement, etc.)
+
+cart_items                         (CartItem)  unique(user_id, product_id)
+  id PK; quantity (not null); user FK -> users (not null);
+  product FK -> products (not null)
+
+wishlist_items                     (WishlistItem)  unique(user_id, product_id)
+  id PK; user FK -> users (not null); product FK -> products (not null)
+
+orders                             (Order)
+  id PK; totalAmount (not null);
+  status   free string, default "Pending"
+           (Pending / Processing / Shipped / Delivered / Cancelled)
+  createdAt; user FK -> users (not null)
+  items   1:N -> order_items (cascade ALL, orphanRemoval)
+
+order_items                        (OrderItem)
+  id PK; quantity (not null); priceAtPurchase (not null, price snapshot);
+  order FK -> orders (not null); product FK -> products (not null)
+
+reviews                            (Review)  unique(user_id, product_id)
+  id PK; rating 1-5 (not null); comment (1000); createdAt;
+  user FK -> users (not null); product FK -> products (not null)
+
+Enum ProductStatus:
+  DRAFT, PENDING_REVIEW, APPROVED, REJECTED, OUT_OF_STOCK, DISCONTINUED
+
+--------------------------------------------------------------------------------
+3.3  ADOPTION
+--------------------------------------------------------------------------------
+shelters                           (Shelter)
+  id PK; manager FK -> users (1:1, unique, not null)
+  shelterName (not null); description (2000)
+  organizationType   enum ShelterOrganizationType
+  registrationNumber; addressLine/city/state/pincode; capacity
+  veterinaryCareArrangements (TEXT); primaryImageBase64 (TEXT)
+  verificationStatus enum VerificationStatus, default NOT_SUBMITTED
+  documents   1:N -> shelter_documents (cascade ALL, orphanRemoval)
+  createdAt / updatedAt / submittedAt
+
+shelter_documents                  (ShelterDocument)
+  id PK; shelter FK -> shelters (not null); documentType (not null);
+  documentBase64 (TEXT, not null); uploadedAt
+
+animals                            (Animal)  — permanent shelter-animal record
+  id PK; animalCode  unique, format "PZA-000001"
+  shelter FK -> shelters (not null)
+  name, species (not null), breed
+  sex   enum AnimalSex, default UNKNOWN
+  estimatedAgeMonths, color, distinguishingMarks (TEXT), weightKg
+  primaryPhotoBase64 (TEXT); microchipNumber
+  status  enum AnimalStatus, default IN_SHELTER_CARE
+  sterilizationStatus enum SterilizationStatus, default UNKNOWN
+  Initial-assessment fields (shelter-observed): generalCondition,
+    visibleInjuries, behaviourObservations, immediateMedicalConcerns,
+    knownAllergies, knownMedicalHistory, parasiteConcerns,
+    vaccinationInfoAtIntake, initialAssessmentRecordedAt/By
+  createdAt / updatedAt
+
+animal_intakes                     (AnimalIntake)
+  id PK; animal FK -> animals (not null); intakeDate (not null)
+  intakeType  enum IntakeType (not null)
+  sourceInfo / previousOwnershipInfo (TEXT)
+  recordedBy FK -> users (not null); createdAt
+
+adoption_listings                  (AdoptionListing)
+  id PK; animal FK -> animals (1:1, unique, not null)
+  size  enum AnimalSize, default UNKNOWN
+  personality (TEXT), specialCareRequirements (TEXT), adoptionFee,
+  listingDescription (TEXT)
+  status  enum VerificationStatus, default NOT_SUBMITTED (reused enum —
+          drives the admin-review gate)
+  submittedAt / reviewedAt / reviewedBy / reviewerNotes (1000)
+  createdAt / updatedAt
+
+adopter_profiles                   (AdopterProfile)
+  id PK; user FK -> users (1:1, unique, not null)
+  address (TEXT)
+  housingType  enum HousingType
+  livingArrangement  enum LivingArrangement
+  existingPets, previousPetExperience, householdMembers,
+    petCareExperience, veterinaryCarePlan (all TEXT)
+  canProvideFoodAndHousing  boolean
+  governmentIdBase64 / addressProofBase64 (TEXT)
+  createdAt / updatedAt
+
+adoption_applications               (AdoptionApplication)
+  id PK; animal FK -> animals (not null)
+  adopter FK -> users (not null); adopterProfile FK -> adopter_profiles
+    (not null)
+  reasonForAdoption / petCarePlan / veterinaryCarePlanNotes (TEXT)
+  status  enum AdoptionApplicationStatus, default DRAFT
+  shelterNotes (1000); submittedAt / decidedAt; createdAt / updatedAt
+
+adoption_audit_logs                (AdoptionAuditLog) — separate from the
+                                    platform audit_logs table because
+                                    shelter managers and vets act here too,
+                                    not only admins
+  id PK; actor FK -> users (not null); action; entityType; entityId;
+  previousStatus / newStatus; notes (1000); createdAt
+
+Enums:
+  AnimalStatus:  IN_SHELTER_CARE, UNDER_MEDICAL_CARE, MEDICAL_REVIEW,
+                 AWAITING_DOCUMENTS, ADOPTION_REVIEW, READY_FOR_ADOPTION,
+                 ON_HOLD, ADOPTION_PENDING, ADOPTED, WITHDRAWN
+  AnimalSex:     MALE, FEMALE, UNKNOWN
+  AnimalSize:    SMALL, MEDIUM, LARGE, EXTRA_LARGE, UNKNOWN
+  SterilizationStatus: NOT_STERILIZED, STERILIZED, SCHEDULED, UNKNOWN
+  IntakeType:    RESCUE, STRAY, OWNER_SURRENDER, TRANSFER, ABANDONED, OTHER
+  ShelterOrganizationType: NGO, TRUST, GOVERNMENT, INDIVIDUAL, COMPANY, OTHER
+  HousingType:   OWNED_HOUSE, RENTED_HOUSE, APARTMENT, FARM, OTHER
+  LivingArrangement: ALONE, WITH_FAMILY, WITH_ROOMMATES, OTHER
+  AdoptionApplicationStatus: DRAFT, SUBMITTED, UNDER_REVIEW,
+                 ADDITIONAL_INFORMATION_REQUIRED, HOUSE_CHECK_PENDING,
+                 HOUSE_CHECK_COMPLETED, SHELTER_REVIEW, APPROVED, REJECTED,
+                 WITHDRAWN, COMPLETED
+
+--------------------------------------------------------------------------------
+3.4  VETERINARY / MEDICAL
+--------------------------------------------------------------------------------
+veterinarian_profiles              (VeterinarianProfile)
+  id PK; user FK -> users (1:1, not null)
+  qualification (255); registrationNumber (100); experience (Integer)
+  submittedAt / verifiedAt; verifiedBy FK -> users
+
+verification_documents             (VerificationDocument) — vet-specific
+  id PK; veterinarianProfile FK -> veterinarian_profiles (not null)
+  documentType; documentBase64
+  status  enum VerificationStatus, default PENDING
+  rejectionReason; uploadedAt / verifiedAt; verifiedBy FK -> users
+
+verification_history               (VerificationHistory) — append-only
+                                    audit trail per vet profile
+  id PK; veterinarianProfile FK -> veterinarian_profiles
+  action; previousStatus / newStatus  enum VerificationStatus
+  reason; admin FK -> users (nullable); createdAt
+
+appointments                       (Appointment)
+  id PK; pet FK -> pets (not null); owner FK -> users (not null)
+  veterinarian FK -> users (not null)
+  appointmentDate (not null); appointmentTime (not null, free string e.g.
+    "09:00 AM")
+  status  free string, not null (UPCOMING / CANCELLED / COMPLETED)
+  notes (1024)
+
+medical_records                    (MedicalRecord) — one exam event
+  id PK; animal FK -> animals (not null); veterinarian FK -> users (not null)
+  examinationDate (not null); weightKg; healthStatus (not null)
+  diagnosis / treatment / medication / labInvestigations / dewormingInfo /
+    parasiteControlInfo / veterinaryNotes (all TEXT)
+  sterilizationStatus  enum SterilizationStatus
+  followUpRequired (boolean); followUpDate; followUpNotes (TEXT); createdAt
+
+vaccinations                       (Vaccination)
+  id PK; animal FK -> animals (not null); veterinarian FK -> users (not null)
+  vaccineName (not null); dateAdministered (not null); nextDueDate
+  batchLotNumber; notes (TEXT); createdAt
+
+preventive_care_records            (PreventiveCareRecord)
+  id PK; animal FK -> animals (not null); veterinarian FK -> users (not null)
+  careType  enum PreventiveCareType (not null)
+  dateAdministered (not null); nextDueDate; product; notes (TEXT); createdAt
+
+medical_documents                  (MedicalDocument) — never publicly exposed
+  id PK; animal FK -> animals (not null)
+  documentType  enum MedicalDocumentType (not null)
+  documentBase64 (TEXT, not null); uploadedBy FK -> users (not null);
+    uploadedAt
+  verificationStatus  enum DocumentVerificationStatus, default PENDING
+  verifiedBy / verifiedAt; notes (TEXT)
+
+pets                                (Pet) — owner-managed pet profile
+  id PK; name, species, breed, age, gender, weight (all not null)
+  vaccinationStatus (not null, free string: "Up-to-date" / "Needs
+    Vaccination" / "Overdue")
+  photoUrl; dateOfBirth; color; allergies (1024); medicalNotes (2048)
+  owner  FK -> users (not null)
+
+Enums:
+  PreventiveCareType: DEWORMING, PARASITE_CONTROL
+  MedicalDocumentType: VACCINATION_RECORD, EXAMINATION_REPORT,
+    MEDICAL_CERTIFICATE, LAB_REPORT, PRESCRIPTION, TREATMENT_DOCUMENT,
+    STERILIZATION_RECORD, OTHER
+  DocumentVerificationStatus: PENDING, VERIFIED, REJECTED, REQUIRES_UPDATE
+
+--------------------------------------------------------------------------------
+3.5  NOTIFICATIONS
+--------------------------------------------------------------------------------
+notifications                      (Notification)
+  id PK; user FK -> users (not null); title (not null); message (1024,
+    not null)
+  type  free string, not null (APPOINTMENT / VACCINATION / PROFILE /
+    SYSTEM / PRODUCT_APPROVED / VERIFICATION / ACCOUNT_APPROVED /
+    ACCOUNT_REJECTED, etc.)
+  reason (2000); referenceId; isRead (default false); createdAt
+
+================================================================================
+ 4. HOW A FEW END-TO-END FLOWS TIE TOGETHER
+================================================================================
+
+Marketplace Seller onboarding:
+  Register as "Marketplace Seller"
+    -> VerificationRequest opened automatically (PENDING), admins notified
+    -> Admin reviews under Seller Verification (generic VerificationQueue)
+    -> Approved: seller's User.verificationStatus = APPROVED
+    -> Seller can now create Products (start in DRAFT) and submit them
+    -> Admin reviews under Product Moderation -> APPROVED/REJECTED
+    -> Approved products appear publicly on the Marketplace
+
+Shelter -> Adoption pipeline:
+  Shelter Manager registers, fills Shelter Profile, submits for verification
+    -> Admin approves (Shelter + manager both -> APPROVED)
+    -> Shelter can now record Animal intakes (IN_SHELTER_CARE)
+    -> Shelter records initial assessment; a Veterinarian adds at least one
+       MedicalRecord for the animal
+    -> Shelter drafts an AdoptionListing and submits for review
+       (animal -> ADOPTION_REVIEW, listing -> PENDING)
+    -> Admin approves (animal -> READY_FOR_ADOPTION, listing -> APPROVED)
+    -> Animal now appears publicly under /adopt
+    -> A Pet Owner completes their AdopterProfile and submits an
+       AdoptionApplication (-> SUBMITTED), shelter manager notified
+    -> (Shelter-side decisioning of the application is a planned next phase)
+
+Veterinarian verification:
+  Register as "Veterinarian", upload VerificationDocuments
+    -> Admin marks UNDER_REVIEW
+    -> Admin (or the vet) resolves each document individually
+       (approve/reject)
+    -> Admin can only approve the vet once every document is APPROVED
+    -> Approved vet can now be booked for Appointments and can manage
+       shelter animals' medical records
+
+Order checkout:
+  Pet Owner adds Products to cart -> checkout
+    -> Each product row is locked and re-validated for stock
+    -> Order created ("Pending"), OrderItems snapshot the price paid,
+       stock decremented, cart cleared
+================================================================================

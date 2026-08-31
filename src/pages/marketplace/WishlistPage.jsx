@@ -68,7 +68,7 @@ export default function WishlistPage() {
   if (loading) {
     return (
       <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-primary-600"></div>
       </div>
     );
   }
@@ -107,14 +107,15 @@ export default function WishlistPage() {
               <div key={item.id} className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col relative group">
                 <button 
                   onClick={() => removeFromWishlist(item.id)}
-                  className="absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 shadow-sm transition-colors"
+                  className={`absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full text-slate-400 shadow-sm transition-colors
+                    hover:bg-rose-50 hover:text-rose-500`}
                   title="Remove from Wishlist"
                 >
                   <Trash2 size={16} />
                 </button>
 
                 <div className="relative aspect-square w-full bg-slate-50">
-                  <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                  <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                   {item.product.stockQuantity === 0 && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
                       <span className="bg-slate-800 text-white font-bold px-4 py-2 rounded-xl shadow-lg">Out of Stock</span>

@@ -68,10 +68,13 @@ export default function ProductCard({ product, onWishlistUpdate }) {
   };
 
   return (
-    <Link 
-      to={`/marketplace/products/${product.id}`}
-      className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full relative"
-    >
+    <div className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full relative">
+      <Link
+        to={`/marketplace/products/${product.id}`}
+        className="absolute inset-0 z-0 rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+        aria-label={product.name}
+      />
+
       {/* Badges */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
         {hasDiscount && (
@@ -91,14 +94,15 @@ export default function ProductCard({ product, onWishlistUpdate }) {
         )}
       </div>
 
-      {/* Quick Actions (Hover) */}
+      {/* Quick Actions */}
       {canBuy && (
-        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transform translate-x-4 group-hover:translate-x-0 group-focus-within:translate-x-0 transition-all duration-300">
           <button
             onClick={handleAddToWishlist}
             disabled={isAddingToWishlist}
-            className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-slate-500 hover:text-rose-500 shadow-sm hover:shadow transition-colors"
+            aria-label="Add to wishlist"
             title="Add to Wishlist"
+            className="h-11 w-11 bg-white/90 backdrop-blur-sm rounded-full text-slate-500 hover:text-rose-500 shadow-sm hover:shadow transition-colors flex items-center justify-center"
           >
             {isAddingToWishlist ? <Check size={16} /> : <Heart size={16} />}
           </button>
@@ -147,7 +151,8 @@ export default function ProductCard({ product, onWishlistUpdate }) {
             <button
               onClick={handleAddToCart}
               disabled={isAddingToCart || product.stockQuantity === 0}
-              className={`p-2.5 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+              aria-label={product.stockQuantity === 0 ? 'Out of stock' : 'Add to cart'}
+              className={`relative z-10 h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-300 ${
                 product.stockQuantity === 0
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                   : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white'
@@ -159,6 +164,6 @@ export default function ProductCard({ product, onWishlistUpdate }) {
           )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

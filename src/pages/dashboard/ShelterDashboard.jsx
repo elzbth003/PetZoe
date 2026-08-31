@@ -177,7 +177,7 @@ export default function ShelterDashboard() {
         )}
 
         {loading ? (
-          <div className="py-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div></div>
+          <div className="py-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-primary-600"></div></div>
         ) : (
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <fieldset disabled={!canEdit} className="space-y-4 disabled:opacity-60">
@@ -449,7 +449,8 @@ export default function ShelterDashboard() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-950/30 text-slate-400 hover:text-rose-400 font-bold text-xs transition-all cursor-pointer text-left w-full"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 font-bold text-xs transition-all cursor-pointer text-left w-full
+            hover:bg-rose-950/20 hover:text-rose-300`}
         >
           <LogOut size={16} /> Sign Out
         </button>

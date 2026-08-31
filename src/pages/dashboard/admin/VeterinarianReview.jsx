@@ -267,7 +267,7 @@ export default function VeterinarianReview() {
               <button 
                 disabled={!canApprove}
                 onClick={handleApproveProfile}
-                className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 disabled:opacity-50 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 <CheckCircle size={18} /> Approve Profile
               </button>
@@ -275,7 +275,7 @@ export default function VeterinarianReview() {
               <button 
                 disabled={vet.verificationStatus !== 'UNDER_REVIEW'}
                 onClick={() => setShowResubmitModal(true)}
-                className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-500 disabled:bg-slate-700 disabled:text-slate-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-500 disabled:opacity-50 hover:bg-amber-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 <AlertCircle size={18} /> Ask Resubmit
               </button>
@@ -283,7 +283,7 @@ export default function VeterinarianReview() {
               <button 
                 disabled={vet.verificationStatus !== 'UNDER_REVIEW'}
                 onClick={() => setShowRejectModal(true)}
-                className="flex-1 sm:flex-none px-6 py-2.5 bg-rose-500 disabled:bg-slate-700 disabled:text-slate-500 hover:bg-rose-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-none px-6 py-2.5 bg-rose-500 disabled:opacity-50 hover:bg-rose-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 <XCircle size={18} /> Reject Profile
               </button>

@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { notificationService } from '../services/notificationService';
+import { adminApi } from '../services/adminApi';
 import { useToast } from '../hooks/useToast';
-import { Shield, Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope, ShoppingBag, Bell, Settings, Menu, X, Check, Trash2, Loader2 } from 'lucide-react';
+import { Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope, ShoppingBag, Bell, Settings, Menu, X, Check, Trash2, Loader2 } from 'lucide-react';
 
 function timeAgo(dateString) {
   const now = new Date();
@@ -34,10 +35,25 @@ export default function AdminLayout() {
   const notifRef = useRef(null);
   const pollingRef = useRef(false); // Guard against overlapping polls
 
+  // Pending-review counts, surfaced as sidebar badges so admins see what needs action at a glance
+  const [pendingCounts, setPendingCounts] = useState({});
+
   const handleLogout = () => {
     logout();
     navigate('/admin-login');
   };
+
+  useEffect(() => {
+    if (!user) return;
+    adminApi.getStats()
+      .then(res => setPendingCounts({
+        veterinarians: res.data.pendingVets,
+        shelters: res.data.pendingShelters,
+        sellers: res.data.pendingSellers,
+        products: res.data.pendingProducts,
+      }))
+      .catch(() => { /* Degrade gracefully — badges just stay hidden */ });
+  }, [user]);
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
@@ -124,11 +140,11 @@ export default function AdminLayout() {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard/admin', icon: Home },
     { name: 'User Management', path: '/dashboard/admin/users', icon: Users },
-    { name: 'Veterinarians', path: '/dashboard/admin/veterinarians', icon: Stethoscope },
-    { name: 'Shelter Verification', path: '/dashboard/admin/shelters', icon: HeartPulse },
+    { name: 'Veterinarians', path: '/dashboard/admin/veterinarians', icon: Stethoscope, badge: pendingCounts.veterinarians },
+    { name: 'Shelter Verification', path: '/dashboard/admin/shelters', icon: HeartPulse, badge: pendingCounts.shelters },
     { name: 'Adoption Review', path: '/dashboard/admin/adoptions', icon: PawPrint },
-    { name: 'Seller Verification', path: '/dashboard/admin/sellers', icon: ShoppingBag },
-    { name: 'Product Moderation', path: '/dashboard/admin/products', icon: CheckSquare },
+    { name: 'Seller Verification', path: '/dashboard/admin/sellers', icon: ShoppingBag, badge: pendingCounts.sellers },
+    { name: 'Product Moderation', path: '/dashboard/admin/products', icon: CheckSquare, badge: pendingCounts.products },
     { name: 'Settings', path: '/dashboard/admin/settings', icon: Settings },
   ];
 
@@ -177,14 +193,19 @@ export default function AdminLayout() {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   title={item.name}
-                  className={`flex items-center gap-3 w-full px-2 lg:px-4 py-3 rounded-xl font-semibold text-xs transition-all ${
-                    isActive 
-                      ? 'bg-slate-700 text-white' 
-                      : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                  className={`flex items-center gap-3 w-full px-2 lg:px-4 py-3 rounded-xl font-semibold text-xs transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-[#1E3A5F] text-white border-l-2 border-[#38BDF8]'
+                      : 'hover:bg-slate-800 text-slate-400 hover:text-white hover:translate-x-0.5'
                   } ${isSidebarOpen ? 'md:justify-center lg:justify-start' : 'justify-start'}`}
                 >
-                  <Icon size={isSidebarOpen ? 20 : 16} className="shrink-0 lg:w-4 lg:h-4" /> 
-                  <span className={`${isSidebarOpen ? 'md:hidden lg:block' : 'block'}`}>{item.name}</span>
+                  <Icon size={isSidebarOpen ? 20 : 16} className="shrink-0 lg:w-4 lg:h-4" />
+                  <span className={`flex-1 text-left ${isSidebarOpen ? 'md:hidden lg:block' : 'block'}`}>{item.name}</span>
+                  {item.badge > 0 && (
+                    <span className={`h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black items-center justify-center ${isSidebarOpen ? 'hidden lg:flex' : 'flex'}`}>
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -213,14 +234,20 @@ export default function AdminLayout() {
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-black text-slate-900 hidden sm:block">Administrator Console</h1>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Administrator Console</h1>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-1">
+                Secure Admin Workspace • {user?.name}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             {/* Notification Bell */}
             <div className="relative" ref={notifRef}>
-              <button 
-                className="p-2 text-slate-400 hover:text-slate-600 relative"
+              <button
+                className="p-2 rounded-xl text-slate-400 hover:text-[#1E3A5F] hover:bg-slate-50 relative transition-colors cursor-pointer"
                 onClick={toggleNotifDropdown}
+                aria-label="Notifications"
               >
                 <Bell size={20} />
                 {unreadCount > 0 && (
@@ -280,7 +307,8 @@ export default function AdminLayout() {
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleMarkRead(notif.id); }}
                                 title="Mark as read"
-                                className="h-6 w-6 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-500 flex items-center justify-center transition-colors"
+                                className={`h-6 w-6 rounded-lg text-slate-400 flex items-center justify-center transition-colors
+                                  hover:bg-blue-100 hover:text-blue-500`}
                               >
                                 <Check size={12} />
                               </button>
@@ -288,7 +316,8 @@ export default function AdminLayout() {
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDelete(notif.id); }}
                               title="Dismiss"
-                              className="h-6 w-6 rounded-lg hover:bg-rose-100 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-colors"
+                              className={`h-6 w-6 rounded-lg text-slate-400 flex items-center justify-center transition-colors
+                                hover:bg-rose-100 hover:text-rose-500`}
                             >
                               <Trash2 size={12} />
                             </button>
@@ -313,7 +342,7 @@ export default function AdminLayout() {
             </div>
 
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-              <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">
+              <div className="h-8 w-8 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white font-bold text-sm">
                 {user?.name?.charAt(0) || 'A'}
               </div>
               <div className="hidden md:block text-sm">

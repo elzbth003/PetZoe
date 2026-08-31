@@ -293,7 +293,7 @@ export default function SellerDashboard() {
             </p>
 
             {verificationLoading ? (
-              <div className="py-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div></div>
+              <div className="py-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-primary-600"></div></div>
             ) : (
               <>
                 <span className={`inline-block text-xs font-bold px-3 py-1.5 rounded-md mb-4 ${statusStyles[status] || 'bg-slate-100 text-slate-600'}`}>
@@ -390,7 +390,7 @@ export default function SellerDashboard() {
                   onClick={() => { setActiveTab(item.name); setIsSidebarOpen(false); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer active:scale-[0.98] ${
                     isActive
-                      ? 'bg-primary-900 text-white border-l-4 border-primary-500'
+                      ? 'bg-primary-900 text-white border-l-2 border-primary-500'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-white hover:translate-x-0.5'
                   }`}
                 >
@@ -404,7 +404,8 @@ export default function SellerDashboard() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-950/30 text-slate-400 hover:text-rose-400 font-bold text-xs transition-all cursor-pointer text-left w-full"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 font-bold text-xs transition-all cursor-pointer text-left w-full
+            hover:bg-rose-950/20 hover:text-rose-300`}
         >
           <LogOut size={16} />
           <span>Sign Out</span>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2, PawPrint, Stethoscope } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { GoogleLogin } from '@react-oauth/google';
@@ -77,12 +77,13 @@ export default function LoginPage() {
         
         {/* Email input */}
         <div>
-          <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Email Address</label>
+          <label htmlFor="email" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Email Address</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
               <Mail size={16} />
             </span>
             <input
+              id="email"
               type="email"
               placeholder="owner@petverse.com"
               disabled={isSubmitting}
@@ -103,12 +104,13 @@ export default function LoginPage() {
 
         {/* Password input */}
         <div>
-          <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Password</label>
+          <label htmlFor="password" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Password</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
               <Lock size={16} />
             </span>
             <input
+              id="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               disabled={isSubmitting}
@@ -195,8 +197,8 @@ export default function LoginPage() {
       {/* Seed Accounts Info Panel */}
       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-[10px] text-slate-500 text-left space-y-1">
         <p className="font-bold text-slate-700">Mock Accounts Available:</p>
-        <p>🐾 Pet Owner: <span className="font-mono font-semibold text-primary-600">owner@petverse.com</span> / <span className="font-mono">Password123!</span></p>
-        <p>🩺 Veterinarian: <span className="font-mono font-semibold text-secondary-600">vet@petverse.com</span> / <span className="font-mono">Password123!</span></p>
+        <p className="flex items-center gap-1.5"><PawPrint size={12} className="text-primary-500" /> Pet Owner: <span className="font-mono font-semibold text-primary-600">owner@petverse.com</span> / <span className="font-mono">Password123!</span></p>
+        <p className="flex items-center gap-1.5"><Stethoscope size={12} className="text-secondary-500" /> Veterinarian: <span className="font-mono font-semibold text-secondary-600">vet@petverse.com</span> / <span className="font-mono">Password123!</span></p>
       </div>
 
     </div>

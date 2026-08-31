@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Heart, Calendar, Clock, Video, FileText, Activity, Shield, Users, 
-  ArrowRight, CheckCircle2, TrendingUp, Plus
+import {
+  Heart, Calendar, Clock, Video, FileText, Activity, Shield, Users,
+  ArrowRight, CheckCircle2, TrendingUp, Plus, PawPrint, Stethoscope, Home
 } from 'lucide-react';
 
 export default function DashboardPreview() {
   const [activeTab, setActiveTab] = useState('owner');
 
   const tabs = [
-    { id: 'owner', label: '🐾 Pet Owner Portal', color: 'from-blue-600 to-indigo-600 text-blue-600' },
-    { id: 'vet', label: '🩺 Veterinarian Console', color: 'from-teal-600 to-emerald-600 text-teal-600' },
-    { id: 'shelter', label: '🏠 Shelter Logistics', color: 'from-rose-600 to-pink-600 text-rose-600' }
+    { id: 'owner', label: 'Pet Owner Portal', icon: PawPrint, color: 'from-blue-600 to-indigo-600 text-blue-600' },
+    { id: 'vet', label: 'Veterinarian Console', icon: Stethoscope, color: 'from-teal-600 to-emerald-600 text-teal-600' },
+    { id: 'shelter', label: 'Shelter Logistics', icon: Home, color: 'from-rose-600 to-pink-600 text-rose-600' }
   ];
 
   return (
@@ -30,13 +30,13 @@ export default function DashboardPreview() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer ${
-                activeTab === tab.id 
-                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20' 
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20'
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               }`}
             >
-              {tab.label.split(' ')[0]} {tab.label.split(' ').slice(1).join(' ')}
+              <tab.icon size={14} /> {tab.label}
             </button>
           ))}
         </div>

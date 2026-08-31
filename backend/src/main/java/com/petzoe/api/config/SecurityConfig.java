@@ -140,8 +140,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow the React frontend
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // Allow the React frontend (Vite falls back to 5174+ if 5173 is already in use)
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
         // Allow standard HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         // Allow specific headers required for JWT

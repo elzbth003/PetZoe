@@ -5,7 +5,7 @@
 @theme {
   --font-display: 'Outfit', system-ui, sans-serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  
+
   --color-primary-50: #f0f4f8;
   --color-primary-100: #d9e2ec;
   --color-primary-200: #bcccdc;
@@ -84,5 +84,26 @@ html {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: var(--color-primary-400);
+}
+
+/* Respect user's motion sensitivity preference. Loading spinners keep spinning
+   (they carry state, not decoration) while decorative and large-scale motion
+   is stopped. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *:not(.animate-spin, .animate-spin *),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+
+  *:not(.animate-spin, .animate-spin *) {
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, MessageSquare, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, User, MessageSquare, CheckCircle, XCircle, Loader2, PawPrint } from 'lucide-react';
 import { appointmentService } from '../../services/appointmentService';
 import { useToast } from '../../hooks/useToast';
 
@@ -96,7 +96,7 @@ export default function VetAppointmentsPanel() {
 
                 <div>
                   <h4 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                    🐾 {appt.petName}
+                    <PawPrint size={16} className="text-primary-500" /> {appt.petName}
                   </h4>
                   <p className="text-xs text-slate-500 font-semibold mt-1">Pet ID: {appt.petId}</p>
                 </div>

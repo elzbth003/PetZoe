@@ -111,10 +111,6 @@ export const router = createBrowserRouter([
       {
         path: 'forgot-password',
         element: <ForgotPasswordPage />
-      },
-      {
-        path: 'admin-login',
-        element: <AdminLogin />
       }
     ]
   },

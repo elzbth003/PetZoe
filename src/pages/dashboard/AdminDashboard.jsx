@@ -42,7 +42,8 @@ export default function AdminDashboard() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-950/30 text-slate-400 hover:text-rose-400 font-semibold text-xs transition-all cursor-pointer text-left w-full"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 font-semibold text-xs transition-all cursor-pointer text-left w-full
+            hover:bg-rose-950/20 hover:text-rose-300`}
         >
           <LogOut size={16} /> Sign Out
         </button>

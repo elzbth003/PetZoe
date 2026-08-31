@@ -127,7 +127,8 @@ export default function Navbar() {
                 <button
                   onClick={handleLogout}
                   title="Logout"
-                  className="ml-2 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors border-l border-slate-200 pl-3"
+                  aria-label="Logout"
+                  className="ml-2 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors border-l border-slate-200 pl-3 h-11 w-11 flex items-center justify-center"
                 >
                   <LogOut size={14} />
                 </button>
@@ -159,6 +160,8 @@ export default function Navbar() {
           )}
           <button
             onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle navigation menu"
+            aria-expanded={isOpen}
             className="p-2 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           >
             {isOpen ? <X size={20} /> : <Menu size={20} />}
@@ -170,7 +173,8 @@ export default function Navbar() {
       <div className={`fixed inset-y-0 right-0 z-40 w-full max-w-xs bg-white px-6 py-20 flex flex-col gap-6 shadow-2xl transition-transform duration-300 ease-in-out md:hidden overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <button
           onClick={() => setIsOpen(false)}
-          className="absolute top-5 right-6 p-2 text-slate-500 hover:text-slate-900 cursor-pointer"
+          aria-label="Close navigation menu"
+          className="absolute top-5 right-6 p-3 text-slate-500 hover:text-slate-900 cursor-pointer"
         >
           <X size={20} />
         </button>

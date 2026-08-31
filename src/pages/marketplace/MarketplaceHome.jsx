@@ -45,7 +45,7 @@ export default function MarketplaceHome() {
   if (loading) {
     return (
       <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-primary-600"></div>
       </div>
     );
   }
@@ -80,7 +80,7 @@ export default function MarketplaceHome() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-white text-slate-800 rounded-full py-4 pl-6 pr-14 outline-none focus:ring-4 focus:ring-accent-500/30 transition-all font-medium shadow-lg"
                 />
-                <button type="submit" className="absolute right-2 bg-primary-600 text-white p-2.5 rounded-full hover:bg-primary-700 transition-colors">
+                <button type="submit" aria-label="Search products" className="absolute right-2 bg-primary-600 text-white p-2.5 rounded-full hover:bg-primary-700 transition-colors">
                   <Search size={20} />
                 </button>
               </form>
@@ -118,7 +118,7 @@ export default function MarketplaceHome() {
               className="bg-white rounded-3xl p-4 flex flex-col items-center text-center border border-slate-100 hover:border-primary-200 hover:shadow-lg hover:shadow-primary-600/5 transition-all duration-300 group"
             >
               <div className="w-16 h-16 rounded-full overflow-hidden mb-3 bg-slate-50 ring-4 ring-slate-50 group-hover:ring-primary-50 transition-all">
-                <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
               </div>
               <span className="font-bold text-slate-700 text-sm group-hover:text-primary-600 transition-colors">{category.name}</span>
             </Link>

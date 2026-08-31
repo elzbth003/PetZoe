@@ -145,7 +145,7 @@ export default function AdopterProfilePanel() {
         </p>
 
         {loading ? (
-          <div className="py-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div></div>
+          <div className="py-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-primary-600"></div></div>
         ) : (
           <form onSubmit={handleSave} className="space-y-4">
             <textarea required placeholder="Address" value={form.address}
@@ -219,7 +219,7 @@ export default function AdopterProfilePanel() {
       <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
         <h2 className="text-lg font-bold text-slate-800 mb-4">My Adoption Applications</h2>
         {loadingApps ? (
-          <div className="py-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div></div>
+          <div className="py-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-primary-600"></div></div>
         ) : applications.length === 0 ? (
           <p className="text-sm text-slate-500">
             No applications yet. <Link to="/adopt" className="text-primary-600 font-bold hover:underline">Browse adoptable animals</Link>.

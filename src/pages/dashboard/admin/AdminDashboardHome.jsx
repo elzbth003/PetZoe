@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
-import { Users, Shield, Database, Activity, Store, Stethoscope, HeartPulse, PawPrint, AlertCircle, Clock, TrendingUp, BarChart3 } from 'lucide-react';
+import { Users, Store, Stethoscope, HeartPulse, PawPrint, AlertCircle, Clock, TrendingUp, BarChart3, CheckCircle2, XCircle, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell
 } from 'recharts';
 
-const CHART_COLORS = ['#b33f3fff', '#ea9648ff', '#d5d964ff', '#cbd5e1', '#96d996ff', '#90eaacff'];
+// Brand palette, not an arbitrary chart-library default: navy, sage, amber (the
+// site's own tokens), plus the portal sky accent and two neutral fallbacks.
+const CHART_COLORS = ['#112A46', '#84A59D', '#F6BD60', '#38BDF8', '#F43F5E', '#94A3B8'];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -24,6 +26,23 @@ const renderPieLabel = ({ name, percent }) => {
   if (percent < 0.05) return null;
   return `${name} (${(percent * 100).toFixed(0)}%)`;
 };
+
+// Admin audit-log actions are machine strings like "APPROVED_VET" or
+// "REJECTED_USER" — read the real outcome out of them for the activity feed
+// instead of showing a neutral dot for every entry.
+function getActionMeta(action = '') {
+  if (action.startsWith('APPROVED')) {
+    return { icon: CheckCircle2, tone: 'text-emerald-600 border-emerald-300 bg-emerald-50' };
+  }
+  if (action.startsWith('REJECTED')) {
+    return { icon: XCircle, tone: 'text-rose-600 border-rose-300 bg-rose-50' };
+  }
+  return { icon: ArrowUpRight, tone: 'text-primary-600 border-primary-300 bg-primary-50' };
+}
+
+function formatAction(action = '') {
+  return action.replace(/_/g, ' ').toLowerCase();
+}
 
 export default function AdminDashboardHome() {
   const [stats, setStats] = useState(null);
@@ -99,19 +118,19 @@ export default function AdminDashboardHome() {
     <div className="space-y-8">
       {/* Action Required Banner */}
       {totalActions > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-accent-50 border border-accent-100 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+            <div className="h-12 w-12 rounded-2xl bg-accent-100 flex items-center justify-center text-accent-700 shrink-0">
               <AlertCircle size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-amber-900">Action Required</h3>
-              <p className="text-amber-700 text-sm">You have {totalActions} items pending review.</p>
+              <h3 className="text-lg font-bold text-slate-900">Action Required</h3>
+              <p className="text-slate-600 text-sm">You have {totalActions} items pending review.</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
             {actionItems.map(item => item.count > 0 && (
-              <Link key={item.title} to={item.path} className="px-4 py-2 bg-white rounded-xl text-sm font-semibold text-amber-700 shadow-sm border border-amber-100 hover:bg-amber-100 transition-colors flex items-center gap-2">
+              <Link key={item.title} to={item.path} className="px-4 py-2 bg-white rounded-xl text-sm font-semibold text-accent-700 shadow-sm border border-accent-200 hover:bg-accent-100 transition-colors flex items-center gap-2">
                 <item.icon size={16} /> {item.count} {item.title}
               </Link>
             ))}
@@ -125,45 +144,44 @@ export default function AdminDashboardHome() {
         <div className="lg:col-span-2 space-y-6">
           <h2 className="text-lg font-bold text-slate-800">Key Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-              <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
-                <Users size={22} />
+            {[
+              {
+                label: 'Total Users', value: stats?.totalUsers, icon: Users,
+                tone: 'bg-primary-50 text-primary-600', bar: 'bg-primary-500',
+                context: 'Across every role'
+              },
+              {
+                label: 'Pet Owners', value: stats?.totalPetOwners, icon: PawPrint,
+                tone: 'bg-rose-50 text-rose-600', bar: 'bg-rose-500',
+                context: stats?.totalUsers ? `${Math.round((stats.totalPetOwners / stats.totalUsers) * 100)}% of total users` : null
+              },
+              {
+                label: 'Verified Vets', value: stats?.verifiedVets, icon: Stethoscope,
+                tone: 'bg-secondary-50 text-secondary-600', bar: 'bg-secondary-500',
+                context: stats?.pendingVets > 0 ? `${stats.pendingVets} awaiting review` : 'All caught up'
+              },
+              {
+                label: 'Active Adoptions', value: stats?.activeAdoptionPets, icon: HeartPulse,
+                tone: 'bg-accent-50 text-accent-600', bar: 'bg-accent-500',
+                context: 'Currently in the pipeline'
+              },
+            ].map((metric) => (
+              <div key={metric.label} className="group bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+                <div className="flex items-center gap-4">
+                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${metric.tone}`}>
+                    <metric.icon size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{metric.label}</p>
+                    <h3 className="text-2xl font-black text-slate-800 tabular-nums leading-tight">{metric.value ?? 0}</h3>
+                    {metric.context && (
+                      <p className="text-[11px] text-slate-400 font-semibold truncate">{metric.context}</p>
+                    )}
+                  </div>
+                </div>
+                <div className={`h-1 w-10 rounded-full mt-5 transition-all duration-300 group-hover:w-16 ${metric.bar}`} />
               </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Users</p>
-                <h3 className="text-2xl font-black text-slate-800">{stats?.totalUsers || 0}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-              <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
-                <PawPrint size={22} />
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pet Owners</p>
-                <h3 className="text-2xl font-black text-slate-800">{stats?.totalPetOwners || 0}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-              <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
-                <Stethoscope size={22} />
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Verified Vets</p>
-                <h3 className="text-2xl font-black text-slate-800">{stats?.verifiedVets || 0}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-              <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
-                <PawPrint size={22} />
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Adoptions</p>
-                <h3 className="text-2xl font-black text-slate-800">{stats?.activeAdoptionPets || 0}</h3>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -172,27 +190,34 @@ export default function AdminDashboardHome() {
           <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full max-h-[600px]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800">Recent Activity</h2>
-              <Clock size={18} className="text-slate-400" />
+              <div className="h-8 w-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">
+                <Clock size={16} />
+              </div>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
               {activities.length === 0 ? (
                 <div className="text-center text-slate-500 py-8 text-sm">No recent activity</div>
               ) : (
-                <div className="space-y-6">
-                  {activities.map((act) => (
-                    <div key={act.id} className="relative pl-6 border-l-2 border-slate-100 last:border-transparent">
-                      <div className="absolute w-3 h-3 bg-white border-2 border-slate-300 rounded-full -left-[7px] top-1"></div>
-                      <div className="-mt-1.5">
-                        <p className="text-sm font-semibold text-slate-700">
-                          {act.adminUser?.name || 'Admin'} <span className="text-slate-500 font-normal">performed</span> {act.action}
+                <div className="space-y-5">
+                  {activities.map((act) => {
+                    const { icon: ActionIcon, tone } = getActionMeta(act.action);
+                    return (
+                      <div key={act.id} className="relative pl-9 border-l-2 border-slate-100 last:border-transparent pb-0.5">
+                        <div className={`absolute h-6 w-6 rounded-full border-2 flex items-center justify-center -left-[13px] top-0 bg-white ${tone}`}>
+                          <ActionIcon size={12} />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-700 capitalize">
+                          {formatAction(act.action)}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">{act.details}</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-wider">
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {act.details} <span className="text-slate-400">— {act.adminUser?.name || 'Admin'}</span>
+                        </p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-wider">
                           {new Date(act.timestamp).toLocaleString()}
                         </p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -203,8 +228,11 @@ export default function AdminDashboardHome() {
 
       {/* ── Analytics Section ── */}
       <div className="space-y-6">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <TrendingUp size={20} className="text-slate-500" /> Analytics
+        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
+          <span className="h-8 w-8 rounded-lg bg-secondary-50 text-secondary-600 flex items-center justify-center">
+            <TrendingUp size={16} />
+          </span>
+          Analytics
         </h2>
 
         {analyticsLoading ? (
@@ -229,7 +257,9 @@ export default function AdminDashboardHome() {
                   <h3 className="font-bold text-slate-800">User Registrations</h3>
                   <p className="text-xs text-slate-400 mt-0.5">Last 30 days</p>
                 </div>
-                <BarChart3 size={18} className="text-slate-400" />
+                <span className="h-8 w-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
+                  <BarChart3 size={16} />
+                </span>
               </div>
               {registrationData.length === 0 ? (
                 <div className="h-56 flex items-center justify-center text-slate-400 text-sm">No registration data available</div>
@@ -238,8 +268,8 @@ export default function AdminDashboardHome() {
                   <AreaChart data={registrationData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="regGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#334155" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#334155" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#112A46" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#112A46" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -263,11 +293,11 @@ export default function AdminDashboardHome() {
                     <Area
                       type="monotone"
                       dataKey="count"
-                      stroke="#334155"
+                      stroke="#112A46"
                       strokeWidth={2}
                       fill="url(#regGradient)"
                       dot={false}
-                      activeDot={{ r: 4, fill: '#334155', strokeWidth: 0 }}
+                      activeDot={{ r: 4, fill: '#112A46', strokeWidth: 0 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -283,30 +313,38 @@ export default function AdminDashboardHome() {
                 {(!analytics?.roleDistribution || analytics.roleDistribution.length === 0) ? (
                   <div className="h-56 flex items-center justify-center text-slate-400 text-sm">No role data</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={240}>
-                    <PieChart>
-                      <Pie
-                        data={analytics.roleDistribution}
-                        dataKey="count"
-                        nameKey="label"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        innerRadius={40}
-                        paddingAngle={2}
-                        label={renderPieLabel}
-                        labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
-                      >
-                        {analytics.roleDistribution.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value, name) => [value, name]}
-                        contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600 }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="relative">
+                    <ResponsiveContainer width="100%" height={240}>
+                      <PieChart>
+                        <Pie
+                          data={analytics.roleDistribution}
+                          dataKey="count"
+                          nameKey="label"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          innerRadius={40}
+                          paddingAngle={2}
+                          label={renderPieLabel}
+                          labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                        >
+                          {analytics.roleDistribution.map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value, name) => [value, name]}
+                          contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none -mt-3">
+                      <p className="text-xl font-black text-slate-800 tabular-nums">
+                        {analytics.roleDistribution.reduce((sum, r) => sum + r.count, 0)}
+                      </p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Users</p>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -317,30 +355,38 @@ export default function AdminDashboardHome() {
                 {(!analytics?.verificationStatusDistribution || analytics.verificationStatusDistribution.length === 0) ? (
                   <div className="h-56 flex items-center justify-center text-slate-400 text-sm">No verification data</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={240}>
-                    <PieChart>
-                      <Pie
-                        data={analytics.verificationStatusDistribution}
-                        dataKey="count"
-                        nameKey="label"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        innerRadius={40}
-                        paddingAngle={2}
-                        label={renderPieLabel}
-                        labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
-                      >
-                        {analytics.verificationStatusDistribution.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value, name) => [value, name]}
-                        contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600 }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="relative">
+                    <ResponsiveContainer width="100%" height={240}>
+                      <PieChart>
+                        <Pie
+                          data={analytics.verificationStatusDistribution}
+                          dataKey="count"
+                          nameKey="label"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          innerRadius={40}
+                          paddingAngle={2}
+                          label={renderPieLabel}
+                          labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                        >
+                          {analytics.verificationStatusDistribution.map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value, name) => [value, name]}
+                          contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none -mt-3">
+                      <p className="text-xl font-black text-slate-800 tabular-nums">
+                        {analytics.verificationStatusDistribution.reduce((sum, r) => sum + r.count, 0)}
+                      </p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Records</p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

@@ -61,7 +61,7 @@ export default function OrderHistoryPage() {
   if (loading) {
     return (
       <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-primary-600"></div>
       </div>
     );
   }
@@ -133,7 +133,7 @@ export default function OrderHistoryPage() {
                       {order.items.map((item) => (
                         <div key={item.id} className="flex items-center gap-4 py-4 border-t border-slate-50">
                           <Link to={`/marketplace/products/${item.product.id}`} className="w-20 h-20 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 flex-shrink-0">
-                            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                           </Link>
                           <div className="flex-1">
                             <Link to={`/marketplace/products/${item.product.id}`}>

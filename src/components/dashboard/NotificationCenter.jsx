@@ -221,7 +221,7 @@ export default function NotificationCenter() {
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                   className={`bg-white border rounded-2xl p-4 flex items-start gap-3 transition-all ${
-                    !notif.isRead ? 'border-l-4 border-l-[#38BDF8] border-slate-100 shadow-sm' : 'border-slate-100'
+                    !notif.isRead ? 'border-sky-200 bg-sky-50/20 shadow-sm' : 'border-slate-100'
                   }`}
                 >
                   {/* Icon */}
@@ -260,7 +260,8 @@ export default function NotificationCenter() {
                       <button
                         onClick={() => handleMarkRead(notif.id)}
                         title="Mark as read"
-                        className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-500 flex items-center justify-center transition-all cursor-pointer"
+                        className={`h-7 w-7 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center transition-all cursor-pointer
+                          hover:bg-blue-50 hover:text-blue-500`}
                       >
                         <Check size={12} />
                       </button>
@@ -268,7 +269,8 @@ export default function NotificationCenter() {
                     <button
                       onClick={() => handleDelete(notif.id)}
                       title="Delete notification"
-                      className="h-7 w-7 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-all cursor-pointer"
+                      className={`h-7 w-7 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center transition-all cursor-pointer
+                        hover:bg-rose-50 hover:text-rose-500`}
                     >
                       <X size={12} />
                     </button>

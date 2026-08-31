@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { 
-  Calendar, Clock, User, MessageSquare, AlertTriangle, 
-  Trash2, Loader2, CalendarClock, ArrowRight, ShieldAlert 
+import {
+  Calendar, Clock, User, MessageSquare, AlertTriangle,
+  Trash2, Loader2, CalendarClock, ArrowRight, ShieldAlert, PawPrint
 } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -156,7 +156,7 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
               >
                 <option value="0">Choose registered pet...</option>
                 {pets.map(p => (
-                  <option key={p.id} value={p.id}>🐾 {p.name} ({p.species})</option>
+                  <option key={p.id} value={p.id}>{p.name} ({p.species})</option>
                 ))}
               </select>
               {errors.petId && (
@@ -173,7 +173,7 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
               >
                 <option value="0">Choose certified vet...</option>
                 {vets.map(v => (
-                  <option key={v.id} value={v.id}>🩺 {v.name}</option>
+                  <option key={v.id} value={v.id}>{v.name}</option>
                 ))}
               </select>
               {errors.veterinarianId && (
@@ -288,7 +288,9 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                 >
                   <div className="flex gap-4 items-start text-left">
                     <div className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                      isCancelled ? 'bg-slate-100 text-slate-400' : 'bg-sky-50 text-sky-600'
+                      isCancelled ? 'bg-slate-100' : 'bg-sky-50'
+                    } ${
+                      isCancelled ? 'text-slate-400' : 'text-sky-600'
                     }`}>
                       <Calendar size={20} />
                     </div>
@@ -296,12 +298,14 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                     <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isUpcoming ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-600'
+                          isUpcoming 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                            : 'bg-slate-100 text-slate-600'
                         }`}>
                           {appt.status}
                         </span>
-                        <p className="text-xs font-bold text-slate-800">
-                          🐾 {appt.petName}
+                        <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                          <PawPrint size={12} className="text-primary-500" /> {appt.petName}
                         </p>
                       </div>
 

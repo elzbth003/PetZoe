@@ -5,7 +5,8 @@ import {
   Heart, Shield, Video, Database, Clock,
   CheckCircle, ArrowRight, Star, Sparkles, MessageSquare,
   ChevronRight, Stethoscope, ShieldAlert, ShoppingBag,
-  Lock, BadgeCheck, Users, CalendarCheck, PawPrint
+  Lock, BadgeCheck, Users, CalendarCheck, PawPrint,
+  Dog, Cat, Rabbit, Bird, Baby, Armchair
 } from 'lucide-react';
 import Accordion from '../components/Accordion';
 import DashboardPreview from '../components/DashboardPreview';
@@ -144,7 +145,7 @@ const TESTIMONIALS = [
 // Interactive Widget Data
 const INTERACTIVE_PET_DATA = {
   Dog: {
-    icon: "🐶",
+    icon: Dog,
     name: "Dog",
     stages: {
       baby: {
@@ -168,7 +169,7 @@ const INTERACTIVE_PET_DATA = {
     }
   },
   Cat: {
-    icon: "🐱",
+    icon: Cat,
     name: "Cat",
     stages: {
       baby: {
@@ -192,7 +193,7 @@ const INTERACTIVE_PET_DATA = {
     }
   },
   Rabbit: {
-    icon: "🐰",
+    icon: Rabbit,
     name: "Rabbit",
     stages: {
       baby: {
@@ -216,7 +217,7 @@ const INTERACTIVE_PET_DATA = {
     }
   },
   Bird: {
-    icon: "🦜",
+    icon: Bird,
     name: "Bird",
     stages: {
       baby: {
@@ -264,11 +265,11 @@ export default function LandingPage() {
   // Framer Motion Animation Settings
   const fadeInUp = {
     hidden: { opacity: 0, y: 30, scale: 0.96 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
+    visible: {
+      opacity: 1,
+      y: 0,
       scale: 1,
-      transition: { type: "spring", stiffness: 80, damping: 20 } 
+      transition: { type: "spring", stiffness: 80, damping: 20 }
     }
   };
 
@@ -295,7 +296,7 @@ export default function LandingPage() {
     <div className="space-y-20 pb-20">
 
       {/* 1. Hero Section */}
-      <section id="hero" className="relative bg-gradient-to-b from-secondary-50/70 via-white to-white pt-32 pb-4 overflow-hidden">
+      <section id="hero" className="relative bg-gradient-to-b from-secondary-50/70 via-white to-white pt-8 pb-4 overflow-hidden">
 
         {/* Ambient decorative blobs */}
         <div className="absolute -top-24 -right-24 w-[420px] h-[420px] bg-secondary-200/30 rounded-full blur-3xl pointer-events-none"></div>
@@ -465,7 +466,7 @@ export default function LandingPage() {
 
       {/* 2. Statistics Section */}
       <section className="max-w-7xl mx-auto px-6">
-        <motion.div 
+        <motion.div
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
@@ -492,7 +493,7 @@ export default function LandingPage() {
       {/* 3. Features Bento Grid Section */}
       <section id="features" className="max-w-7xl mx-auto px-6 py-4 scroll-mt-20">
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -566,28 +567,31 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-            
+
             {/* Input Selectors Left (4 cols) */}
             <div className="md:col-span-4 space-y-6 text-left">
-              
+
               {/* Pet Type Selection */}
               <div className="space-y-2">
                 <label className="block text-slate-500 text-[10px] font-black uppercase tracking-wider ml-1">Select Pet</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {Object.keys(INTERACTIVE_PET_DATA).map(petKey => (
-                    <button
-                      key={petKey}
-                      onClick={() => setSelectedPet(petKey)}
-                      className={`py-3.5 rounded-2xl border text-center font-bold text-xs transition-all cursor-pointer ${
-                        selectedPet === petKey
-                          ? 'bg-primary-600 border-primary-600 text-white shadow-md'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      <span className="text-base mr-1">{INTERACTIVE_PET_DATA[petKey].icon}</span>
-                      {INTERACTIVE_PET_DATA[petKey].name}
-                    </button>
-                  ))}
+                  {Object.keys(INTERACTIVE_PET_DATA).map(petKey => {
+                    const PetIcon = INTERACTIVE_PET_DATA[petKey].icon;
+                    return (
+                      <button
+                        key={petKey}
+                        onClick={() => setSelectedPet(petKey)}
+                        className={`py-3.5 rounded-2xl border text-center font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          selectedPet === petKey
+                            ? 'bg-primary-600 border-primary-600 text-white shadow-md'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <PetIcon size={16} />
+                        {INTERACTIVE_PET_DATA[petKey].name}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -596,9 +600,9 @@ export default function LandingPage() {
                 <label className="block text-slate-500 text-[10px] font-black uppercase tracking-wider ml-1">Life Stage</label>
                 <div className="flex flex-col gap-2">
                   {[
-                    { id: 'baby', label: '👶 Baby (<1 Year)' },
-                    { id: 'adult', label: '🐕 Adult (1-7 Years)' },
-                    { id: 'senior', label: '👵 Senior (7+ Years)' }
+                    { id: 'baby', label: 'Baby (<1 Year)', icon: Baby },
+                    { id: 'adult', label: 'Adult (1-7 Years)', icon: Dog },
+                    { id: 'senior', label: 'Senior (7+ Years)', icon: Armchair }
                   ].map(stage => (
                     <button
                       key={stage.id}
@@ -609,7 +613,10 @@ export default function LandingPage() {
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
-                      <span>{stage.label}</span>
+                      <span className="flex items-center gap-2">
+                        <stage.icon size={14} />
+                        {stage.label}
+                      </span>
                       <ChevronRight size={14} />
                     </button>
                   ))}
@@ -630,8 +637,12 @@ export default function LandingPage() {
                   className="bg-slate-50 border border-slate-200/70 rounded-2xl p-6 text-left space-y-5"
                 >
                   <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                    <h4 className="font-display font-bold text-slate-800 text-base">
-                      {INTERACTIVE_PET_DATA[selectedPet].icon} {selectedPet} Care Blueprint
+                    <h4 className="font-display font-bold text-slate-800 text-base flex items-center gap-2">
+                      {(() => {
+                        const PetIcon = INTERACTIVE_PET_DATA[selectedPet].icon;
+                        return <PetIcon size={18} className="text-primary-600" />;
+                      })()}
+                      {selectedPet} Care Blueprint
                     </h4>
                     <span className="px-3 py-1 bg-white border border-slate-200 text-primary-600 text-[11px] font-bold rounded-full capitalize">
                       Stage: {selectedStage}
@@ -694,7 +705,7 @@ export default function LandingPage() {
       <section id="services" className="bg-slate-100/50 py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           {/* Header */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -742,9 +753,9 @@ export default function LandingPage() {
       {/* 7. Why Choose Us Section */}
       <section id="why-us" className="max-w-7xl mx-auto px-6 scroll-mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center text-left">
-          
+
           {/* Image/Mockup Slot Left */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -820,7 +831,7 @@ export default function LandingPage() {
       <section id="testimonials" className="bg-slate-100/50 py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           {/* Header */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -861,6 +872,7 @@ export default function LandingPage() {
                     src={test.avatar}
                     alt={test.name}
                     className="w-10 h-10 rounded-full object-cover"
+                    loading="lazy"
                   />
                   <div className="text-left">
                     <h4 className="text-xs font-bold text-slate-900">{test.name}</h4>
@@ -876,7 +888,7 @@ export default function LandingPage() {
       {/* 9. FAQ Accordion Section */}
       <section id="faq" className="max-w-4xl mx-auto px-6 scroll-mt-20">
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
