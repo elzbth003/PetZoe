@@ -158,6 +158,7 @@ public class AppointmentService {
                 appt.getPet().getId(),
                 appt.getPet().getName(),
                 appt.getOwner().getId(),
+                appt.getOwner().getName(),
                 appt.getVeterinarian().getId(),
                 appt.getVeterinarian().getName(),
                 appt.getAppointmentDate(),

@@ -13,6 +13,8 @@ public record AppointmentDTO(
     String petName,
 
     Long ownerId,
+    
+    String ownerName,
 
     @NotNull(message = "Veterinarian ID is required")
     Long veterinarianId,

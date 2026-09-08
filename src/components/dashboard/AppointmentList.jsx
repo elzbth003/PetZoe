@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
+import ChatWidget from './ChatWidget';
 
 // Time slots options
 const TIME_SLOTS = [
@@ -32,8 +34,10 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [activeChat, setActiveChat] = useState(null);
 
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const {
     register,
@@ -331,15 +335,24 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                     </div>
                   </div>
 
-                  {/* Actions (Cancel button) */}
+                  {/* Actions (Cancel button & Chat) */}
                   {isUpcoming && (
-                    <button
-                      onClick={() => setCancelTarget(appt)}
-                      className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/60 hover:border-slate-200 text-slate-400 hover:text-rose-600 shadow-sm transition-all cursor-pointer shrink-0"
-                      title="Cancel Appointment"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <button
+                        onClick={() => setActiveChat(appt)}
+                        className="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-600 hover:text-blue-700 shadow-sm transition-all cursor-pointer flex items-center justify-center"
+                        title="Chat with Vet"
+                      >
+                        <MessageSquare size={14} />
+                      </button>
+                      <button
+                        onClick={() => setCancelTarget(appt)}
+                        className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/60 hover:border-slate-200 text-slate-400 hover:text-rose-600 shadow-sm transition-all cursor-pointer flex items-center justify-center"
+                        title="Cancel Appointment"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   )}
 
                 </div>
@@ -348,6 +361,15 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
           </div>
         )}
       </div>
+
+      {activeChat && (
+        <ChatWidget 
+          appointmentId={activeChat.id} 
+          currentUserId={user?.id}
+          otherUserName={`Dr. ${activeChat.veterinarianName}`}
+          onClose={() => setActiveChat(null)} 
+        />
+      )}
 
       {/* Cancel Confirmation Dialog */}
       {cancelTarget && (

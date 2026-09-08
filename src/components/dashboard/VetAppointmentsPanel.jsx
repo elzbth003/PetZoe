@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, MessageSquare, CheckCircle, XCircle, Loader2, PawPrint } from 'lucide-react';
 import { appointmentService } from '../../services/appointmentService';
 import { useToast } from '../../hooks/useToast';
+import ChatWidget from './ChatWidget';
+import CreatePrescriptionModal from './CreatePrescriptionModal';
+
+import { useAuth } from '../../hooks/useAuth';
 
 export default function VetAppointmentsPanel() {
   const [appointments, setAppointments] = useState([]);
@@ -10,7 +14,11 @@ export default function VetAppointmentsPanel() {
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [updateStatus, setUpdateStatus] = useState('');
   const [notes, setNotes] = useState('');
+  const [activeChat, setActiveChat] = useState(null);
+  const [activePrescription, setActivePrescription] = useState(null);
   const { showToast } = useToast();
+  
+  const { user } = useAuth();
 
   const loadAppointments = async () => {
     setLoading(true);
@@ -116,19 +124,35 @@ export default function VetAppointmentsPanel() {
               </div>
 
               {isUpcoming && (
-                <div className="flex gap-2 mt-6">
-                  <button
-                    onClick={() => openUpdateModal(appt, 'COMPLETED')}
-                    className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <CheckCircle size={14} /> Complete
-                  </button>
-                  <button
-                    onClick={() => openUpdateModal(appt, 'CANCELLED')}
-                    className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <XCircle size={14} /> Cancel
-                  </button>
+                <div className="flex flex-col gap-2 mt-6">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openUpdateModal(appt, 'COMPLETED')}
+                      className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle size={14} /> Complete
+                    </button>
+                    <button
+                      onClick={() => openUpdateModal(appt, 'CANCELLED')}
+                      className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <XCircle size={14} /> Cancel
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setActiveChat(appt)}
+                      className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <MessageSquare size={14} /> Chat
+                    </button>
+                    <button
+                      onClick={() => setActivePrescription(appt)}
+                      className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <PawPrint size={14} /> Prescribe
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -180,6 +204,26 @@ export default function VetAppointmentsPanel() {
             </div>
           </div>
         </div>
+      )}
+
+      {activeChat && (
+        <ChatWidget 
+          appointmentId={activeChat.id} 
+          currentUserId={user?.id}
+          otherUserName={activeChat.ownerName || 'Pet Owner'}
+          onClose={() => setActiveChat(null)} 
+        />
+      )}
+
+      {activePrescription && (
+        <CreatePrescriptionModal 
+          appointment={activePrescription} 
+          onClose={() => setActivePrescription(null)} 
+          onSuccess={() => {
+            showToast('Prescription issued successfully', 'success');
+            setActivePrescription(null);
+          }}
+        />
       )}
     </div>
   );

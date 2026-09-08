@@ -15,6 +15,7 @@ import AdopterProfilePanel from '../../components/dashboard/AdopterProfilePanel'
 import { notificationService } from '../../services/notificationService';
 import marketplaceService from '../../services/marketplaceService';
 import api from '../../services/api';
+import MedicalRecordsView from '../../components/dashboard/owner/MedicalRecordsView';
 
 export default function OwnerDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -289,22 +290,7 @@ export default function OwnerDashboard() {
       case 'Profile':
         return <ProfileManagement />;
       case 'Medical Records':
-        return (
-          <div className="bg-white border border-slate-100 rounded-3xl p-16 text-center space-y-4 animate-in fade-in duration-200 max-w-xl mx-auto">
-            <div className="h-16 w-16 bg-blue-50 text-[#1E3A5F] rounded-2xl flex items-center justify-center mx-auto">
-              <Sparkles size={32} />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-display font-bold text-lg text-slate-800">Medical Records Module</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                This module is planned for Milestone 2 and will support encrypted medical history, lab results, and prescription tracking.
-              </p>
-            </div>
-            <button onClick={() => setActiveTab('Dashboard')} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer">
-              Return to Overview
-            </button>
-          </div>
-        );
+        return <MedicalRecordsView />;
       default:
         return null;
     }
