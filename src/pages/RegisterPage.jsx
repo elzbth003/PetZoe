@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, Phone, User, Shield, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Phone, User, Shield, Briefcase, ArrowRight, Loader2, ChevronDown } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { GoogleLogin } from '@react-oauth/google';
@@ -10,13 +10,27 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: 'Empty', color: 'bg-slate-200' });
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const roleDropdownRef = React.useRef(null);
+  
   const { register: registerAuth, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) {
+        setIsRoleDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const {
     register,
     handleSubmit,
+    setValue,
     watch,
     formState: { errors }
   } = useForm({
@@ -186,23 +200,39 @@ export default function RegisterPage() {
         </div>
 
         {/* User Role */}
-        <div>
-          <label htmlFor="role" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">User Role</label>
+        <div ref={roleDropdownRef}>
+          <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">User Role</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 pointer-events-none">
               <Briefcase size={16} />
             </span>
-            <select
-              id="role"
-              disabled={isSubmitting}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-semibold cursor-pointer"
-              {...register('role')}
+            <div
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus-within:border-primary-500 text-slate-800 focus-within:ring-1 focus-within:ring-primary-500/20 text-xs font-semibold cursor-pointer flex items-center justify-between transition-all ${isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}
+              onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
             >
-              <option value="Pet Owner">Pet Owner</option>
-              <option value="Veterinarian">Veterinarian</option>
-              <option value="Shelter Manager">Shelter Manager</option>
-              <option value="Marketplace Seller">Marketplace Seller</option>
-            </select>
+              <span>{watch('role')}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isRoleDropdownOpen ? 'rotate-180' : ''}`} />
+            </div>
+            
+            {/* Hidden actual input for react-hook-form */}
+            <input type="hidden" {...register('role')} />
+
+            {isRoleDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 overflow-hidden z-50 py-1 animate-in fade-in zoom-in-95 duration-100">
+                {['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Marketplace Seller'].map((roleOption) => (
+                  <div
+                    key={roleOption}
+                    className={`px-4 py-2.5 text-xs font-semibold cursor-pointer hover:bg-slate-50 hover:text-primary-600 transition-colors ${watch('role') === roleOption ? 'bg-primary-50 text-primary-700' : 'text-slate-700'}`}
+                    onClick={() => {
+                      setValue('role', roleOption, { shouldValidate: true });
+                      setIsRoleDropdownOpen(false);
+                    }}
+                  >
+                    {roleOption}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
