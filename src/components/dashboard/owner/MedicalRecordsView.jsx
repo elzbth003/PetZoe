@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { prescriptionApi } from '../../services/medicalApi';
-import api from '../../services/api';
+import { prescriptionApi } from '../../../services/medicalApi';
+import api from '../../../services/api';
 import { FileText, Calendar, Info, Clock } from 'lucide-react';
 
 export default function MedicalRecordsView() {
