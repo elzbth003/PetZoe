@@ -1,0 +1,107 @@
+package com.petzoe.api.service;
+
+import com.petzoe.api.dto.ChatMessageDTO;
+import com.petzoe.api.entity.Appointment;
+import com.petzoe.api.entity.ChatMessage;
+import com.petzoe.api.entity.User;
+import com.petzoe.api.repository.AppointmentRepository;
+import com.petzoe.api.repository.ChatMessageRepository;
+import com.petzoe.api.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class ChatService {
+
+    private final ChatMessageRepository chatMessageRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final UserRepository userRepository;
+
+    public ChatService(ChatMessageRepository chatMessageRepository,
+                       AppointmentRepository appointmentRepository,
+                       UserRepository userRepository) {
+        this.chatMessageRepository = chatMessageRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.userRepository = userRepository;
+    }
+
+    @Transactional
+    public ChatMessageDTO sendMessage(Long appointmentId, String content, String senderEmail) {
+        if (content == null || content.trim().isEmpty()) {
+            throw new IllegalArgumentException("Message content cannot be empty");
+        }
+
+        User sender = userRepository.findByEmail(senderEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
+
+        User receiver;
+        if (appointment.getOwner().getId().equals(sender.getId())) {
+            receiver = appointment.getVeterinarian();
+        } else if (appointment.getVeterinarian().getId().equals(sender.getId())) {
+            receiver = appointment.getOwner();
+        } else {
+            throw new AccessDeniedException("You are not authorized to send messages for this appointment");
+        }
+
+        ChatMessage message = new ChatMessage();
+        message.setSender(sender);
+        message.setReceiver(receiver);
+        message.setAppointment(appointment);
+        message.setContent(content.trim());
+        
+        ChatMessage saved = chatMessageRepository.save(message);
+        return mapToDTO(saved);
+    }
+
+    public List<ChatMessageDTO> getMessagesByAppointment(Long appointmentId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
+
+        if (!appointment.getOwner().getId().equals(user.getId()) &&
+            !appointment.getVeterinarian().getId().equals(user.getId()) &&
+            !user.getRole().equalsIgnoreCase("ADMIN")) {
+            throw new AccessDeniedException("You are not authorized to view messages for this appointment");
+        }
+
+        return chatMessageRepository.findByAppointmentIdOrderByCreatedAtAsc(appointmentId)
+                .stream().map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void markMessagesAsRead(Long appointmentId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                
+        List<ChatMessage> messages = chatMessageRepository.findByAppointmentIdOrderByCreatedAtAsc(appointmentId);
+        for (ChatMessage message : messages) {
+            if (message.getReceiver().getId().equals(user.getId()) && !message.isRead()) {
+                message.setRead(true);
+                chatMessageRepository.save(message);
+            }
+        }
+    }
+
+    private ChatMessageDTO mapToDTO(ChatMessage message) {
+        ChatMessageDTO dto = new ChatMessageDTO();
+        dto.setId(message.getId());
+        dto.setSenderId(message.getSender().getId());
+        dto.setSenderName(message.getSender().getName());
+        dto.setReceiverId(message.getReceiver().getId());
+        dto.setReceiverName(message.getReceiver().getName());
+        dto.setAppointmentId(message.getAppointment().getId());
+        dto.setContent(message.getContent());
+        dto.setRead(message.isRead());
+        dto.setCreatedAt(message.getCreatedAt());
+        return dto;
+    }
+}
