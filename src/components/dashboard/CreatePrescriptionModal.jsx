@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { prescriptionApi } from '../../services/medicalApi';
-import { FiX, FiCheck } from 'react-icons/fi';
+import { X, Check } from 'lucide-react';
 
 const CreatePrescriptionModal = ({ appointment, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -41,8 +41,8 @@ const CreatePrescriptionModal = ({ appointment, onClose, onSuccess }) => {
         
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
           <h2 className="text-xl font-bold text-gray-800">Issue Prescription</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 focus:outline-none">
-            <FiX size={24} />
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+            <X size={24} />
           </button>
         </div>
 
@@ -140,7 +140,7 @@ const CreatePrescriptionModal = ({ appointment, onClose, onSuccess }) => {
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center"
           >
-            {loading ? 'Saving...' : <><FiCheck className="mr-2" /> Issue Prescription</>}
+            {loading ? 'Saving...' : <><Check className="mr-2" /> Issue Prescription</>}
           </button>
         </div>
       </div>

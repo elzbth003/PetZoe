@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatApi } from '../../services/medicalApi';
-import { FiSend, FiX } from 'react-icons/fi';
+import { Send, X } from 'lucide-react';
 
 const ChatWidget = ({ appointmentId, onClose, currentUserId, otherUserName }) => {
   const [messages, setMessages] = useState([]);
@@ -51,8 +51,8 @@ const ChatWidget = ({ appointmentId, onClose, currentUserId, otherUserName }) =>
       {/* Header */}
       <div className="px-4 py-3 bg-blue-600 text-white flex justify-between items-center rounded-t-lg">
         <h3 className="font-semibold">Chat with {otherUserName}</h3>
-        <button onClick={onClose} className="text-white hover:text-gray-200">
-          <FiX size={20} />
+        <button type="button" onClick={onClose} className="text-white hover:text-gray-200 focus:outline-none">
+          <X size={20} />
         </button>
       </div>
 
@@ -94,7 +94,7 @@ const ChatWidget = ({ appointmentId, onClose, currentUserId, otherUserName }) =>
           disabled={!newMessage.trim()}
           className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-10 h-10"
         >
-          <FiSend size={18} className="ml-1" />
+          <Send size={18} className="ml-1" />
         </button>
       </form>
     </div>
