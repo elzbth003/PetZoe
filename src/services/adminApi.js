@@ -4,7 +4,8 @@ export const adminApi = {
   getStats: () => api.get('/admin/dashboard/stats'),
   
   getUsers: () => api.get('/admin/users'),
-  toggleUserStatus: (id, enabled) => api.put(`/admin/users/${id}/status?enabled=${enabled}`),
+  getUserSummary: () => api.get('/admin/users/summary'),
+  toggleUserStatus: (id, enabled) => api.patch(`/admin/users/${id}/status?enabled=${enabled}`),
   
   getPendingVerifications: (entityType) => api.get(`/admin/verifications?entityType=${entityType}`),
   approveVerification: (id) => api.post(`/admin/verifications/${id}/approve`),

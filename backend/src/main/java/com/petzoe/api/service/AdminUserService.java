@@ -23,16 +23,34 @@ public class AdminUserService {
                 .collect(Collectors.toList());
     }
     
-    public AdminUserDTO toggleUserStatus(Long userId, boolean enabled) {
+    public AdminUserDTO toggleUserStatus(Long userId, boolean enabled, String currentAdminEmail) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
         
-        // Prevent disabling the main admin
-        if ("Admin".equalsIgnoreCase(user.getRole())) {
-            throw new RuntimeException("Cannot modify admin status");
+        if (user.getEmail().equalsIgnoreCase(currentAdminEmail)) {
+            throw new IllegalArgumentException("You cannot deactivate your own account.");
+        }
+
+        // Prevent disabling the main admin or any admin
+        if ("Admin".equalsIgnoreCase(user.getRole()) && !enabled) {
+            throw new IllegalArgumentException("Administrator accounts cannot be deactivated.");
         }
         
         user.setEnabled(enabled);
         return new AdminUserDTO(userRepository.save(user));
+    }
+
+    public java.util.Map<String, Long> getUserSummary() {
+        List<User> users = userRepository.findAll();
+        long total = users.size();
+        long active = users.stream().filter(User::isEnabled).count();
+        long inactive = total - active;
+        long pending = users.stream().filter(u -> "PENDING".equalsIgnoreCase(u.getVerificationStatus().name())).count();
+        return java.util.Map.of(
+            "totalUsers", total,
+            "activeUsers", active,
+            "inactiveUsers", inactive,
+            "pendingVerification", pending
+        );
     }
 }

@@ -24,8 +24,16 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.getAllUsers());
     }
 
-    @PutMapping("/{id}/status")
-    public ResponseEntity<AdminUserDTO> toggleUserStatus(@PathVariable Long id, @RequestParam boolean enabled) {
-        return ResponseEntity.ok(adminUserService.toggleUserStatus(id, enabled));
+    @GetMapping("/summary")
+    public ResponseEntity<java.util.Map<String, Long>> getUserSummary() {
+        return ResponseEntity.ok(adminUserService.getUserSummary());
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<AdminUserDTO> toggleUserStatus(
+            @PathVariable Long id, 
+            @RequestParam boolean enabled, 
+            java.security.Principal principal) {
+        return ResponseEntity.ok(adminUserService.toggleUserStatus(id, enabled, principal.getName()));
     }
 }

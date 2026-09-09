@@ -46,6 +46,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             userEmail = jwtService.extractUsername(jwt);
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                if (!userDetails.isEnabled()) {
+                    throw new org.springframework.security.authentication.DisabledException("Account is disabled");
+                }
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -56,6 +59,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
+        } catch (org.springframework.security.authentication.DisabledException e) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\": \"Your PetZoe account has been deactivated. Please contact the administrator.\"}");
+            return;
         } catch (Exception e) {
             // Token parsing or signature issues are swallowed here so filter chain proceeds,
             // resulting in a 401/403 downstream for protected routes.

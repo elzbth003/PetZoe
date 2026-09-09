@@ -11,6 +11,7 @@ public class AdminUserDTO {
     private String role;
     private boolean enabled;
     private VerificationStatus verificationStatus;
+    private java.time.LocalDateTime createdAt;
 
     public AdminUserDTO(User user) {
         this.id = user.getId();
@@ -20,6 +21,7 @@ public class AdminUserDTO {
         this.role = user.getRole();
         this.enabled = user.isEnabled();
         this.verificationStatus = user.getVerificationStatus();
+        this.createdAt = user.getCreatedAt();
     }
 
     public Long getId() { return id; }
@@ -36,4 +38,6 @@ public class AdminUserDTO {
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public VerificationStatus getVerificationStatus() { return verificationStatus; }
     public void setVerificationStatus(VerificationStatus verificationStatus) { this.verificationStatus = verificationStatus; }
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
