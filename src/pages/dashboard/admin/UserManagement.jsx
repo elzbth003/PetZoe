@@ -33,17 +33,18 @@ export default function UserManagement() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersRes, summaryRes] = await Promise.all([
-        adminApi.getUsers(),
-        adminApi.getUserSummary()
-      ]);
+      const usersRes = await adminApi.getUsers();
       setUsers(usersRes.data);
+    } catch (err) {
+      showToast("Failed to fetch users", "error");
+    }
+    try {
+      const summaryRes = await adminApi.getUserSummary();
       setSummary(summaryRes.data);
     } catch (err) {
-      showToast("Failed to fetch user data", "error");
-    } finally {
-      setLoading(false);
+      // Summary is non-critical; silently degrade
     }
+    setLoading(false);
   };
 
   const executeStatusChange = async () => {

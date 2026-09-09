@@ -45,7 +45,7 @@ public class AdminUserService {
         long total = users.size();
         long active = users.stream().filter(User::isEnabled).count();
         long inactive = total - active;
-        long pending = users.stream().filter(u -> "PENDING".equalsIgnoreCase(u.getVerificationStatus().name())).count();
+        long pending = users.stream().filter(u -> u.getVerificationStatus() != null && "PENDING".equalsIgnoreCase(u.getVerificationStatus().name())).count();
         return java.util.Map.of(
             "totalUsers", total,
             "activeUsers", active,
