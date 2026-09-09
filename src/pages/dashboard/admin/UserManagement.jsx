@@ -4,7 +4,7 @@ import { useToast } from '../../../hooks/useToast';
 import { useAuth } from '../../../hooks/useAuth';
 import { 
   Users, Search, CheckCircle, XCircle, MoreVertical, 
-  User as UserIcon, Calendar, Mail, Phone, Shield, ShieldAlert, X
+  User as UserIcon, Calendar, Mail, Phone, Shield, ShieldAlert, X, ChevronDown
 } from 'lucide-react';
 
 export default function UserManagement() {
@@ -22,12 +22,24 @@ export default function UserManagement() {
   const [actionMenuId, setActionMenuId] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null); // For Drawer
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, user: null, targetStatus: null });
+  const [openFilter, setOpenFilter] = useState(null); // 'role' | 'status' | 'verification' | null
+  const filterRef = React.useRef(null);
 
   const { showToast } = useToast();
   const { user: currentUser } = useAuth(); // to prevent deactivating self visually
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setOpenFilter(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const fetchData = async () => {
@@ -144,41 +156,95 @@ export default function UserManagement() {
           />
         </div>
         
-        <div className="flex w-full lg:w-auto gap-3 flex-wrap md:flex-nowrap">
-          <select 
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="flex-1 md:w-40 px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm font-medium text-slate-700 cursor-pointer"
-          >
-            <option value="All">All Roles</option>
-            <option value="Pet Owner">Pet Owner</option>
-            <option value="Veterinarian">Veterinarian</option>
-            <option value="Shelter Manager">Shelter Manager</option>
-            <option value="Marketplace Seller">Marketplace Seller</option>
-            <option value="Admin">Admin</option>
-          </select>
+        <div className="flex w-full lg:w-auto gap-3 flex-wrap md:flex-nowrap" ref={filterRef}>
+          {/* Role Filter */}
+          <div className="relative flex-1 md:w-40">
+            <div
+              onClick={() => setOpenFilter(openFilter === 'role' ? null : 'role')}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-medium text-slate-700 cursor-pointer flex items-center justify-between gap-2 hover:border-slate-300 transition-colors"
+            >
+              <span>{roleFilter === 'All' ? 'All Roles' : roleFilter}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${openFilter === 'role' ? 'rotate-180' : ''}`} />
+            </div>
+            {openFilter === 'role' && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-30 py-1">
+                {[
+                  { value: 'All', label: 'All Roles' },
+                  { value: 'Pet Owner', label: 'Pet Owner' },
+                  { value: 'Veterinarian', label: 'Veterinarian' },
+                  { value: 'Shelter Manager', label: 'Shelter Manager' },
+                  { value: 'Marketplace Seller', label: 'Marketplace Seller' },
+                  { value: 'Admin', label: 'Admin' },
+                ].map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={() => { setRoleFilter(opt.value); setOpenFilter(null); }}
+                    className={`px-4 py-2 text-sm font-medium cursor-pointer transition-colors ${roleFilter === opt.value ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    {opt.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="flex-1 md:w-32 px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm font-medium text-slate-700 cursor-pointer"
-          >
-            <option value="All">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
+          {/* Status Filter */}
+          <div className="relative flex-1 md:w-32">
+            <div
+              onClick={() => setOpenFilter(openFilter === 'status' ? null : 'status')}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-medium text-slate-700 cursor-pointer flex items-center justify-between gap-2 hover:border-slate-300 transition-colors"
+            >
+              <span>{statusFilter === 'All' ? 'All Status' : statusFilter}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${openFilter === 'status' ? 'rotate-180' : ''}`} />
+            </div>
+            {openFilter === 'status' && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-30 py-1">
+                {[
+                  { value: 'All', label: 'All Status' },
+                  { value: 'Active', label: 'Active' },
+                  { value: 'Inactive', label: 'Inactive' },
+                ].map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={() => { setStatusFilter(opt.value); setOpenFilter(null); }}
+                    className={`px-4 py-2 text-sm font-medium cursor-pointer transition-colors ${statusFilter === opt.value ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    {opt.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-          <select 
-            value={verificationFilter}
-            onChange={(e) => setVerificationFilter(e.target.value)}
-            className="flex-1 md:w-40 px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm font-medium text-slate-700 cursor-pointer"
-          >
-            <option value="All">All Verification</option>
-            <option value="VERIFIED">Verified</option>
-            <option value="PENDING">Pending</option>
-            <option value="NOT_SUBMITTED">Not Submitted</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
+          {/* Verification Filter */}
+          <div className="relative flex-1 md:w-40">
+            <div
+              onClick={() => setOpenFilter(openFilter === 'verification' ? null : 'verification')}
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-medium text-slate-700 cursor-pointer flex items-center justify-between gap-2 hover:border-slate-300 transition-colors"
+            >
+              <span>{verificationFilter === 'All' ? 'All Verification' : verificationFilter.replace('_', ' ')}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${openFilter === 'verification' ? 'rotate-180' : ''}`} />
+            </div>
+            {openFilter === 'verification' && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-30 py-1">
+                {[
+                  { value: 'All', label: 'All Verification' },
+                  { value: 'VERIFIED', label: 'Verified' },
+                  { value: 'PENDING', label: 'Pending' },
+                  { value: 'NOT_SUBMITTED', label: 'Not Submitted' },
+                  { value: 'REJECTED', label: 'Rejected' },
+                ].map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={() => { setVerificationFilter(opt.value); setOpenFilter(null); }}
+                    className={`px-4 py-2 text-sm font-medium cursor-pointer transition-colors ${verificationFilter === opt.value ? 'bg-primary-50 text-primary-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    {opt.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
