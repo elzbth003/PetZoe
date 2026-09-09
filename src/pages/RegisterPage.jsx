@@ -32,8 +32,9 @@ export default function RegisterPage() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors }
+    formState: { errors, touchedFields }
   } = useForm({
+    mode: 'onTouched',
     defaultValues: {
       name: '',
       email: '',
