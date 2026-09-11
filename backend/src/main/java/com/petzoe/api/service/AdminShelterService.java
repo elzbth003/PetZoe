@@ -45,9 +45,14 @@ public class AdminShelterService {
         return shelters.stream().map(ShelterSummaryDTO::new).collect(Collectors.toList());
     }
 
-    public ShelterResponseDTO getShelterDetail(Long id) {
-        Shelter shelter = shelterRepository.findById(id)
+    private Shelter findShelter(Long id) {
+        return shelterRepository.findById(id)
+                .or(() -> shelterRepository.findByManagerId(id))
                 .orElseThrow(() -> new RuntimeException("Shelter not found"));
+    }
+
+    public ShelterResponseDTO getShelterDetail(Long id) {
+        Shelter shelter = findShelter(id);
         String rejectionReason = shelter.getVerificationStatus() == VerificationStatus.REJECTED
                 || shelter.getVerificationStatus() == VerificationStatus.CHANGES_REQUIRED
                 ? findVerificationRequest(shelter.getManager()).map(VerificationRequest::getReviewerNotes).orElse(null)
@@ -57,8 +62,7 @@ public class AdminShelterService {
 
     @Transactional
     public ShelterResponseDTO approve(Long id, String adminEmail) {
-        Shelter shelter = shelterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Shelter not found"));
+        Shelter shelter = findShelter(id);
         User admin = getAdmin(adminEmail);
 
         VerificationStatus previous = shelter.getVerificationStatus();
@@ -88,8 +92,7 @@ public class AdminShelterService {
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("A rejection reason is required.");
         }
-        Shelter shelter = shelterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Shelter not found"));
+        Shelter shelter = findShelter(id);
         User admin = getAdmin(adminEmail);
 
         VerificationStatus previous = shelter.getVerificationStatus();
@@ -120,8 +123,7 @@ public class AdminShelterService {
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("Please describe what changes are required.");
         }
-        Shelter shelter = shelterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Shelter not found"));
+        Shelter shelter = findShelter(id);
         User admin = getAdmin(adminEmail);
 
         VerificationStatus previous = shelter.getVerificationStatus();
@@ -152,8 +154,7 @@ public class AdminShelterService {
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("A suspension reason is required.");
         }
-        Shelter shelter = shelterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Shelter not found"));
+        Shelter shelter = findShelter(id);
         User admin = getAdmin(adminEmail);
 
         VerificationStatus previous = shelter.getVerificationStatus();

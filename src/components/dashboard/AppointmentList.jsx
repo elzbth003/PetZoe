@@ -76,7 +76,9 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
       setAppointments(sortedAppts);
 
       if (onAppointmentsUpdated) {
-        const upcomingCount = sortedAppts.filter(a => a.status === 'UPCOMING').length;
+        const upcomingCount = sortedAppts.filter(a =>
+          ['PENDING', 'CONFIRMED', 'UPCOMING', 'IN_CONSULTATION'].includes(a.status?.toUpperCase())
+        ).length;
         onAppointmentsUpdated(upcomingCount);
       }
     } catch (_err) {
@@ -282,31 +284,51 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
         ) : (
           <div className="space-y-4">
             {appointments.map((appt) => {
-              const isUpcoming = appt.status === 'UPCOMING';
-              const isCancelled = appt.status === 'CANCELLED';
+              const statusUpper = (appt.status || '').toUpperCase();
+              const isUpcoming = ['PENDING', 'CONFIRMED', 'UPCOMING', 'IN_CONSULTATION'].includes(statusUpper);
+              const isCancelled = statusUpper === 'CANCELLED' || statusUpper === 'REJECTED';
+              const isCompleted = statusUpper === 'COMPLETED';
+              const isInConsultation = statusUpper === 'IN_CONSULTATION';
+              const isPending = statusUpper === 'PENDING';
 
               return (
                 <div 
                   key={appt.id} 
-                  className={`bg-white border ${isCancelled ? 'border-slate-100 opacity-75' : 'border-slate-100'} rounded-[16px] p-5 shadow-sm hover:shadow-md transition-all flex items-start justify-between gap-4`}
+                  className={`bg-white border ${
+                    isInConsultation
+                      ? 'border-amber-400/80 ring-2 ring-amber-400/20'
+                      : isCancelled
+                      ? 'border-slate-100 opacity-75'
+                      : 'border-slate-100'
+                  } rounded-[16px] p-5 shadow-sm hover:shadow-md transition-all flex items-start justify-between gap-4`}
                 >
                   <div className="flex gap-4 items-start text-left">
                     <div className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                      isCancelled ? 'bg-slate-100' : 'bg-sky-50'
-                    } ${
-                      isCancelled ? 'text-slate-400' : 'text-sky-600'
+                      isInConsultation ? 'bg-amber-50 text-amber-600' :
+                      isCancelled ? 'bg-slate-100 text-slate-400' :
+                      isCompleted ? 'bg-emerald-50 text-emerald-600' :
+                      isPending ? 'bg-purple-50 text-purple-600' :
+                      'bg-sky-50 text-sky-600'
                     }`}>
                       <Calendar size={20} />
                     </div>
                     
                     <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isUpcoming 
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                            : 'bg-slate-100 text-slate-600'
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                          isPending
+                            ? 'bg-purple-50 text-purple-700 border border-purple-100'
+                            : isInConsultation
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
+                            : isCompleted
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : isCancelled
+                            ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                            : 'bg-sky-50 text-sky-700 border border-sky-100'
                         }`}>
-                          {appt.status}
+                          {isPending ? 'Awaiting Doctor Confirmation' :
+                           isInConsultation ? 'Consultation In Progress' :
+                           appt.status}
                         </span>
                         <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
                           <PawPrint size={12} className="text-primary-500" /> {appt.petName}

@@ -20,13 +20,16 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public ChatService(ChatMessageRepository chatMessageRepository,
                        AppointmentRepository appointmentRepository,
-                       UserRepository userRepository) {
+                       UserRepository userRepository,
+                       NotificationService notificationService) {
         this.chatMessageRepository = chatMessageRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -57,6 +60,18 @@ public class ChatService {
         message.setContent(content.trim());
         
         ChatMessage saved = chatMessageRepository.save(message);
+
+        // Notify receiver of new chat message
+        String preview = content.length() > 60 ? content.substring(0, 57) + "..." : content;
+        notificationService.createNotification(
+                receiver,
+                "New message from " + sender.getName(),
+                preview,
+                "CHAT",
+                null,
+                appointment.getId()
+        );
+
         return mapToDTO(saved);
     }
 

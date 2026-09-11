@@ -38,21 +38,45 @@ public class AdminVeterinarianService {
     }
 
     public List<AdminVeterinarianListDTO> getAllVeterinarians() {
-        return veterinarianProfileRepository.findAll().stream()
-                .map(this::mapToListDTO)
-                .collect(Collectors.toList());
+        List<User> vets = userRepository.findByRole("Veterinarian");
+        return vets.stream().map(user -> {
+            VeterinarianProfile profile = veterinarianProfileRepository.findByUserId(user.getId())
+                    .orElse(null);
+            return new AdminVeterinarianListDTO(
+                    user.getId(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getPhone(),
+                    user.getSpecialization(),
+                    user.getVerificationStatus() != null ? user.getVerificationStatus() : VerificationStatus.NOT_SUBMITTED,
+                    profile != null ? profile.getSubmittedAt() : null,
+                    profile != null ? profile.getExperience() : null,
+                    profile != null ? profile.getRegistrationNumber() : null
+            );
+        }).collect(Collectors.toList());
+    }
+
+    private VeterinarianProfile findProfile(Long id) {
+        return veterinarianProfileRepository.findByUserId(id)
+                .or(() -> veterinarianProfileRepository.findById(id))
+                .orElseGet(() -> {
+                    User user = userRepository.findById(id)
+                            .filter(u -> "Veterinarian".equalsIgnoreCase(u.getRole()))
+                            .orElseThrow(() -> new RuntimeException("Veterinarian profile not found for ID: " + id));
+                    VeterinarianProfile newProfile = new VeterinarianProfile();
+                    newProfile.setUser(user);
+                    return veterinarianProfileRepository.save(newProfile);
+                });
     }
 
     public VeterinarianDetailDTO getVeterinarianDetail(Long id) {
-        VeterinarianProfile profile = veterinarianProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veterinarian profile not found"));
+        VeterinarianProfile profile = findProfile(id);
         return mapToDetailDTO(profile);
     }
 
     @Transactional
     public void markUnderReview(Long id, String adminEmail) {
-        VeterinarianProfile profile = veterinarianProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veterinarian profile not found"));
+        VeterinarianProfile profile = findProfile(id);
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
@@ -66,8 +90,7 @@ public class AdminVeterinarianService {
 
     @Transactional
     public void approveVeterinarian(Long id, String adminEmail) {
-        VeterinarianProfile profile = veterinarianProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veterinarian profile not found"));
+        VeterinarianProfile profile = findProfile(id);
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
@@ -96,8 +119,7 @@ public class AdminVeterinarianService {
             throw new IllegalArgumentException("Reason is required for rejection");
         }
 
-        VeterinarianProfile profile = veterinarianProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veterinarian profile not found"));
+        VeterinarianProfile profile = findProfile(id);
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
@@ -111,8 +133,7 @@ public class AdminVeterinarianService {
             throw new IllegalArgumentException("Reason is required to request resubmission");
         }
 
-        VeterinarianProfile profile = veterinarianProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Veterinarian profile not found"));
+        VeterinarianProfile profile = findProfile(id);
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
@@ -187,11 +208,15 @@ public class AdminVeterinarianService {
     private VeterinarianDetailDTO mapToDetailDTO(VeterinarianProfile profile) {
         User user = profile.getUser();
         
-        List<VerificationDocumentDTO> docs = verificationDocumentRepository.findByVeterinarianProfileId(profile.getId())
-                .stream().map(this::mapToDocumentDTO).collect(Collectors.toList());
+        List<VerificationDocumentDTO> docs = profile.getId() != null
+                ? verificationDocumentRepository.findByVeterinarianProfileId(profile.getId())
+                    .stream().map(this::mapToDocumentDTO).collect(Collectors.toList())
+                : List.of();
                 
-        List<VerificationHistoryDTO> history = verificationHistoryRepository.findByVeterinarianProfileIdOrderByCreatedAtDesc(profile.getId())
-                .stream().map(this::mapToHistoryDTO).collect(Collectors.toList());
+        List<VerificationHistoryDTO> history = profile.getId() != null
+                ? verificationHistoryRepository.findByVeterinarianProfileIdOrderByCreatedAtDesc(profile.getId())
+                    .stream().map(this::mapToHistoryDTO).collect(Collectors.toList())
+                : List.of();
 
         return new VeterinarianDetailDTO(
                 user.getId(),
@@ -201,7 +226,7 @@ public class AdminVeterinarianService {
                 user.getSpecialization(),
                 user.getBio(),
                 user.getAddress(),
-                user.getVerificationStatus(),
+                user.getVerificationStatus() != null ? user.getVerificationStatus() : VerificationStatus.NOT_SUBMITTED,
                 profile.getId(),
                 profile.getQualification(),
                 profile.getRegistrationNumber(),

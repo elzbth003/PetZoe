@@ -1,6 +1,7 @@
 package com.petzoe.api.controller;
 
-import com.petzoe.api.dto.PetDTO;
+import com.petzoe.api.dto.*;
+import com.petzoe.api.service.PetClinicalService;
 import com.petzoe.api.service.PetService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +15,11 @@ import java.util.List;
 public class PetController {
 
     private final PetService petService;
+    private final PetClinicalService petClinicalService;
 
-    public PetController(PetService petService) {
+    public PetController(PetService petService, PetClinicalService petClinicalService) {
         this.petService = petService;
+        this.petClinicalService = petClinicalService;
     }
 
     @GetMapping
@@ -48,5 +51,25 @@ public class PetController {
         String email = authentication.getName();
         petService.deletePet(id, email);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/medical-records")
+    public ResponseEntity<List<PetMedicalRecordDTO>> getPetMedicalRecords(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(petClinicalService.getPetMedicalRecords(id, authentication.getName()));
+    }
+
+    @GetMapping("/{id}/vaccinations")
+    public ResponseEntity<List<PetVaccinationDTO>> getPetVaccinations(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(petClinicalService.getPetVaccinations(id, authentication.getName()));
+    }
+
+    @GetMapping("/{id}/documents")
+    public ResponseEntity<List<PetMedicalDocumentDTO>> getPetDocuments(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(petClinicalService.getPetDocuments(id, authentication.getName()));
+    }
+
+    @GetMapping("/{id}/clinical-history")
+    public ResponseEntity<VetPatientDetailDTO> getPetClinicalHistory(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(petClinicalService.getPatientDetail(id, authentication.getName()));
     }
 }

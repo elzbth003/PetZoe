@@ -253,40 +253,63 @@ export default function VeterinarianReview() {
           </div>
 
           {/* Profile Level Actions */}
-          <div className="bg-slate-900 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-white font-bold">Final Decision</h3>
-              <p className="text-slate-400 text-sm">
-                {!canApprove && vet.verificationStatus === 'UNDER_REVIEW' 
-                  ? 'All documents must be approved first.' 
-                  : 'Approve or reject the overall profile.'}
+          <div className="bg-slate-900 rounded-3xl p-6 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-5 overflow-hidden border border-slate-800">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-white font-bold text-lg">Final Decision</h3>
+              <p className="text-slate-400 text-sm mt-1">
+                {vet.verificationStatus === 'APPROVED'
+                  ? 'This veterinarian profile has been verified and approved.'
+                  : vet.verificationStatus === 'REJECTED'
+                  ? 'This veterinarian profile has been rejected.'
+                  : canStartReview
+                  ? 'Profile is waiting for review. Start review to audit credentials.'
+                  : !canApprove && vet.verificationStatus === 'UNDER_REVIEW'
+                  ? 'All submitted documents must be approved first before approving profile.'
+                  : 'Approve or reject the overall veterinarian profile.'}
               </p>
             </div>
             
-            <div className="flex gap-3 w-full sm:w-auto">
-              <button 
-                disabled={!canApprove}
-                onClick={handleApproveProfile}
-                className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 disabled:opacity-50 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <CheckCircle size={18} /> Approve Profile
-              </button>
-              
-              <button 
-                disabled={vet.verificationStatus !== 'UNDER_REVIEW'}
-                onClick={() => setShowResubmitModal(true)}
-                className="flex-1 sm:flex-none px-6 py-2.5 bg-amber-500 disabled:opacity-50 hover:bg-amber-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <AlertCircle size={18} /> Ask Resubmit
-              </button>
+            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto shrink-0 justify-start xl:justify-end">
+              {canStartReview && (
+                <button 
+                  onClick={handleReviewProfile}
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm whitespace-nowrap active:scale-95"
+                >
+                  <Clock size={16} /> Start Review
+                </button>
+              )}
 
-              <button 
-                disabled={vet.verificationStatus !== 'UNDER_REVIEW'}
-                onClick={() => setShowRejectModal(true)}
-                className="flex-1 sm:flex-none px-6 py-2.5 bg-rose-500 disabled:opacity-50 hover:bg-rose-600 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <XCircle size={18} /> Reject Profile
-              </button>
+              {vet.verificationStatus === 'APPROVED' ? (
+                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold">
+                  <CheckCircle size={16} /> Verified & Active
+                </div>
+              ) : (
+                <>
+                  <button 
+                    disabled={!canApprove}
+                    onClick={handleApproveProfile}
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-950/40 disabled:text-emerald-500/40 disabled:border-emerald-900/30 border border-emerald-500/30 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:cursor-not-allowed whitespace-nowrap active:scale-95"
+                  >
+                    <CheckCircle size={16} /> Approve Profile
+                  </button>
+                  
+                  <button 
+                    disabled={vet.verificationStatus !== 'UNDER_REVIEW'}
+                    onClick={() => setShowResubmitModal(true)}
+                    className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-amber-950/40 disabled:text-amber-500/40 disabled:border-amber-900/30 border border-amber-500/30 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:cursor-not-allowed whitespace-nowrap active:scale-95"
+                  >
+                    <AlertCircle size={16} /> Ask Resubmit
+                  </button>
+
+                  <button 
+                    disabled={vet.verificationStatus !== 'UNDER_REVIEW'}
+                    onClick={() => setShowRejectModal(true)}
+                    className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:bg-rose-950/40 disabled:text-rose-500/40 disabled:border-rose-900/30 border border-rose-500/30 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:cursor-not-allowed whitespace-nowrap active:scale-95"
+                  >
+                    <XCircle size={16} /> Reject Profile
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

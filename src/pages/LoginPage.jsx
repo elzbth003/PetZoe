@@ -194,13 +194,6 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      {/* Seed Accounts Info Panel */}
-      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-[10px] text-slate-500 text-left space-y-1">
-        <p className="font-bold text-slate-700">Mock Accounts Available:</p>
-        <p className="flex items-center gap-1.5"><PawPrint size={12} className="text-primary-500" /> Pet Owner: <span className="font-mono font-semibold text-primary-600">owner@petverse.com</span> / <span className="font-mono">Password123!</span></p>
-        <p className="flex items-center gap-1.5"><Stethoscope size={12} className="text-secondary-500" /> Veterinarian: <span className="font-mono font-semibold text-secondary-600">vet@petverse.com</span> / <span className="font-mono">Password123!</span></p>
-      </div>
-
     </div>
   );
 }

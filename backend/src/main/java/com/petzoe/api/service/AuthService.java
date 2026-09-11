@@ -150,7 +150,7 @@ public class AuthService {
                 user.setName(name != null ? name : email);
                 user.setEmail(email);
                 user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
-                user.setPhone(null);
+                user.setPhone("");
                 user.setRole("Pet Owner");
                 user.setGoogleId(googleId);
                 user.setProfileImage(pictureUrl);
