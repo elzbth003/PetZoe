@@ -11,6 +11,13 @@ export const appointmentService = {
     return response.data;
   },
 
+  getAvailableSlots: async (veterinarianId, date) => {
+    const response = await api.get('/appointments/available-slots', {
+      params: { veterinarianId, date }
+    });
+    return response.data;
+  },
+
   cancelAppointment: async (id) => {
     const response = await api.put(`/appointments/${id}/cancel`);
     return response.data;

@@ -4,6 +4,7 @@ import com.petzoe.api.dto.VerificationDocumentDTO;
 import com.petzoe.api.dto.VerificationHistoryDTO;
 import com.petzoe.api.dto.VeterinarianProfileUpdateDTO;
 import com.petzoe.api.dto.VeterinarianSelfProfileDTO;
+import com.petzoe.api.dto.VetScheduleUpdateDTO;
 import com.petzoe.api.entity.User;
 import com.petzoe.api.entity.VerificationDocument;
 import com.petzoe.api.entity.VerificationHistory;
@@ -183,6 +184,30 @@ public class VetProfileService {
         return mapToSelfProfileDTO(vet, profile);
     }
 
+    @Transactional
+    public VeterinarianSelfProfileDTO updateSchedule(String vetEmail, VetScheduleUpdateDTO dto) {
+        User vet = getVetByEmail(vetEmail);
+        VeterinarianProfile profile = veterinarianProfileRepository.findByUserId(vet.getId())
+                .orElseGet(() -> {
+                    VeterinarianProfile newProfile = new VeterinarianProfile();
+                    newProfile.setUser(vet);
+                    return veterinarianProfileRepository.save(newProfile);
+                });
+
+        if (dto.workingDays() != null && !dto.workingDays().isEmpty()) {
+            profile.setWorkingDays(String.join(",", dto.workingDays()));
+        }
+        if (dto.workStartTime() != null && !dto.workStartTime().isBlank()) {
+            profile.setWorkStartTime(dto.workStartTime().trim());
+        }
+        if (dto.workEndTime() != null && !dto.workEndTime().isBlank()) {
+            profile.setWorkEndTime(dto.workEndTime().trim());
+        }
+
+        VeterinarianProfile saved = veterinarianProfileRepository.save(profile);
+        return mapToSelfProfileDTO(vet, saved);
+    }
+
     private User getVetByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
@@ -219,7 +244,10 @@ public class VetProfileService {
                 profile.getSubmittedAt(),
                 profile.getVerifiedAt(),
                 docs,
-                history
+                history,
+                profile.getWorkingDays(),
+                profile.getWorkStartTime(),
+                profile.getWorkEndTime()
         );
     }
 

@@ -36,6 +36,13 @@ public class VetProfileController {
         return ResponseEntity.ok(vetProfileService.updateProfile(auth.getName(), dto));
     }
 
+    @PutMapping("/schedule")
+    public ResponseEntity<VeterinarianSelfProfileDTO> updateSchedule(
+            @Valid @RequestBody com.petzoe.api.dto.VetScheduleUpdateDTO dto,
+            Authentication auth) {
+        return ResponseEntity.ok(vetProfileService.updateSchedule(auth.getName(), dto));
+    }
+
     @PostMapping("/documents")
     public ResponseEntity<VerificationDocumentDTO> uploadDocument(
             @Valid @RequestBody VerificationDocumentUploadDTO dto,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Shield, CheckCircle2, AlertCircle, Clock, Upload, Trash2,
   FileText, ExternalLink, RefreshCw, Send, Loader2, Award, User,
-  Building, Phone, MapPin, Sparkles, AlertTriangle, XCircle
+  Building, Phone, MapPin, Sparkles, AlertTriangle, XCircle, Calendar
 } from 'lucide-react';
 import { vetClinicalService } from '../../services/vetClinicalService';
 import { useToast } from '../../hooks/useToast';
@@ -13,6 +13,12 @@ export default function VetVerificationPanel() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [submittingVerification, setSubmittingVerification] = useState(false);
+  const [schedule, setSchedule] = useState({
+    workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+    workStartTime: '09:00 AM',
+    workEndTime: '05:00 PM',
+  });
+  const [savingSchedule, setSavingSchedule] = useState(false);
 
   const [form, setForm] = useState({
     qualification: '',
@@ -47,6 +53,13 @@ export default function VetVerificationPanel() {
         address: data.address || '',
         phone: data.phone || '',
       });
+      if (data.workingDays) {
+        setSchedule({
+          workingDays: data.workingDays.split(',').map(d => d.trim()),
+          workStartTime: data.workStartTime || '09:00 AM',
+          workEndTime: data.workEndTime || '05:00 PM',
+        });
+      }
     } catch (err) {
       showToast('Failed to load veterinarian profile', 'error');
     } finally {
@@ -57,6 +70,33 @@ export default function VetVerificationPanel() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  const handleToggleDay = (day) => {
+    setSchedule(prev => {
+      const days = prev.workingDays.includes(day)
+        ? prev.workingDays.filter(d => d !== day)
+        : [...prev.workingDays, day];
+      return { ...prev, workingDays: days };
+    });
+  };
+
+  const handleUpdateSchedule = async (e) => {
+    e.preventDefault();
+    if (schedule.workingDays.length === 0) {
+      showToast('Please select at least one consultation day', 'error');
+      return;
+    }
+    setSavingSchedule(true);
+    try {
+      const updated = await vetClinicalService.updateVetSchedule(schedule);
+      setProfile(updated);
+      showToast('Consultation schedule updated successfully', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update schedule', 'error');
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -371,6 +411,100 @@ export default function VetVerificationPanel() {
                 >
                   {savingProfile && <Loader2 size={14} className="animate-spin" />}
                   Save Profile Details
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Consultation Hours & Schedule Card */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                  <Calendar size={18} className="text-sky-600" /> Consultation Hours & Schedule
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configure your working days and daily shift. Inactive days are automatically disabled for pet owners during booking.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateSchedule} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">Available Consultation Days</label>
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                  {[
+                    { id: 'MONDAY', label: 'Mon' },
+                    { id: 'TUESDAY', label: 'Tue' },
+                    { id: 'WEDNESDAY', label: 'Wed' },
+                    { id: 'THURSDAY', label: 'Thu' },
+                    { id: 'FRIDAY', label: 'Fri' },
+                    { id: 'SATURDAY', label: 'Sat' },
+                    { id: 'SUNDAY', label: 'Sun' }
+                  ].map(day => {
+                    const isSelected = schedule.workingDays.includes(day.id);
+                    return (
+                      <button
+                        key={day.id}
+                        type="button"
+                        onClick={() => handleToggleDay(day.id)}
+                        className={`py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center ${
+                          isSelected
+                            ? 'bg-sky-50 border-sky-300 text-sky-700 shadow-sm'
+                            : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span>{day.label}</span>
+                        <span className="text-[9px] font-semibold mt-0.5">
+                          {isSelected ? 'Active' : 'Off'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Shift Start Time</label>
+                  <select
+                    value={schedule.workStartTime}
+                    onChange={(e) => setSchedule({ ...schedule, workStartTime: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    <option value="08:00 AM">08:00 AM</option>
+                    <option value="08:30 AM">08:30 AM</option>
+                    <option value="09:00 AM">09:00 AM</option>
+                    <option value="09:30 AM">09:30 AM</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Shift End Time</label>
+                  <select
+                    value={schedule.workEndTime}
+                    onChange={(e) => setSchedule({ ...schedule, workEndTime: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    <option value="04:00 PM">04:00 PM</option>
+                    <option value="04:30 PM">04:30 PM</option>
+                    <option value="05:00 PM">05:00 PM</option>
+                    <option value="05:30 PM">05:30 PM</option>
+                    <option value="06:00 PM">06:00 PM</option>
+                    <option value="07:00 PM">07:00 PM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={savingSchedule}
+                  className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {savingSchedule && <Loader2 size={14} className="animate-spin" />}
+                  Save Schedule & Availability
                 </button>
               </div>
             </form>

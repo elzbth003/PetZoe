@@ -2,6 +2,8 @@ package com.petzoe.api.service;
 
 import com.petzoe.api.dto.AppointmentDTO;
 import com.petzoe.api.dto.ConsultationSubmissionDTO;
+import com.petzoe.api.dto.DoctorDayScheduleDTO;
+import com.petzoe.api.dto.SlotAvailabilityDTO;
 import com.petzoe.api.entity.*;
 import com.petzoe.api.repository.*;
 import org.springframework.security.access.AccessDeniedException;
@@ -22,19 +24,22 @@ public class AppointmentService {
     private final NotificationService notificationService;
     private final PetMedicalRecordRepository petMedicalRecordRepository;
     private final PrescriptionRepository prescriptionRepository;
+    private final VeterinarianProfileRepository veterinarianProfileRepository;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                               PetRepository petRepository,
                               UserRepository userRepository,
                               NotificationService notificationService,
                               PetMedicalRecordRepository petMedicalRecordRepository,
-                              PrescriptionRepository prescriptionRepository) {
+                              PrescriptionRepository prescriptionRepository,
+                              VeterinarianProfileRepository veterinarianProfileRepository) {
         this.appointmentRepository = appointmentRepository;
         this.petRepository = petRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.petMedicalRecordRepository = petMedicalRecordRepository;
         this.prescriptionRepository = prescriptionRepository;
+        this.veterinarianProfileRepository = veterinarianProfileRepository;
     }
 
     public List<AppointmentDTO> getAppointmentsByOwner(String email) {
@@ -271,9 +276,95 @@ public class AppointmentService {
         return convertToDTO(updatedAppointment);
     }
 
+    public static final List<String> ALL_TIME_SLOTS = List.of(
+            "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM",
+            "11:00 AM", "11:30 AM", "02:00 PM", "02:30 PM",
+            "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
+    );
+
+    public DoctorDayScheduleDTO getDoctorSlotAvailability(Long veterinarianId, LocalDate date) {
+        User vet = userRepository.findById(veterinarianId)
+                .orElseThrow(() -> new IllegalArgumentException("Veterinarian not found with ID: " + veterinarianId));
+
+        if (!"Veterinarian".equalsIgnoreCase(vet.getRole())) {
+            throw new IllegalArgumentException("User is not a veterinarian.");
+        }
+
+        VeterinarianProfile profile = veterinarianProfileRepository.findByUserId(vet.getId()).orElse(null);
+        String workingDaysStr = profile != null ? profile.getWorkingDays() : "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY";
+        String workStartTime = profile != null ? profile.getWorkStartTime() : "09:00 AM";
+        String workEndTime = profile != null ? profile.getWorkEndTime() : "05:00 PM";
+        String workingHours = workStartTime + " - " + workEndTime;
+
+        List<String> workingDaysList = java.util.Arrays.stream(workingDaysStr.split(","))
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .collect(Collectors.toList());
+
+        String dayOfWeek = date.getDayOfWeek().name();
+        boolean isWorkingDay = workingDaysList.contains(dayOfWeek);
+
+        if (!isWorkingDay) {
+            List<SlotAvailabilityDTO> offDutySlots = ALL_TIME_SLOTS.stream()
+                    .map(slot -> new SlotAvailabilityDTO(slot, "OFF_DUTY", false))
+                    .collect(Collectors.toList());
+            return new DoctorDayScheduleDTO(
+                    vet.getId(),
+                    vet.getName(),
+                    date,
+                    false,
+                    dayOfWeek,
+                    workingHours,
+                    "Dr. " + vet.getName() + " does not hold clinic hours on " + dayOfWeek + "s. Please select another date.",
+                    offDutySlots
+            );
+        }
+
+        List<Appointment> bookedAppts = appointmentRepository.findByVeterinarianIdAndAppointmentDateAndStatusIn(
+                vet.getId(),
+                date,
+                List.of("PENDING", "CONFIRMED", "UPCOMING", "IN_CONSULTATION")
+        );
+
+        java.util.Set<String> bookedTimes = bookedAppts.stream()
+                .map(Appointment::getAppointmentTime)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        List<SlotAvailabilityDTO> slots = ALL_TIME_SLOTS.stream()
+                .map(slot -> {
+                    if (bookedTimes.contains(slot)) {
+                        return new SlotAvailabilityDTO(slot, "BOOKED", false);
+                    }
+                    return new SlotAvailabilityDTO(slot, "AVAILABLE", true);
+                })
+                .collect(Collectors.toList());
+
+        return new DoctorDayScheduleDTO(
+                vet.getId(),
+                vet.getName(),
+                date,
+                true,
+                dayOfWeek,
+                workingHours,
+                "Consultation hours available",
+                slots
+        );
+    }
+
     public AppointmentDTO bookAppointment(AppointmentDTO dto, String email) {
         User owner = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+
+        if (dto.appointmentDate() == null) {
+            throw new IllegalArgumentException("Appointment date is required.");
+        }
+        if (dto.appointmentDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Cannot book an appointment in the past.");
+        }
+        if (dto.appointmentTime() == null || dto.appointmentTime().isBlank()) {
+            throw new IllegalArgumentException("Time slot is required.");
+        }
 
         Pet pet = petRepository.findById(dto.petId())
                 .orElseThrow(() -> new IllegalArgumentException("Pet not found with ID: " + dto.petId()));
@@ -289,6 +380,29 @@ public class AppointmentService {
             throw new IllegalArgumentException("Selected user is not a veterinarian.");
         }
 
+        // Validate doctor working day
+        VeterinarianProfile profile = veterinarianProfileRepository.findByUserId(veterinarian.getId()).orElse(null);
+        String workingDaysStr = profile != null ? profile.getWorkingDays() : "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY";
+        List<String> workingDaysList = java.util.Arrays.stream(workingDaysStr.split(","))
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .toList();
+
+        if (!workingDaysList.contains(dto.appointmentDate().getDayOfWeek().name())) {
+            throw new IllegalStateException("Dr. " + veterinarian.getName() + " does not hold clinic hours on " + dto.appointmentDate().getDayOfWeek() + "s. Please select an available consultation date.");
+        }
+
+        // Validate double-booking collision
+        boolean isSlotTaken = appointmentRepository.existsByVeterinarianIdAndAppointmentDateAndAppointmentTimeAndStatusIn(
+                veterinarian.getId(),
+                dto.appointmentDate(),
+                dto.appointmentTime().trim(),
+                List.of("PENDING", "CONFIRMED", "UPCOMING", "IN_CONSULTATION")
+        );
+        if (isSlotTaken) {
+            throw new IllegalStateException("The selected time slot (" + dto.appointmentTime() + ") on " + dto.appointmentDate() + " is already booked for Dr. " + veterinarian.getName() + ". Please select another slot.");
+        }
+
         // Default new bookings to PENDING (or preserve status if supplied and valid)
         String initialStatus = "PENDING";
         if (dto.status() != null && (dto.status().equalsIgnoreCase("UPCOMING") || dto.status().equalsIgnoreCase("CONFIRMED"))) {
@@ -297,7 +411,7 @@ public class AppointmentService {
 
         Appointment appointment = new Appointment(
                 pet, owner, veterinarian,
-                dto.appointmentDate(), dto.appointmentTime(),
+                dto.appointmentDate(), dto.appointmentTime().trim(),
                 initialStatus, dto.notes()
         );
 

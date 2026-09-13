@@ -26,6 +26,13 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAppointmentsByOwner(email));
     }
 
+    @GetMapping("/available-slots")
+    public ResponseEntity<com.petzoe.api.dto.DoctorDayScheduleDTO> getAvailableSlots(
+            @RequestParam Long veterinarianId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
+        return ResponseEntity.ok(appointmentService.getDoctorSlotAvailability(veterinarianId, date));
+    }
+
     @PostMapping
     public ResponseEntity<AppointmentDTO> bookAppointment(@Valid @RequestBody AppointmentDTO dto, Authentication authentication) {
         String email = authentication.getName();

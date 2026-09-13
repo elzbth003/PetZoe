@@ -20,5 +20,8 @@ public record VeterinarianSelfProfileDTO(
         LocalDateTime submittedAt,
         LocalDateTime verifiedAt,
         List<VerificationDocumentDTO> documents,
-        List<VerificationHistoryDTO> history
+        List<VerificationHistoryDTO> history,
+        String workingDays,
+        String workStartTime,
+        String workEndTime
 ) {}

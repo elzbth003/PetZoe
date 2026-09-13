@@ -79,6 +79,11 @@ export const vetClinicalService = {
     return res.data;
   },
 
+  updateVetSchedule: async (data) => {
+    const res = await api.put('/vets/profile/schedule', data);
+    return res.data;
+  },
+
   uploadVerificationDocument: async (documentType, documentBase64) => {
     const res = await api.post('/vets/profile/documents', { documentType, documentBase64 });
     return res.data;

@@ -26,5 +26,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     @Query("SELECT COUNT(DISTINCT a.pet.id) FROM Appointment a WHERE a.veterinarian.id = :vetId")
     long countDistinctPetsByVeterinarianId(@Param("vetId") Long vetId);
+
+    List<Appointment> findByVeterinarianIdAndAppointmentDateAndStatusIn(Long veterinarianId, LocalDate appointmentDate, List<String> statuses);
+
+    boolean existsByVeterinarianIdAndAppointmentDateAndAppointmentTimeAndStatusIn(Long veterinarianId, LocalDate appointmentDate, String appointmentTime, List<String> statuses);
 }
 
