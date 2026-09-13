@@ -20,13 +20,16 @@ public class PrescriptionService {
     private final PrescriptionRepository prescriptionRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
+    private final com.petzoe.api.repository.PetRepository petRepository;
 
     public PrescriptionService(PrescriptionRepository prescriptionRepository,
                                AppointmentRepository appointmentRepository,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               com.petzoe.api.repository.PetRepository petRepository) {
         this.prescriptionRepository = prescriptionRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
+        this.petRepository = petRepository;
     }
 
     @Transactional
@@ -58,20 +61,19 @@ public class PrescriptionService {
     public List<PrescriptionDTO> getPrescriptionsByPet(Long petId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        
-        List<Prescription> prescriptions = prescriptionRepository.findByPetIdOrderByCreatedAtDesc(petId);
-        
-        // Authorization check: User must be either the pet owner or a vet who has an appointment with the pet
-        if (!prescriptions.isEmpty()) {
-            boolean isOwner = prescriptions.get(0).getPet().getOwner().getId().equals(user.getId());
-            boolean isVetWithAccess = appointmentRepository.findByPetId(petId).stream()
-                    .anyMatch(app -> app.getVeterinarian().getId().equals(user.getId()));
-            
-            if (!isOwner && !isVetWithAccess && !user.getRole().equalsIgnoreCase("ADMIN")) {
-                throw new AccessDeniedException("You are not authorized to view prescriptions for this pet");
-            }
+
+        com.petzoe.api.entity.Pet pet = petRepository.findById(petId)
+                .orElseThrow(() -> new IllegalArgumentException("Pet not found with ID: " + petId));
+
+        boolean isOwner = pet.getOwner().getId().equals(user.getId());
+        boolean isVetWithAccess = appointmentRepository.findByPetId(petId).stream()
+                .anyMatch(app -> app.getVeterinarian().getId().equals(user.getId()));
+
+        if (!isOwner && !isVetWithAccess && !user.getRole().equalsIgnoreCase("ADMIN")) {
+            throw new AccessDeniedException("You are not authorized to view prescriptions for this pet");
         }
-        
+
+        List<Prescription> prescriptions = prescriptionRepository.findByPetIdOrderByCreatedAtDesc(petId);
         return prescriptions.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 

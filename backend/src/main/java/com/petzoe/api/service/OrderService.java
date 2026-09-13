@@ -99,8 +99,8 @@ public class OrderService {
     public Order getOrderById(Long id, String email) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!order.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("Not authorized to view this order");
+        if (!order.getUser().getEmail().equalsIgnoreCase(email)) {
+            throw new org.springframework.security.access.AccessDeniedException("Not authorized to view this order");
         }
         return order;
     }

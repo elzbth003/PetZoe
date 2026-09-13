@@ -19,16 +19,37 @@ const profileSchema = z.object({
     .max(60, 'Name cannot exceed 60 characters')
     .regex(/^[a-zA-Z\s.'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
   phone: z.string()
-    .trim()
-    .regex(/^$|^[6-9]\d{9}$/, 'Phone must be a valid 10-digit mobile number starting with 6, 7, 8, or 9')
+    .max(15, 'Phone cannot exceed 15 digits')
+    .refine((val) => !val || val.length === 0 || val.trim().length > 0, {
+      message: 'Phone cannot be only whitespace',
+    })
+    .refine((val) => !val || val.trim().length === 0 || /^[6-9]\d{9}$/.test(val.trim()), {
+      message: 'Phone must be a valid 10-digit mobile number starting with 6, 7, 8, or 9',
+    })
     .optional(),
   bio: z.string()
-    .trim()
     .max(500, 'Bio cannot exceed 500 characters')
+    .refine((val) => !val || val.length === 0 || val.trim().length > 0, {
+      message: 'Bio cannot be only whitespace',
+    })
+    .refine((val) => !val || val.trim().length === 0 || val.trim().length >= 10, {
+      message: 'Bio must be at least 10 characters if provided',
+    })
+    .refine((val) => !val || !/[<>]/.test(val), {
+      message: 'Bio cannot contain HTML or script tags (< or >)',
+    })
     .optional(),
   address: z.string()
-    .trim()
     .max(255, 'Address cannot exceed 255 characters')
+    .refine((val) => !val || val.length === 0 || val.trim().length > 0, {
+      message: 'Address cannot be only whitespace',
+    })
+    .refine((val) => !val || val.trim().length === 0 || val.trim().length >= 5, {
+      message: 'Address must be at least 5 characters if provided',
+    })
+    .refine((val) => !val || val.trim().length === 0 || /^[a-zA-Z0-9\s,.'#\/()&-]+$/.test(val), {
+      message: 'Address can only contain letters, numbers, spaces, and basic punctuation (# , . - / \' &)',
+    })
     .optional(),
   profileImage: z.string()
     .trim()
@@ -36,8 +57,13 @@ const profileSchema = z.object({
     .or(z.literal(''))
     .optional(),
   specialization: z.string()
-    .trim()
     .max(100, 'Specialization cannot exceed 100 characters')
+    .refine((val) => !val || val.length === 0 || val.trim().length > 0, {
+      message: 'Specialization cannot be only whitespace',
+    })
+    .refine((val) => !val || val.trim().length === 0 || /^[a-zA-Z\s,.'&-]+$/.test(val.trim()), {
+      message: 'Specialization can only contain letters, spaces, and basic punctuation',
+    })
     .optional(),
 });
 
@@ -120,7 +146,15 @@ export default function ProfileManagement() {
   const onProfileUpdate = async (data) => {
     setIsSubmitting(true);
     try {
-      const updated = await profileService.updateProfile(data);
+      const payload = {
+        name: data.name?.trim(),
+        phone: data.phone && data.phone.trim().length > 0 ? data.phone.trim() : null,
+        bio: data.bio && data.bio.trim().length > 0 ? data.bio.trim() : null,
+        address: data.address && data.address.trim().length > 0 ? data.address.trim() : null,
+        profileImage: data.profileImage && data.profileImage.trim().length > 0 ? data.profileImage.trim() : null,
+        specialization: data.specialization && data.specialization.trim().length > 0 ? data.specialization.trim() : null,
+      };
+      const updated = await profileService.updateProfile(payload);
       setProfile(updated);
       // Update stored session user info
       const stored = JSON.parse(sessionStorage.getItem('petzoe_user') || '{}');
@@ -275,14 +309,22 @@ export default function ProfileManagement() {
 
             {/* Address */}
             <div>
-              <label htmlFor="profile-address" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Address <span className="text-slate-400 font-normal">(optional)</span></label>
+              <div className="flex justify-between items-center mb-1.5 ml-1">
+                <label htmlFor="profile-address" className="block text-slate-700 text-xs font-bold">
+                  Address <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <span className={`text-[10px] ${(watchProfile('address') || '').length > 240 ? 'text-amber-500 font-bold' : 'text-slate-400'}`}>
+                  {(watchProfile('address') || '').length}/255
+                </span>
+              </div>
               <div className="relative">
                 <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   id="profile-address"
                   type="text"
-                  placeholder="City, State, Country"
-                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.address ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
+                  maxLength={255}
+                  placeholder="Street, City, State, ZIP / PIN"
+                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.address ? 'border-rose-400 focus:border-rose-500 ring-1 ring-rose-200' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none transition-colors`}
                   {...registerProfile('address')}
                 />
               </div>
@@ -292,14 +334,19 @@ export default function ProfileManagement() {
             {/* Bio */}
             <div>
               <div className="flex justify-between items-center mb-1.5 ml-1">
-                <label htmlFor="profile-bio" className="block text-slate-700 text-xs font-bold">Bio <span className="text-slate-400 font-normal">(optional)</span></label>
-                <span className="text-[10px] text-slate-400">{(watchProfile('bio') || '').length}/500</span>
+                <label htmlFor="profile-bio" className="block text-slate-700 text-xs font-bold">
+                  Bio <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <span className={`text-[10px] ${(watchProfile('bio') || '').length > 480 ? 'text-amber-500 font-bold' : 'text-slate-400'}`}>
+                  {(watchProfile('bio') || '').length}/500
+                </span>
               </div>
               <textarea
                 id="profile-bio"
                 rows={3}
+                maxLength={500}
                 placeholder="Tell us a bit about yourself..."
-                className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.bio ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none resize-none`}
+                className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.bio ? 'border-rose-400 focus:border-rose-500 ring-1 ring-rose-200' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none resize-none transition-colors`}
                 {...registerProfile('bio')}
               />
               {profileErrors.bio && <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{profileErrors.bio.message}</p>}

@@ -72,6 +72,21 @@ public class ProductService {
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+
+        if (!Boolean.TRUE.equals(product.getApproved())) {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            boolean isOwnerOrAdmin = false;
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+                String email = auth.getName();
+                boolean isOwner = product.getSeller() != null && email.equalsIgnoreCase(product.getSeller().getEmail());
+                boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                isOwnerOrAdmin = isOwner || isAdmin;
+            }
+            if (!isOwnerOrAdmin) {
+                throw new RuntimeException("Product not found with id: " + id);
+            }
+        }
+
         return toResponse(product);
     }
 

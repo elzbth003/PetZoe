@@ -31,12 +31,27 @@ public class UserService {
 
     public UserDTO updateProfile(String email, UpdateProfileRequest request) {
         User user = getUser(email);
-        user.setName(request.name());
-        if (request.phone() != null) user.setPhone(request.phone());
-        if (request.bio() != null) user.setBio(request.bio());
-        if (request.address() != null) user.setAddress(request.address());
-        if (request.profileImage() != null) user.setProfileImage(request.profileImage());
-        if (request.specialization() != null) user.setSpecialization(request.specialization());
+        user.setName(request.name().trim());
+        if (request.phone() != null) {
+            String trimmed = request.phone().trim();
+            user.setPhone(trimmed.isEmpty() ? null : trimmed);
+        }
+        if (request.bio() != null) {
+            String trimmed = request.bio().trim();
+            user.setBio(trimmed.isEmpty() ? null : trimmed);
+        }
+        if (request.address() != null) {
+            String trimmed = request.address().trim();
+            user.setAddress(trimmed.isEmpty() ? null : trimmed);
+        }
+        if (request.profileImage() != null) {
+            String trimmed = request.profileImage().trim();
+            user.setProfileImage(trimmed.isEmpty() ? null : trimmed);
+        }
+        if (request.specialization() != null) {
+            String trimmed = request.specialization().trim();
+            user.setSpecialization(trimmed.isEmpty() ? null : trimmed);
+        }
         return toDTO(userRepository.save(user));
     }
 
@@ -56,6 +71,7 @@ public class UserService {
 
     public List<VetSearchDTO> getAllVets() {
         return userRepository.findByRole("Veterinarian").stream()
+                .filter(u -> u.isEnabled() && u.getVerificationStatus() == com.petzoe.api.entity.VerificationStatus.APPROVED)
                 .map(this::toVetDTO)
                 .collect(Collectors.toList());
     }
@@ -65,6 +81,9 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("Veterinarian not found: " + id));
         if (!"Veterinarian".equals(vet.getRole())) {
             throw new IllegalArgumentException("User is not a veterinarian.");
+        }
+        if (!vet.isEnabled() || vet.getVerificationStatus() != com.petzoe.api.entity.VerificationStatus.APPROVED) {
+            throw new IllegalArgumentException("Veterinarian is not available or not yet approved.");
         }
         return toVetDTO(vet);
     }

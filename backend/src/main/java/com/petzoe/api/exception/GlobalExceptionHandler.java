@@ -46,6 +46,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.DisabledException.class)
+    public ResponseEntity<Map<String, String>> handleDisabledException(org.springframework.security.authentication.DisabledException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Your PetZoe account has been deactivated. Please contact the administrator.");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Map<String, String>> handleSecurityException(SecurityException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", ex.getMessage() != null ? ex.getMessage() : "Access denied.");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, String>> handleNoSuchElementException(NoSuchElementException ex) {
         Map<String, String> response = new HashMap<>();

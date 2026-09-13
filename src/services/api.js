@@ -23,14 +23,21 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle unauthorized access
+// Add response interceptor to handle unauthorized access & account deactivation
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      sessionStorage.removeItem('petzoe_token');
-      sessionStorage.removeItem('petzoe_user');
-      window.dispatchEvent(new Event('auth-change'));
+    if (error.response) {
+      const is401 = error.response.status === 401;
+      const isDeactivated = error.response.status === 403 &&
+        (error.response.data?.message?.toLowerCase().includes('deactivated') ||
+         error.response.data?.message?.toLowerCase().includes('disabled'));
+
+      if (is401 || isDeactivated) {
+        sessionStorage.removeItem('petzoe_token');
+        sessionStorage.removeItem('petzoe_user');
+        window.dispatchEvent(new Event('auth-change'));
+      }
     }
     return Promise.reject(error);
   }

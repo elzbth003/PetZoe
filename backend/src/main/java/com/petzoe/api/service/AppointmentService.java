@@ -246,8 +246,25 @@ public class AppointmentService {
             throw new AccessDeniedException("Unauthorized: You are not the veterinarian for this appointment.");
         }
 
+        String currentStatus = appointment.getStatus() != null ? appointment.getStatus().toUpperCase() : "PENDING";
+        if ("COMPLETED".equals(currentStatus) || "CANCELLED".equals(currentStatus) || "REJECTED".equals(currentStatus)) {
+            throw new IllegalStateException("Cannot change the status of an appointment that is already " + currentStatus + ".");
+        }
+
         if (status != null && !status.isEmpty()) {
-            appointment.setStatus(status);
+            String newStatus = status.toUpperCase();
+            boolean validTransition = false;
+            if ("PENDING".equals(currentStatus)) {
+                validTransition = List.of("CONFIRMED", "REJECTED", "CANCELLED").contains(newStatus);
+            } else if ("CONFIRMED".equals(currentStatus) || "UPCOMING".equals(currentStatus)) {
+                validTransition = List.of("IN_CONSULTATION", "COMPLETED", "CANCELLED").contains(newStatus);
+            } else if ("IN_CONSULTATION".equals(currentStatus)) {
+                validTransition = List.of("COMPLETED", "CANCELLED").contains(newStatus);
+            }
+            if (!validTransition) {
+                throw new IllegalStateException("Invalid status transition from " + currentStatus + " to " + newStatus + ".");
+            }
+            appointment.setStatus(newStatus);
         }
 
         if (notes != null) {
@@ -380,6 +397,10 @@ public class AppointmentService {
             throw new IllegalArgumentException("Selected user is not a veterinarian.");
         }
 
+        if (!veterinarian.isEnabled() || veterinarian.getVerificationStatus() != VerificationStatus.APPROVED) {
+            throw new IllegalStateException("Dr. " + veterinarian.getName() + " is currently unavailable or pending verification.");
+        }
+
         // Validate doctor working day
         VeterinarianProfile profile = veterinarianProfileRepository.findByUserId(veterinarian.getId()).orElse(null);
         String workingDaysStr = profile != null ? profile.getWorkingDays() : "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY";
@@ -446,6 +467,12 @@ public class AppointmentService {
 
         if (!isOwner && !isVet && !user.getRole().equalsIgnoreCase("ADMIN")) {
             throw new AccessDeniedException("Unauthorized: You cannot cancel this appointment.");
+        }
+
+        if ("COMPLETED".equalsIgnoreCase(appointment.getStatus()) ||
+            "CANCELLED".equalsIgnoreCase(appointment.getStatus()) ||
+            "REJECTED".equalsIgnoreCase(appointment.getStatus())) {
+            throw new IllegalStateException("Cannot cancel an appointment that is already " + appointment.getStatus() + ".");
         }
 
         appointment.setStatus("CANCELLED");

@@ -381,9 +381,15 @@ export default function VetVerificationPanel() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Practice Address / Hospital</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700">Practice Address / Hospital</label>
+                    <span className={`text-[10px] ${(form.address || '').length > 240 ? 'text-amber-500 font-bold' : 'text-slate-400'}`}>
+                      {(form.address || '').length}/255
+                    </span>
+                  </div>
                   <input
                     type="text"
+                    maxLength={255}
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                     placeholder="e.g. 124 Baker St, Central Pet Hospital"
@@ -393,9 +399,15 @@ export default function VetVerificationPanel() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Professional Bio & Practice Focus</label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700">Professional Bio & Practice Focus</label>
+                  <span className={`text-[10px] ${(form.bio || '').length > 480 ? 'text-amber-500 font-bold' : 'text-slate-400'}`}>
+                    {(form.bio || '').length}/500
+                  </span>
+                </div>
                 <textarea
                   rows="3"
+                  maxLength={500}
                   value={form.bio}
                   onChange={(e) => setForm({ ...form, bio: e.target.value })}
                   placeholder="Tell pet owners and colleagues about your background, experience with shelter medicine, surgery, and wellness..."

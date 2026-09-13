@@ -38,13 +38,13 @@ public class VendorProductController {
     }
 
     @PostMapping
-    public ResponseEntity<ProductResponseDTO> createProduct(@RequestBody ProductRequestDTO request, Authentication authentication) {
+    public ResponseEntity<ProductResponseDTO> createProduct(@jakarta.validation.Valid @RequestBody ProductRequestDTO request, Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(vendorProductService.createProduct(request, email));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProductResponseDTO> updateProduct(@PathVariable Long id, @RequestBody ProductRequestDTO request, Authentication authentication) {
+    public ResponseEntity<ProductResponseDTO> updateProduct(@PathVariable Long id, @jakarta.validation.Valid @RequestBody ProductRequestDTO request, Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(vendorProductService.updateProduct(id, request, email));
     }

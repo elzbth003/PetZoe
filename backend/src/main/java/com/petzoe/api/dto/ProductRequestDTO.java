@@ -2,16 +2,30 @@ package com.petzoe.api.dto;
 
 import java.util.List;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class ProductRequestDTO {
+    @NotBlank(message = "Product name is required")
     private String name;
     private String shortDescription;
     private String description;
     private String brand;
+
+    @NotNull(message = "Product price is required")
+    @Positive(message = "Product price must be greater than zero")
     private Double price;
     private Double mrp;
     private String sku;
+
+    @NotNull(message = "Stock quantity is required")
+    @Min(value = 0, message = "Stock quantity cannot be negative")
     private Integer stockQuantity;
     private Integer lowStockThreshold;
+
+    @NotNull(message = "Category ID is required")
     private Long categoryId;
     private String subcategory;
     private String petType;
