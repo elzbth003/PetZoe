@@ -13,18 +13,44 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().optional(),
-  bio: z.string().max(500, 'Bio cannot exceed 500 characters').optional(),
-  address: z.string().optional(),
-  profileImage: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  specialization: z.string().optional(),
+  name: z.string()
+    .trim()
+    .min(2, 'Name must be at least 2 characters')
+    .max(60, 'Name cannot exceed 60 characters')
+    .regex(/^[a-zA-Z\s.'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
+  phone: z.string()
+    .trim()
+    .regex(/^$|^[6-9]\d{9}$/, 'Phone must be a valid 10-digit mobile number starting with 6, 7, 8, or 9')
+    .optional(),
+  bio: z.string()
+    .trim()
+    .max(500, 'Bio cannot exceed 500 characters')
+    .optional(),
+  address: z.string()
+    .trim()
+    .max(255, 'Address cannot exceed 255 characters')
+    .optional(),
+  profileImage: z.string()
+    .trim()
+    .url('Must be a valid web URL (e.g. https://...)')
+    .or(z.literal(''))
+    .optional(),
+  specialization: z.string()
+    .trim()
+    .max(100, 'Specialization cannot exceed 100 characters')
+    .optional(),
 });
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
+  newPassword: z.string()
+    .min(8, 'New password must be at least 8 characters')
+    .max(64, 'New password cannot exceed 64 characters')
+    .regex(/[a-z]/, 'Must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Must contain at least one special character (!@#$%^&* etc.)'),
+  confirmPassword: z.string().min(1, 'Please confirm your new password'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -48,15 +74,23 @@ export default function ProfileManagement() {
     register: registerProfile,
     handleSubmit: handleProfileSubmit,
     reset: resetProfile,
+    watch: watchProfile,
     formState: { errors: profileErrors }
-  } = useForm({ resolver: zodResolver(profileSchema) });
+  } = useForm({
+    resolver: zodResolver(profileSchema),
+    mode: 'onChange'
+  });
 
   const {
     register: registerPassword,
     handleSubmit: handlePasswordSubmit,
     reset: resetPassword,
+    watch: watchPassword,
     formState: { errors: passwordErrors }
-  } = useForm({ resolver: zodResolver(passwordSchema) });
+  } = useForm({
+    resolver: zodResolver(passwordSchema),
+    mode: 'onChange'
+  });
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -210,10 +244,11 @@ export default function ProfileManagement() {
           <form onSubmit={handleProfileSubmit(onProfileUpdate)} className="space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Full Name</label>
+              <label htmlFor="profile-name" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Full Name</label>
               <div className="relative">
                 <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="profile-name"
                   type="text"
                   className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.name ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]`}
                   {...registerProfile('name')}
@@ -224,39 +259,47 @@ export default function ProfileManagement() {
 
             {/* Phone */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Phone Number</label>
+              <label htmlFor="profile-phone" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Phone Number <span className="text-slate-400 font-normal">(optional, 10 digits)</span></label>
               <div className="relative">
                 <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="profile-phone"
                   type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]"
+                  placeholder="9876543210"
+                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.phone ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
                   {...registerProfile('phone')}
                 />
               </div>
+              {profileErrors.phone && <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{profileErrors.phone.message}</p>}
             </div>
 
             {/* Address */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Address</label>
+              <label htmlFor="profile-address" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Address <span className="text-slate-400 font-normal">(optional)</span></label>
               <div className="relative">
                 <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="profile-address"
                   type="text"
                   placeholder="City, State, Country"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]"
+                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.address ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
                   {...registerProfile('address')}
                 />
               </div>
+              {profileErrors.address && <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{profileErrors.address.message}</p>}
             </div>
 
             {/* Bio */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Bio <span className="text-slate-400 font-normal">(optional)</span></label>
+              <div className="flex justify-between items-center mb-1.5 ml-1">
+                <label htmlFor="profile-bio" className="block text-slate-700 text-xs font-bold">Bio <span className="text-slate-400 font-normal">(optional)</span></label>
+                <span className="text-[10px] text-slate-400">{(watchProfile('bio') || '').length}/500</span>
+              </div>
               <textarea
+                id="profile-bio"
                 rows={3}
                 placeholder="Tell us a bit about yourself..."
-                className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.bio ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8] resize-none`}
+                className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.bio ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none resize-none`}
                 {...registerProfile('bio')}
               />
               {profileErrors.bio && <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{profileErrors.bio.message}</p>}
@@ -264,13 +307,14 @@ export default function ProfileManagement() {
 
             {/* Profile Image */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Profile Picture URL <span className="text-slate-400 font-normal">(optional)</span></label>
+              <label htmlFor="profile-image" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Profile Picture URL <span className="text-slate-400 font-normal">(optional)</span></label>
               <div className="relative">
                 <Camera size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="profile-image"
                   type="url"
                   placeholder="https://example.com/photo.jpg"
-                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.profileImage ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]`}
+                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.profileImage ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
                   {...registerProfile('profileImage')}
                 />
               </div>
@@ -279,13 +323,18 @@ export default function ProfileManagement() {
 
             {profile?.role === 'Veterinarian' && (
               <div>
-                <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Specialization</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Small Animals, Surgery"
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]"
-                  {...registerProfile('specialization')}
-                />
+                <label htmlFor="profile-specialization" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Specialization <span className="text-slate-400 font-normal">(optional)</span></label>
+                <div className="relative">
+                  <Award size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="profile-specialization"
+                    type="text"
+                    placeholder="e.g. Small Animal Surgery, Dermatology"
+                    className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.specialization ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
+                    {...registerProfile('specialization')}
+                  />
+                </div>
+                {profileErrors.specialization && <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{profileErrors.specialization.message}</p>}
               </div>
             )}
 
@@ -316,10 +365,11 @@ export default function ProfileManagement() {
           <form onSubmit={handlePasswordSubmit(onPasswordChange)} className="space-y-4">
             {/* Current Password */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Current Password</label>
+              <label htmlFor="pwd-current" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Current Password</label>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="pwd-current"
                   type={showCurrentPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   className={`w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 border ${passwordErrors.currentPassword ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]`}
@@ -334,13 +384,14 @@ export default function ProfileManagement() {
 
             {/* New Password */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">New Password</label>
+              <label htmlFor="pwd-new" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">New Password</label>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="pwd-new"
                   type={showNewPassword ? 'text' : 'password'}
-                  placeholder="At least 6 characters"
-                  className={`w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 border ${passwordErrors.newPassword ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]`}
+                  placeholder="At least 8 chars (uppercase, lowercase, number, symbol)"
+                  className={`w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 border ${passwordErrors.newPassword ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
                   {...registerPassword('newPassword')}
                 />
                 <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer">
@@ -352,13 +403,14 @@ export default function ProfileManagement() {
 
             {/* Confirm New Password */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Confirm New Password</label>
+              <label htmlFor="pwd-confirm" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Confirm New Password</label>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="pwd-confirm"
                   type="password"
                   placeholder="••••••••"
-                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${passwordErrors.confirmPassword ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:border-[#38BDF8]`}
+                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${passwordErrors.confirmPassword ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
                   {...registerPassword('confirmPassword')}
                 />
               </div>

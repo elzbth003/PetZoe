@@ -17,6 +17,7 @@ export default function AdminLogin() {
     handleSubmit,
     formState: { errors }
   } = useForm({
+    mode: 'onChange',
     defaultValues: { email: '', password: '' }
   });
 

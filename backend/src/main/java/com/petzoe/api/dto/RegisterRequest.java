@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
     @NotBlank(message = "Name is required")
+    @Size(min = 2, max = 60, message = "Name must be between 2 and 60 characters")
+    @Pattern(regexp = "^[a-zA-Z\\s.'-]+$", message = "Name can only contain letters, spaces, hyphens, and apostrophes")
     String name,
 
     @NotBlank(message = "Email is required")
@@ -14,7 +16,7 @@ public record RegisterRequest(
     String email,
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Size(min = 8, max = 64, message = "Password must be at least 8 characters")
     String password,
 
     @NotBlank(message = "Phone number is required")

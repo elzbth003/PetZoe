@@ -18,22 +18,59 @@ const SPECIES_PRESETS = {
   Other: "https://images.unsplash.com/photo-1472491235688-bdc81a63246e?auto=format&fit=crop&q=80&w=400"
 };
 
+const todayIso = new Date().toISOString().split('T')[0];
+
 // Zod validation schema
 const petSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  species: z.string().min(1, { message: "Species is required" }),
-  breed: z.string().min(1, { message: "Breed is required" }),
-  age: z.coerce.number().int().min(0, { message: "Age cannot be negative" }).max(100, { message: "Age must be realistic" }),
-  gender: z.enum(["Male", "Female"], { errorMap: () => ({ message: "Select Male or Female" }) }),
-  weight: z.coerce.number().positive({ message: "Weight must be greater than 0" }),
+  name: z.string()
+    .trim()
+    .min(2, { message: "Pet name must be at least 2 characters" })
+    .max(50, { message: "Pet name cannot exceed 50 characters" })
+    .regex(/^[a-zA-Z0-9\s.'-]+$/, { message: "Pet name can only contain letters, numbers, spaces, hyphens, and apostrophes" }),
+  species: z.enum(["Dog", "Cat", "Bird", "Rabbit", "Other"], {
+    errorMap: () => ({ message: "Please select a valid species" })
+  }),
+  breed: z.string()
+    .trim()
+    .min(2, { message: "Breed must be at least 2 characters" })
+    .max(50, { message: "Breed cannot exceed 50 characters" })
+    .regex(/^[a-zA-Z\s.'-]+$/, { message: "Breed can only contain letters, spaces, hyphens, and apostrophes" }),
+  age: z.coerce.number({ invalid_type_error: "Age must be a number" })
+    .int({ message: "Age must be a whole number of years" })
+    .min(0, { message: "Age cannot be negative" })
+    .max(30, { message: "Age must be between 0 and 30 years" }),
+  gender: z.enum(["Male", "Female"], {
+    errorMap: () => ({ message: "Select Male or Female" })
+  }),
+  weight: z.coerce.number({ invalid_type_error: "Weight must be a number" })
+    .min(0.05, { message: "Weight must be at least 0.05 kg" })
+    .max(200, { message: "Weight cannot exceed 200 kg" }),
   vaccinationStatus: z.enum(["Up-to-date", "Needs Vaccination", "Overdue"], { 
     errorMap: () => ({ message: "Select a valid status" }) 
   }),
-  photoUrl: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  color: z.string().optional(),
-  allergies: z.string().optional(),
-  medicalNotes: z.string().optional(),
+  photoUrl: z.string()
+    .trim()
+    .url({ message: "Must be a valid web URL (e.g. https://...)" })
+    .or(z.literal(''))
+    .optional(),
+  dateOfBirth: z.string()
+    .optional()
+    .refine((val) => !val || val <= todayIso, {
+      message: "Date of birth cannot be in the future"
+    }),
+  color: z.string()
+    .trim()
+    .max(50, { message: "Color cannot exceed 50 characters" })
+    .regex(/^[a-zA-Z\s,.'/-]*$/, { message: "Color contains invalid characters" })
+    .optional(),
+  allergies: z.string()
+    .trim()
+    .max(200, { message: "Allergies cannot exceed 200 characters" })
+    .optional(),
+  medicalNotes: z.string()
+    .trim()
+    .max(1000, { message: "Medical notes cannot exceed 1000 characters" })
+    .optional(),
 });
 
 export default function PetList({ onPetsUpdated }) {
@@ -57,6 +94,7 @@ export default function PetList({ onPetsUpdated }) {
     formState: { errors }
   } = useForm({
     resolver: zodResolver(petSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       species: 'Dog',
@@ -395,8 +433,9 @@ export default function PetList({ onPetsUpdated }) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Pet Name */}
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Pet Name</label>
+                  <label htmlFor="pet-name" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Pet Name</label>
                   <input
+                    id="pet-name"
                     type="text"
                     placeholder="Milo"
                     className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.name ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
@@ -409,8 +448,9 @@ export default function PetList({ onPetsUpdated }) {
 
                 {/* Species */}
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Species</label>
+                  <label htmlFor="pet-species" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Species</label>
                   <select
+                    id="pet-species"
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none"
                     {...register('species')}
                   >
@@ -426,8 +466,9 @@ export default function PetList({ onPetsUpdated }) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Breed */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Breed</label>
+                  <label htmlFor="pet-breed" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Breed</label>
                   <input
+                    id="pet-breed"
                     type="text"
                     placeholder="Golden Retriever"
                     className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.breed ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
@@ -440,8 +481,9 @@ export default function PetList({ onPetsUpdated }) {
 
                 {/* Age */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Age (Years)</label>
+                  <label htmlFor="pet-age" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Age (Years)</label>
                   <input
+                    id="pet-age"
                     type="number"
                     className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.age ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
                     {...register('age')}
@@ -455,8 +497,9 @@ export default function PetList({ onPetsUpdated }) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Gender */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Gender</label>
+                  <label htmlFor="pet-gender" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Gender</label>
                   <select
+                    id="pet-gender"
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none"
                     {...register('gender')}
                   >
@@ -467,8 +510,9 @@ export default function PetList({ onPetsUpdated }) {
 
                 {/* Weight */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Weight (kg)</label>
+                  <label htmlFor="pet-weight" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Weight (kg)</label>
                   <input
+                    id="pet-weight"
                     type="number"
                     step="0.1"
                     className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.weight ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
@@ -483,8 +527,9 @@ export default function PetList({ onPetsUpdated }) {
               <div className="grid grid-cols-1 gap-4">
                 {/* Vaccination Status */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Vaccination Status</label>
+                  <label htmlFor="pet-vaccinationStatus" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Vaccination Status</label>
                   <select
+                    id="pet-vaccinationStatus"
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none"
                     {...register('vaccinationStatus')}
                   >
@@ -496,10 +541,11 @@ export default function PetList({ onPetsUpdated }) {
 
                 {/* Photo URL */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
+                  <label htmlFor="pet-photoUrl" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
                     Photo URL <span className="text-[10px] text-slate-400 font-normal">(Optional - default preset is used if blank)</span>
                   </label>
                   <input
+                    id="pet-photoUrl"
                     type="url"
                     placeholder="https://images.unsplash.com/..."
                     className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.photoUrl ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
@@ -512,45 +558,62 @@ export default function PetList({ onPetsUpdated }) {
 
                 {/* Color */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Color / Markings <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <label htmlFor="pet-color" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Color / Markings <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
                   <input
+                    id="pet-color"
                     type="text"
                     placeholder="e.g. Golden, Black & White"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none"
+                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.color ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
                     {...register('color')}
                   />
+                  {errors.color && (
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.color.message}</p>
+                  )}
                 </div>
 
                 {/* Date of Birth */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Date of Birth <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <label htmlFor="pet-dateOfBirth" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Date of Birth <span className="text-[10px] text-slate-400 font-normal">(Optional, cannot be in future)</span></label>
                   <input
+                    id="pet-dateOfBirth"
                     type="date"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none"
+                    max={todayIso}
+                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.dateOfBirth ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
                     {...register('dateOfBirth')}
                   />
+                  {errors.dateOfBirth && (
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.dateOfBirth.message}</p>
+                  )}
                 </div>
 
                 {/* Allergies */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Known Allergies <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <label htmlFor="pet-allergies" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Known Allergies <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
                   <input
+                    id="pet-allergies"
                     type="text"
                     placeholder="e.g. Pollen, Certain foods, Medications"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none"
+                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.allergies ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
                     {...register('allergies')}
                   />
+                  {errors.allergies && (
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.allergies.message}</p>
+                  )}
                 </div>
 
                 {/* Medical Notes */}
                 <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Medical Notes <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                  <label htmlFor="pet-medicalNotes" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Medical Notes <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
                   <textarea
+                    id="pet-medicalNotes"
                     rows={3}
                     placeholder="Previous conditions, ongoing treatments, special care instructions..."
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none resize-none"
+                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.medicalNotes ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none resize-none`}
                     {...register('medicalNotes')}
                   />
+                  {errors.medicalNotes && (
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.medicalNotes.message}</p>
+                  )}
                 </div>
               </div>
 

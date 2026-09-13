@@ -18,6 +18,7 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors }
   } = useForm({
+    mode: 'onChange',
     defaultValues: {
       email: '',
       password: '',
@@ -30,6 +31,7 @@ export default function LoginPage() {
       case 'Pet Owner': navigate('/dashboard/owner'); break;
       case 'Veterinarian': navigate('/dashboard/vet'); break;
       case 'Shelter Manager': navigate('/dashboard/shelter'); break;
+      case 'Marketplace Seller': navigate('/dashboard/seller'); break;
       case 'Admin': navigate('/dashboard/admin'); break;
       default: navigate('/');
     }

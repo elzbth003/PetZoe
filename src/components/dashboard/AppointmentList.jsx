@@ -3,10 +3,11 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Calendar, Clock, User, MessageSquare, AlertTriangle,
+  Calendar, Clock, User, MessageSquare, AlertTriangle, AlertCircle,
   Trash2, Loader2, CalendarClock, ArrowRight, ShieldAlert, PawPrint
 } from 'lucide-react';
 import api from '../../services/api';
+import { appointmentService } from '../../services/appointmentService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import ChatWidget from './ChatWidget';
@@ -22,7 +23,13 @@ const TIME_SLOTS = [
 const appointmentSchema = z.object({
   petId: z.coerce.number().positive({ message: "Select a registered pet" }),
   veterinarianId: z.coerce.number().positive({ message: "Select a veterinarian" }),
-  appointmentDate: z.string().min(1, { message: "Date is required" }),
+  appointmentDate: z.string()
+    .min(1, { message: "Date is required" })
+    .refine((val) => {
+      if (!val) return true;
+      const today = new Date().toISOString().split('T')[0];
+      return val >= today;
+    }, { message: "Appointment date cannot be in the past" }),
   appointmentTime: z.string().min(1, { message: "Select a time slot" }),
   notes: z.string().max(1000, { message: "Notes cannot exceed 1000 characters" }).optional()
 });
@@ -35,6 +42,8 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [activeChat, setActiveChat] = useState(null);
+  const [scheduleData, setScheduleData] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -47,6 +56,7 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
     watch,
     formState: { errors }
   } = useForm({
+    mode: 'onChange',
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
       petId: 0,
@@ -58,6 +68,8 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
   });
 
   const selectedTime = watch("appointmentTime", "");
+  const selectedVetId = watch("veterinarianId", 0);
+  const selectedDate = watch("appointmentDate", "");
 
   // Load dropdown lists and appointments
   const loadData = async () => {
@@ -93,6 +105,38 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!selectedVetId || selectedVetId == 0 || !selectedDate) {
+      setScheduleData(null);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchSlots = async () => {
+      setLoadingSlots(true);
+      try {
+        const data = await appointmentService.getAvailableSlots(selectedVetId, selectedDate);
+        if (isMounted) {
+          setScheduleData(data);
+          // If the currently selected time is not available in the new schedule, clear it
+          if (selectedTime) {
+            const currentSlot = data.slots?.find(s => s.slot === selectedTime);
+            if (!currentSlot || !currentSlot.available) {
+              setValue("appointmentTime", "", { shouldValidate: true });
+            }
+          }
+        }
+      } catch (err) {
+        if (isMounted) setScheduleData(null);
+      } finally {
+        if (isMounted) setLoadingSlots(false);
+      }
+    };
+
+    fetchSlots();
+    return () => { isMounted = false; };
+  }, [selectedVetId, selectedDate]);
+
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
@@ -105,6 +149,7 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
         appointmentTime: '',
         notes: ''
       });
+      setScheduleData(null);
       loadData();
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to book appointment.", "error");
@@ -203,22 +248,68 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
 
             {/* Time Slots grid selector */}
             <div>
-              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Time Slot</label>
+              <div className="flex items-center justify-between mb-1.5 ml-1">
+                <label className="block text-slate-700 text-xs font-bold">Time Slot</label>
+                {loadingSlots && (
+                  <span className="text-[10px] text-[#38BDF8] font-semibold flex items-center gap-1">
+                    <Loader2 size={10} className="animate-spin" /> Checking availability...
+                  </span>
+                )}
+                {scheduleData && !loadingSlots && (
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Hours: {scheduleData.workingHours}
+                  </span>
+                )}
+              </div>
+
+              {/* Off Duty Alert */}
+              {scheduleData && !scheduleData.isWorkingDay && (
+                <div className="p-3 mb-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-2.5 text-amber-800 text-xs font-semibold">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                  <p className="text-[11px] leading-tight">
+                    {scheduleData.message || "This veterinarian does not hold consultation hours on this date."}
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-3 gap-2">
-                {TIME_SLOTS.map(slot => (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => setValue("appointmentTime", slot, { shouldValidate: true })}
-                    className={`py-2 text-[10px] font-bold rounded-xl border text-center transition-all cursor-pointer ${
-                      selectedTime === slot 
-                        ? 'bg-[#38BDF8] border-[#38BDF8] text-white' 
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    {slot}
-                  </button>
-                ))}
+                {TIME_SLOTS.map(slot => {
+                  const slotInfo = scheduleData?.slots?.find(s => s.slot === slot);
+                  const isAvailable = !scheduleData || (slotInfo ? slotInfo.available : true);
+                  const isBooked = slotInfo?.status === 'BOOKED';
+                  const isOffDuty = slotInfo?.status === 'OFF_DUTY';
+                  const isSelected = selectedTime === slot;
+
+                  let buttonStyle = 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 cursor-pointer';
+                  let statusBadge = null;
+
+                  if (isSelected) {
+                    buttonStyle = 'bg-[#38BDF8] border-[#38BDF8] text-white shadow-sm shadow-sky-500/30';
+                  } else if (isBooked) {
+                    buttonStyle = 'bg-slate-100/90 border-slate-200 text-slate-400 cursor-not-allowed opacity-75';
+                    statusBadge = <span className="block text-[8px] font-bold text-rose-500 uppercase tracking-wider mt-0.5">Booked</span>;
+                  } else if (isOffDuty) {
+                    buttonStyle = 'bg-slate-100/60 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
+                    statusBadge = <span className="block text-[8px] font-bold text-amber-600 uppercase tracking-wider mt-0.5">Off Duty</span>;
+                  }
+
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      disabled={!isAvailable || loadingSlots}
+                      onClick={() => {
+                        if (isAvailable) {
+                          setValue("appointmentTime", slot, { shouldValidate: true });
+                        }
+                      }}
+                      className={`py-2 px-1 text-[10px] font-bold rounded-xl border text-center transition-all flex flex-col items-center justify-center min-h-[44px] ${buttonStyle}`}
+                    >
+                      <span className={isBooked ? 'line-through decoration-slate-400/80' : ''}>{slot}</span>
+                      {statusBadge}
+                    </button>
+                  );
+                })}
               </div>
               {errors.appointmentTime && (
                 <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.appointmentTime.message}</p>

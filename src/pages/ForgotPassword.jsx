@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { motion } from 'framer-motion';
 import { Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useToast } from '../hooks/useToast';
@@ -15,6 +16,7 @@ export default function ForgotPasswordPage() {
     handleSubmit,
     formState: { errors }
   } = useForm({
+    mode: 'onChange',
     defaultValues: {
       email: ''
     }

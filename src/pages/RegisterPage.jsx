@@ -34,7 +34,7 @@ export default function RegisterPage() {
     watch,
     formState: { errors, touchedFields }
   } = useForm({
-    mode: 'onTouched',
+    mode: 'onChange',
     defaultValues: {
       name: '',
       email: '',
@@ -138,7 +138,18 @@ export default function RegisterPage() {
               placeholder="Dr. Sarah Jenkins"
               disabled={isSubmitting}
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border ${errors.name ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
-              {...register('name', { required: 'Full name is required' })}
+              {...register('name', {
+                required: 'Full name is required',
+                minLength: { value: 2, message: 'Full name must be at least 2 characters' },
+                maxLength: { value: 60, message: 'Full name cannot exceed 60 characters' },
+                validate: (val) => {
+                  if (!val || !val.trim()) return 'Full name cannot be blank spaces';
+                  if (!/^[a-zA-Z\s.'-]+$/.test(val.trim())) {
+                    return 'Name can only contain letters, spaces, hyphens, and apostrophes';
+                  }
+                  return true;
+                }
+              })}
             />
           </div>
           {errors.name && (
@@ -161,9 +172,10 @@ export default function RegisterPage() {
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border ${errors.email ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
               {...register('email', {
                 required: 'Email address is required',
+                maxLength: { value: 100, message: 'Email cannot exceed 100 characters' },
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Please enter a valid email address'
+                  value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                  message: 'Please enter a valid email address (e.g. user@example.com)'
                 }
               })}
             />
@@ -188,9 +200,12 @@ export default function RegisterPage() {
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border ${errors.phone ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
               {...register('phone', {
                 required: 'Phone number is required',
-                pattern: {
-                  value: /^[0-9]{10}$/,
-                  message: 'Please enter a valid 10-digit phone number'
+                validate: (val) => {
+                  const cleaned = (val || '').replace(/[\s-]/g, '');
+                  if (!/^[6-9]\d{9}$/.test(cleaned)) {
+                    return 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9';
+                  }
+                  return true;
                 }
               })}
             />
@@ -256,9 +271,15 @@ export default function RegisterPage() {
                   value: 8,
                   message: 'Password must be at least 8 characters'
                 },
-                pattern: {
-                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                  message: 'Password must contain uppercase, lowercase, number, and special character'
+                maxLength: {
+                  value: 64,
+                  message: 'Password cannot exceed 64 characters'
+                },
+                validate: {
+                  hasLower: (v) => /[a-z]/.test(v) || 'Must contain at least one lowercase letter',
+                  hasUpper: (v) => /[A-Z]/.test(v) || 'Must contain at least one uppercase letter',
+                  hasDigit: (v) => /[0-9]/.test(v) || 'Must contain at least one number',
+                  hasSpecial: (v) => /[^A-Za-z0-9]/.test(v) || 'Must contain at least one special character (!@#$%^&* etc.)',
                 }
               })}
             />
