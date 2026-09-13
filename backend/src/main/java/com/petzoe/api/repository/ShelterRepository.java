@@ -13,4 +13,5 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     Optional<Shelter> findByManagerId(Long managerId);
     Optional<Shelter> findByManager_Email(String email);
     List<Shelter> findByVerificationStatus(VerificationStatus status);
+    long countByVerificationStatus(VerificationStatus status);
 }

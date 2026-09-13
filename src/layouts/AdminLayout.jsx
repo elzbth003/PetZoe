@@ -145,6 +145,7 @@ export default function AdminLayout() {
     { name: 'Adoption Review', path: '/dashboard/admin/adoptions', icon: PawPrint },
     { name: 'Seller Verification', path: '/dashboard/admin/sellers', icon: ShoppingBag, badge: pendingCounts.sellers },
     { name: 'Product Moderation', path: '/dashboard/admin/products', icon: CheckSquare, badge: pendingCounts.products },
+    { name: 'Notifications', path: '/dashboard/admin/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : null },
     { name: 'Settings', path: '/dashboard/admin/settings', icon: Settings },
   ];
 
@@ -330,7 +331,7 @@ export default function AdminLayout() {
                   {notifications.length > 0 && (
                     <div className="p-3 border-t border-slate-100 bg-slate-50">
                       <button 
-                        onClick={() => { setNotifOpen(false); navigate('/dashboard/admin/settings'); }}
+                        onClick={() => { setNotifOpen(false); navigate('/dashboard/admin/notifications'); }}
                         className="w-full text-center text-xs font-bold text-slate-600 hover:text-slate-800 transition-colors py-1"
                       >
                         View all notifications

@@ -33,6 +33,10 @@ export default function SellerDashboard() {
   }, [user, navigate]);
 
   useEffect(() => {
+    fetchMyProducts();
+  }, []);
+
+  useEffect(() => {
     if (activeTab === 'My Products') {
       fetchMyProducts();
     }

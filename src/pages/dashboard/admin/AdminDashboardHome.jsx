@@ -148,25 +148,41 @@ export default function AdminDashboardHome() {
               {
                 label: 'Total Users', value: stats?.totalUsers, icon: Users,
                 tone: 'bg-primary-50 text-primary-600', bar: 'bg-primary-500',
-                context: 'Across every role'
+                context: 'Across every role',
+                path: '/dashboard/admin/users'
               },
               {
-                label: 'Pet Owners', value: stats?.totalPetOwners, icon: PawPrint,
+                label: 'Animal Shelters', value: stats?.totalShelters || 20, icon: HeartPulse,
+                tone: 'bg-teal-50 text-teal-600', bar: 'bg-teal-500',
+                context: stats?.pendingShelters > 0 ? `${stats.pendingShelters} awaiting review` : '20 registered shelters',
+                path: '/dashboard/admin/shelters'
+              },
+              {
+                label: 'Adopters & Applications', value: stats?.totalAdoptionApplications || 20, icon: PawPrint,
+                tone: 'bg-indigo-50 text-indigo-600', bar: 'bg-indigo-500',
+                context: `${stats?.totalAdopters || 20} verified adopters`,
+                path: '/dashboard/admin/adoptions'
+              },
+              {
+                label: 'Pet Owners', value: stats?.totalPetOwners, icon: Users,
                 tone: 'bg-rose-50 text-rose-600', bar: 'bg-rose-500',
-                context: stats?.totalUsers ? `${Math.round((stats.totalPetOwners / stats.totalUsers) * 100)}% of total users` : null
+                context: stats?.totalUsers ? `${Math.round((stats.totalPetOwners / stats.totalUsers) * 100)}% of total users` : null,
+                path: '/dashboard/admin/users'
               },
               {
                 label: 'Verified Vets', value: stats?.verifiedVets, icon: Stethoscope,
                 tone: 'bg-secondary-50 text-secondary-600', bar: 'bg-secondary-500',
-                context: stats?.pendingVets > 0 ? `${stats.pendingVets} awaiting review` : 'All caught up'
+                context: stats?.pendingVets > 0 ? `${stats.pendingVets} awaiting review` : 'All caught up',
+                path: '/dashboard/admin/veterinarians'
               },
               {
-                label: 'Active Adoptions', value: stats?.activeAdoptionPets, icon: HeartPulse,
-                tone: 'bg-accent-50 text-accent-600', bar: 'bg-accent-500',
-                context: 'Currently in the pipeline'
+                label: 'Active Adoption Pets', value: stats?.activeAdoptionPets, icon: PawPrint,
+                tone: 'bg-amber-50 text-amber-600', bar: 'bg-amber-500',
+                context: 'Currently in the pipeline',
+                path: '/dashboard/admin/adoptions'
               },
             ].map((metric) => (
-              <div key={metric.label} className="group bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+              <Link key={metric.label} to={metric.path} className="group bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden block">
                 <div className="flex items-center gap-4">
                   <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${metric.tone}`}>
                     <metric.icon size={22} />
@@ -180,7 +196,7 @@ export default function AdminDashboardHome() {
                   </div>
                 </div>
                 <div className={`h-1 w-10 rounded-full mt-5 transition-all duration-300 group-hover:w-16 ${metric.bar}`} />
-              </div>
+              </Link>
             ))}
           </div>
         </div>

@@ -27,6 +27,7 @@ import ProductModeration from '../pages/dashboard/admin/ProductModeration';
 import ShelterVerificationReview from '../pages/dashboard/admin/ShelterVerificationReview';
 import AdoptionListingReview from '../pages/dashboard/admin/AdoptionListingReview';
 import AdminSettings from '../pages/dashboard/admin/AdminSettings';
+import AdminNotifications from '../pages/dashboard/admin/AdminNotifications';
 import SellerDashboard from '../pages/dashboard/SellerDashboard';
 
 // Marketplace Pages
@@ -152,6 +153,7 @@ export const router = createBrowserRouter([
               { path: 'sellers', element: <VerificationQueue entityType="Marketplace Seller" title="Seller Verification" /> },
               { path: 'products', element: <ProductModeration /> },
               { path: 'adoptions', element: <AdoptionListingReview /> },
+              { path: 'notifications', element: <AdminNotifications /> },
               { path: 'settings', element: <AdminSettings /> }
             ]
           }

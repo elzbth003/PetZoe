@@ -9,6 +9,10 @@ public class AdminStatsDTO {
     private long pendingSellers;
     private long pendingProducts;
     private long activeAdoptionPets;
+    private long totalShelters;
+    private long totalAdopters;
+    private long totalAdoptionApplications;
+    private long pendingAdoptionListings;
 
     public long getTotalUsers() { return totalUsers; }
     public void setTotalUsers(long totalUsers) { this.totalUsers = totalUsers; }
@@ -33,4 +37,16 @@ public class AdminStatsDTO {
 
     public long getActiveAdoptionPets() { return activeAdoptionPets; }
     public void setActiveAdoptionPets(long activeAdoptionPets) { this.activeAdoptionPets = activeAdoptionPets; }
+
+    public long getTotalShelters() { return totalShelters; }
+    public void setTotalShelters(long totalShelters) { this.totalShelters = totalShelters; }
+
+    public long getTotalAdopters() { return totalAdopters; }
+    public void setTotalAdopters(long totalAdopters) { this.totalAdopters = totalAdopters; }
+
+    public long getTotalAdoptionApplications() { return totalAdoptionApplications; }
+    public void setTotalAdoptionApplications(long totalAdoptionApplications) { this.totalAdoptionApplications = totalAdoptionApplications; }
+
+    public long getPendingAdoptionListings() { return pendingAdoptionListings; }
+    public void setPendingAdoptionListings(long pendingAdoptionListings) { this.pendingAdoptionListings = pendingAdoptionListings; }
 }

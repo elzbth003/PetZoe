@@ -39,18 +39,18 @@ public class ReviewService {
     /** Submit a new review for a product. */
     public Review addReview(Long productId, ReviewDTO dto, String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new java.util.NoSuchElementException("User not found"));
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new java.util.NoSuchElementException("Product not found"));
 
         // Prevent duplicate reviews
         if (reviewRepository.findByUserAndProduct(user, product).isPresent()) {
-            throw new RuntimeException("You have already reviewed this product");
+            throw new IllegalStateException("You have already reviewed this product");
         }
 
         // Validate rating
         if (dto.getRating() < 1 || dto.getRating() > 5) {
-            throw new RuntimeException("Rating must be between 1 and 5");
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
         }
 
         Review review = new Review();

@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface AdoptionListingRepository extends JpaRepository<AdoptionListing, Long> {
     Optional<AdoptionListing> findByAnimalId(Long animalId);
     List<AdoptionListing> findByStatus(VerificationStatus status);
+    long countByStatus(VerificationStatus status);
 }

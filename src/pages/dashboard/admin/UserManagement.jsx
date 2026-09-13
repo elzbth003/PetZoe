@@ -163,14 +163,14 @@ export default function UserManagement() {
               onClick={() => setOpenFilter(openFilter === 'role' ? null : 'role')}
               className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-medium text-slate-700 cursor-pointer flex items-center justify-between gap-2 hover:border-slate-300 transition-colors"
             >
-              <span>{roleFilter === 'All' ? 'All Roles' : roleFilter}</span>
+              <span>{roleFilter === 'All' ? 'All Roles' : (roleFilter === 'Pet Owner' ? 'Pet Owner / Adopter' : roleFilter)}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${openFilter === 'role' ? 'rotate-180' : ''}`} />
             </div>
             {openFilter === 'role' && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-30 py-1">
                 {[
                   { value: 'All', label: 'All Roles' },
-                  { value: 'Pet Owner', label: 'Pet Owner' },
+                  { value: 'Pet Owner', label: 'Pet Owner / Adopter' },
                   { value: 'Veterinarian', label: 'Veterinarian' },
                   { value: 'Shelter Manager', label: 'Shelter Manager' },
                   { value: 'Marketplace Seller', label: 'Marketplace Seller' },

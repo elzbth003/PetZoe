@@ -3,10 +3,10 @@ import adminAdoptionListingService from '../../../services/adminAdoptionListingS
 import { useToast } from '../../../hooks/useToast';
 import { CheckCircle, XCircle, PawPrint, AlertTriangle } from 'lucide-react';
 
-const FILTERS = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CHANGES_REQUIRED', 'ALL'];
+const FILTERS = ['ALL', 'PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CHANGES_REQUIRED'];
 
 export default function AdoptionListingReview() {
-  const [filter, setFilter] = useState('PENDING');
+  const [filter, setFilter] = useState('ALL');
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);

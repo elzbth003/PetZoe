@@ -14,10 +14,19 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.stereotype.Repository;
+
 /**
  * Repository for Product operations including search, filter, and pagination.
  */
+@Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
+
+    /** Check if product exists by SKU */
+    boolean existsBySku(String sku);
+
+    /** Find product by SKU */
+    Optional<Product> findBySku(String sku);
 
     /** Find all approved products (visible to buyers). */
     Page<Product> findByApprovedTrue(Pageable pageable);

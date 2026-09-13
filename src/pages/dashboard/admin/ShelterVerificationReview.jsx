@@ -3,10 +3,10 @@ import adminShelterService from '../../../services/adminShelterService';
 import { useToast } from '../../../hooks/useToast';
 import { CheckCircle, XCircle, FileText, AlertTriangle, Building2 } from 'lucide-react';
 
-const FILTERS = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CHANGES_REQUIRED', 'SUSPENDED', 'ALL'];
+const FILTERS = ['ALL', 'PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CHANGES_REQUIRED', 'SUSPENDED'];
 
 export default function ShelterVerificationReview() {
-  const [filter, setFilter] = useState('PENDING');
+  const [filter, setFilter] = useState('ALL');
   const [shelters, setShelters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
