@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import {
   Bell, Calendar, Shield, User, Settings, Trash2,
-  Check, CheckCheck, Loader2, Sparkles, X, CheckCircle, XCircle
+  Check, CheckCheck, Loader2, Sparkles, X, CheckCircle, XCircle, MessageSquare
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
+import ChatWidget from './ChatWidget';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TYPE_CONFIG = {
+  CHAT: {
+    icon: MessageSquare,
+    color: 'text-sky-600',
+    bg: 'bg-sky-50',
+    border: 'border-sky-100',
+    label: 'Chat Message',
+  },
   APPOINTMENT: {
     icon: Calendar,
     color: 'text-blue-600',
@@ -84,7 +93,9 @@ export default function NotificationCenter() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [activeChat, setActiveChat] = useState(null);
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -133,7 +144,7 @@ export default function NotificationCenter() {
     }
   };
 
-  const filters = ['ALL', 'UNREAD', 'APPOINTMENT', 'VACCINATION', 'SYSTEM'];
+  const filters = ['ALL', 'UNREAD', 'CHAT', 'APPOINTMENT', 'VACCINATION', 'SYSTEM'];
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const filteredNotifications = notifications.filter(n => {
@@ -255,7 +266,22 @@ export default function NotificationCenter() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {notif.type === 'CHAT' && notif.referenceId && (
+                      <button
+                        onClick={() => {
+                          handleMarkRead(notif.id);
+                          setActiveChat({
+                            appointmentId: notif.referenceId,
+                            otherUserName: notif.title.replace('New message from ', '')
+                          });
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                        title="Reply to message"
+                      >
+                        <MessageSquare size={13} /> Reply
+                      </button>
+                    )}
                     {!notif.isRead && (
                       <button
                         onClick={() => handleMarkRead(notif.id)}
@@ -280,6 +306,16 @@ export default function NotificationCenter() {
             })}
           </AnimatePresence>
         </div>
+      )}
+
+      {/* Reply Chat Widget Popup */}
+      {activeChat && (
+        <ChatWidget
+          appointmentId={activeChat.appointmentId}
+          currentUserId={user?.id}
+          otherUserName={activeChat.otherUserName}
+          onClose={() => setActiveChat(null)}
+        />
       )}
     </div>
   );
