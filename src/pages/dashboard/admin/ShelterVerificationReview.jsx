@@ -12,12 +12,14 @@ export default function ShelterVerificationReview() {
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState(null);
   const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
     fetchShelters();
     setSelected(null);
     setDetail(null);
+    setReason('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
@@ -39,14 +41,18 @@ export default function ShelterVerificationReview() {
     try {
       const res = await adminShelterService.getShelterDetail(summary.id);
       setDetail(res.data);
+      if (res.data?.rejectionReason) {
+        setReason(res.data.rejectionReason);
+      }
     } catch (err) {
       showToast('Failed to load shelter detail', 'error');
     }
   };
 
   const runAction = async (action) => {
-    if (!selected) return;
+    if (!selected || submitting) return;
     try {
+      setSubmitting(true);
       if (action === 'approve') {
         await adminShelterService.approve(selected.id);
       } else {
@@ -54,16 +60,20 @@ export default function ShelterVerificationReview() {
           showToast('Please provide a reason', 'error');
           return;
         }
-        if (action === 'reject') await adminShelterService.reject(selected.id, reason);
-        else if (action === 'request-changes') await adminShelterService.requestChanges(selected.id, reason);
-        else if (action === 'suspend') await adminShelterService.suspend(selected.id, reason);
+        if (action === 'reject') await adminShelterService.reject(selected.id, reason.trim());
+        else if (action === 'request-changes') await adminShelterService.requestChanges(selected.id, reason.trim());
+        else if (action === 'suspend') await adminShelterService.suspend(selected.id, reason.trim());
       }
       showToast('Updated successfully', 'success');
       setSelected(null);
       setDetail(null);
+      setReason('');
       fetchShelters();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Action failed', 'error');
+      const msg = err.response?.data?.message || err.response?.data?.error || (err.response?.status === 401 ? 'Session expired. Please log in again.' : err.message) || 'Action failed';
+      showToast(msg, 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -154,28 +164,44 @@ export default function ShelterVerificationReview() {
               </div>
 
               <div className="pt-6 border-t border-slate-100 space-y-4">
-                <h4 className="font-bold text-slate-800 flex items-center gap-2"><AlertTriangle size={16} /> Decision</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-800 flex items-center gap-2"><AlertTriangle size={16} /> Decision</h4>
+                  {submitting && <span className="text-xs text-primary-600 font-bold animate-pulse">Processing...</span>}
+                </div>
+
+                {detail.rejectionReason && (
+                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
+                    <p className="font-semibold text-amber-800">Recorded Review / Rejection Reason:</p>
+                    <p className="mt-0.5 whitespace-pre-wrap">{detail.rejectionReason}</p>
+                  </div>
+                )}
+
                 <textarea
                   placeholder="Reason (required for reject / request changes / suspend)..."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm h-20 resize-none"
+                  disabled={submitting}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm h-20 resize-none disabled:bg-slate-50 disabled:opacity-60"
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => runAction('approve')}
-                    className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2">
+                    disabled={submitting}
+                    className="py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all">
                     <CheckCircle size={16} /> Approve
                   </button>
                   <button onClick={() => runAction('reject')}
-                    className="py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl flex items-center justify-center gap-2">
+                    disabled={submitting}
+                    className="py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all">
                     <XCircle size={16} /> Reject
                   </button>
                   <button onClick={() => runAction('request-changes')}
-                    className="py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm">
+                    disabled={submitting}
+                    className="py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all">
                     Request Changes
                   </button>
                   <button onClick={() => runAction('suspend')}
-                    className="py-2.5 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-sm">
+                    disabled={submitting}
+                    className="py-2.5 bg-slate-500 hover:bg-slate-600 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all">
                     Suspend
                   </button>
                 </div>

@@ -55,6 +55,7 @@ public class AdminShelterService {
         Shelter shelter = findShelter(id);
         String rejectionReason = shelter.getVerificationStatus() == VerificationStatus.REJECTED
                 || shelter.getVerificationStatus() == VerificationStatus.CHANGES_REQUIRED
+                || shelter.getVerificationStatus() == VerificationStatus.SUSPENDED
                 ? findVerificationRequest(shelter.getManager()).map(VerificationRequest::getReviewerNotes).orElse(null)
                 : null;
         return new ShelterResponseDTO(shelter, rejectionReason);
@@ -181,21 +182,36 @@ public class AdminShelterService {
     }
 
     private void updateVerificationRequest(User manager, VerificationStatus status, User admin, String reason) {
-        findVerificationRequest(manager).ifPresent(vr -> {
-            vr.setStatus(status);
-            vr.setReviewerNotes(reason);
-            vr.setReviewedAt(LocalDateTime.now());
-            vr.setReviewedBy(admin);
-            verificationRequestRepository.save(vr);
+        VerificationRequest vr = findVerificationRequest(manager).orElseGet(() -> {
+            VerificationRequest newVr = new VerificationRequest();
+            newVr.setUser(manager);
+            newVr.setEntityType(manager.getRole() != null ? manager.getRole() : "Shelter Manager");
+            newVr.setSubmittedAt(LocalDateTime.now());
+            return newVr;
         });
+        vr.setStatus(status);
+        vr.setReviewerNotes(reason);
+        vr.setReviewedAt(LocalDateTime.now());
+        vr.setReviewedBy(admin);
+        verificationRequestRepository.save(vr);
     }
 
     private Optional<VerificationRequest> findVerificationRequest(User manager) {
-        return verificationRequestRepository.findByUserIdAndEntityType(manager.getId(), manager.getRole());
+        Optional<VerificationRequest> direct = verificationRequestRepository.findByUserIdAndEntityType(manager.getId(), manager.getRole());
+        if (direct.isPresent()) {
+            return direct;
+        }
+        return verificationRequestRepository.findByUserId(manager.getId());
     }
 
     private User getAdmin(String email) {
-        return userRepository.findByEmail(email)
+        if (email != null && !email.isBlank()) {
+            Optional<User> u = userRepository.findByEmail(email);
+            if (u.isPresent()) return u.get();
+        }
+        return userRepository.findAll().stream()
+                .filter(u -> "Admin".equalsIgnoreCase(u.getRole()))
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
     }
 }

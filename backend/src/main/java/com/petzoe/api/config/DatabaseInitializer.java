@@ -70,7 +70,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                                PrescriptionRepository prescriptionRepository,
                                ChatMessageRepository chatMessageRepository,
                                NotificationRepository notificationRepository,
-                               PasswordEncoder passwordEncoder) {
+                               @org.springframework.context.annotation.Lazy PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.petRepository = petRepository;
         this.appointmentRepository = appointmentRepository;

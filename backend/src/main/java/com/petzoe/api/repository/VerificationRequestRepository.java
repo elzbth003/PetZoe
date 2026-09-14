@@ -12,4 +12,5 @@ public interface VerificationRequestRepository extends JpaRepository<Verificatio
     List<VerificationRequest> findByEntityTypeAndStatus(String entityType, VerificationStatus status);
     List<VerificationRequest> findByStatus(VerificationStatus status);
     Optional<VerificationRequest> findByUserIdAndEntityType(Long userId, String entityType);
+    Optional<VerificationRequest> findByUserId(Long userId);
 }
