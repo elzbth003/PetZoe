@@ -29,7 +29,8 @@ public class ShelterService {
             VerificationStatus.NOT_SUBMITTED,
             VerificationStatus.REJECTED,
             VerificationStatus.CHANGES_REQUIRED,
-            VerificationStatus.RESUBMISSION_REQUIRED
+            VerificationStatus.RESUBMISSION_REQUIRED,
+            VerificationStatus.APPROVED
     );
 
     private final ShelterRepository shelterRepository;

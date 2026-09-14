@@ -11,6 +11,7 @@ import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import ImageUpload from '../ui/ImageUpload';
 
 const profileSchema = z.object({
   name: z.string()
@@ -101,6 +102,7 @@ export default function ProfileManagement() {
     handleSubmit: handleProfileSubmit,
     reset: resetProfile,
     watch: watchProfile,
+    setValue: setValueProfile,
     formState: { errors: profileErrors }
   } = useForm({
     resolver: zodResolver(profileSchema),
@@ -354,18 +356,12 @@ export default function ProfileManagement() {
 
             {/* Profile Image */}
             <div>
-              <label htmlFor="profile-image" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Profile Picture URL <span className="text-slate-400 font-normal">(optional)</span></label>
-              <div className="relative">
-                <Camera size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="profile-image"
-                  type="url"
-                  placeholder="https://example.com/photo.jpg"
-                  className={`w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border ${profileErrors.profileImage ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#38BDF8]'} text-slate-800 text-xs font-medium focus:outline-none`}
-                  {...registerProfile('profileImage')}
-                />
-              </div>
-              {profileErrors.profileImage && <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{profileErrors.profileImage.message}</p>}
+              <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Profile Picture <span className="text-slate-400 font-normal">(optional)</span></label>
+              <ImageUpload
+                value={watchProfile('profileImage')}
+                onChange={(url) => setValueProfile('profileImage', url, { shouldValidate: true })}
+                error={profileErrors.profileImage?.message}
+              />
             </div>
 
             {profile?.role === 'Veterinarian' && (

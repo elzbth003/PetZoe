@@ -202,6 +202,18 @@ export default function AdopterProfilePanel() {
       return;
     }
 
+    const xssPattern = /[<>]/;
+    const fieldsToCheck = [
+      'address', 'existingPets', 'previousPetExperience', 
+      'householdMembers', 'petCareExperience', 'veterinaryCarePlan'
+    ];
+    for (const field of fieldsToCheck) {
+      if (form[field] && xssPattern.test(form[field])) {
+        showToast('Inputs cannot contain HTML characters (< or >)', 'error');
+        return;
+      }
+    }
+
     try {
       setSaving(true);
       const payload = {

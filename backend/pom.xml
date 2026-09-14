@@ -95,6 +95,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
+                    <fork>true</fork>
                     <useIncrementalCompilation>false</useIncrementalCompilation>
                 </configuration>
             </plugin>

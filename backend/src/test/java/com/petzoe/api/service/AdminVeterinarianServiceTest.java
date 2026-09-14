@@ -65,7 +65,8 @@ public class AdminVeterinarianServiceTest {
 
     @Test
     void testGetAllVeterinarians() {
-        when(profileRepository.findAll()).thenReturn(List.of(vetProfile));
+        when(userRepository.findByRole("Veterinarian")).thenReturn(List.of(vetUser));
+        when(profileRepository.findByUserId(2L)).thenReturn(Optional.of(vetProfile));
         List<AdminVeterinarianListDTO> list = adminVeterinarianService.getAllVeterinarians();
         assertEquals(1, list.size());
         assertEquals("Vet", list.get(0).name());

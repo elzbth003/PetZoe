@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../hooks/useToast';
+import ImageUpload from '../ui/ImageUpload';
 
 // Default presets for pet pictures based on species
 const SPECIES_PRESETS = {
@@ -91,6 +92,8 @@ export default function PetList({ onPetsUpdated }) {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors }
   } = useForm({
     resolver: zodResolver(petSchema),
@@ -541,19 +544,14 @@ export default function PetList({ onPetsUpdated }) {
 
                 {/* Photo URL */}
                 <div>
-                  <label htmlFor="pet-photoUrl" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
-                    Photo URL <span className="text-[10px] text-slate-400 font-normal">(Optional - default preset is used if blank)</span>
+                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
+                    Photo <span className="text-[10px] text-slate-400 font-normal">(Optional - default preset is used if blank)</span>
                   </label>
-                  <input
-                    id="pet-photoUrl"
-                    type="url"
-                    placeholder="https://images.unsplash.com/..."
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.photoUrl ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('photoUrl')}
+                  <ImageUpload
+                    value={watch('photoUrl')}
+                    onChange={(url) => setValue('photoUrl', url, { shouldValidate: true })}
+                    error={errors.photoUrl?.message}
                   />
-                  {errors.photoUrl && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.photoUrl.message}</p>
-                  )}
                 </div>
 
                 {/* Color */}

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/adopters/me/profile")
@@ -25,7 +26,7 @@ public class AdopterProfileController {
     }
 
     @PutMapping
-    public ResponseEntity<AdopterProfileDTO> updateMyProfile(@RequestBody AdopterProfileRequestDTO request,
+    public ResponseEntity<AdopterProfileDTO> updateMyProfile(@Valid @RequestBody AdopterProfileRequestDTO request,
                                                                Authentication authentication) {
         return ResponseEntity.ok(adopterProfileService.updateMyProfile(authentication.getName(), request));
     }

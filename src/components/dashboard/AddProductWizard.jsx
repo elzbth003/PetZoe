@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { vendorProductService } from '../../services/vendorProductService';
 import marketplaceService from '../../services/marketplaceService';
 import { AlertCircle, ArrowLeft, ArrowRight, Save, Send, Loader2 } from 'lucide-react';
+import ImageUpload from '../ui/ImageUpload';
 
 const AddProductWizard = ({ onCancel, onProductAdded }) => {
   const [step, setStep] = useState(1);
@@ -313,14 +314,10 @@ const AddProductWizard = ({ onCancel, onProductAdded }) => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Image URL (Optional)</label>
-              <input
-                type="url"
-                name="imageUrl"
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Product Image (Optional)</label>
+              <ImageUpload
                 value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://images.unsplash.com/photo-..."
-                className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
               />
             </div>
           </div>
