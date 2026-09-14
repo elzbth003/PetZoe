@@ -91,7 +91,7 @@ export default function ShelterDashboard() {
   };
 
   const status = shelter?.verificationStatus || 'NOT_SUBMITTED';
-  const canEdit = ['NOT_SUBMITTED', 'REJECTED', 'CHANGES_REQUIRED', 'RESUBMISSION_REQUIRED'].includes(status);
+  const canEdit = ['NOT_SUBMITTED', 'REJECTED', 'CHANGES_REQUIRED', 'RESUBMISSION_REQUIRED', 'APPROVED'].includes(status);
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -160,165 +160,314 @@ export default function ShelterDashboard() {
     navigate('/login');
   };
 
+  // ── Verification status config ──────────────────────────────────────────────
+  const STATUS_META = {
+    NOT_SUBMITTED:          { label: 'Not Submitted',         bg: 'bg-slate-50',  border: 'border-slate-200',  badge: 'bg-slate-100 text-slate-600',   icon: null },
+    PENDING:                { label: 'Under Review',          bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700',   icon: '🕐' },
+    UNDER_REVIEW:           { label: 'Under Review',          bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700',   icon: '🕐' },
+    APPROVED:               { label: 'Approved',              bg: 'bg-emerald-50',border: 'border-emerald-200',badge: 'bg-emerald-100 text-emerald-700',icon: '✓'  },
+    REJECTED:               { label: 'Rejected',              bg: 'bg-rose-50',   border: 'border-rose-200',   badge: 'bg-rose-100 text-rose-700',     icon: '✕'  },
+    CHANGES_REQUIRED:       { label: 'Changes Required',      bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700',   icon: '⚠'  },
+    RESUBMISSION_REQUIRED:  { label: 'Resubmission Required', bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700',   icon: '⚠'  },
+    SUSPENDED:              { label: 'Suspended',             bg: 'bg-rose-50',   border: 'border-rose-200',   badge: 'bg-rose-100 text-rose-700',     icon: '✕'  },
+  };
+  const meta = STATUS_META[status] || STATUS_META.NOT_SUBMITTED;
+
+  // Known document type labels
+  const DOC_LABELS = {
+    REGISTRATION_CERTIFICATE: 'Registration Certificate',
+    ID_PROOF: 'ID Proof',
+    ADDRESS_PROOF: 'Address Proof',
+    OTHER: 'Other Document',
+  };
+
   const renderProfileTab = () => (
-    <div className="space-y-6 max-w-3xl">
-      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-800">Shelter Profile</h2>
-          <span className={`text-xs font-bold px-3 py-1.5 rounded-md ${STATUS_STYLES[status] || 'bg-slate-100 text-slate-600'}`}>
-            Status: {status.replace(/_/g, ' ')}
-          </span>
+    <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-start">
+
+      {/* ── LEFT: Main profile form ──────────────────────────────────────── */}
+      <div className="space-y-5">
+
+        {/* Profile form card */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-bold text-slate-800">Shelter Information</h2>
+            {!loading && (
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${meta.badge}`}>
+                {meta.icon && <span className="mr-1">{meta.icon}</span>}{meta.label}
+              </span>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="py-12 flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-primary-600" />
+            </div>
+          ) : (
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <fieldset disabled={!canEdit} className="space-y-4 disabled:opacity-60">
+
+                {/* Row 1: Name + Org Type */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Shelter Name</label>
+                    <input required value={form.shelterName}
+                      onChange={(e) => setForm({ ...form, shelterName: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Organization Type</label>
+                    <select required value={form.organizationType}
+                      onChange={(e) => setForm({ ...form, organizationType: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150">
+                      <option value="" disabled>Select type</option>
+                      {ORG_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Row 2: Description */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Description</label>
+                  <textarea required value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150 h-24 resize-none" />
+                </div>
+
+                {/* Row 3: Reg Number + Capacity */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Registration Number</label>
+                    <input required value={form.registrationNumber}
+                      onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Capacity (max animals)</label>
+                    <input required type="number" min="1" value={form.capacity}
+                      onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150" />
+                  </div>
+                </div>
+
+                {/* Row 4: Address */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Address</label>
+                  <input required value={form.addressLine}
+                    onChange={(e) => setForm({ ...form, addressLine: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150" />
+                </div>
+
+                {/* Row 5: City + State + Pincode */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">City</label>
+                    <input required value={form.city}
+                      onChange={(e) => setForm({ ...form, city: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">State</label>
+                    <input required value={form.state}
+                      onChange={(e) => setForm({ ...form, state: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Pincode</label>
+                    <input value={form.pincode}
+                      onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150" />
+                  </div>
+                </div>
+
+                {/* Row 6: Vet Care */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Veterinary Care Arrangements</label>
+                  <textarea value={form.veterinaryCareArrangements}
+                    onChange={(e) => setForm({ ...form, veterinaryCareArrangements: e.target.value })}
+                    placeholder="e.g. On-call arrangement with Dr. X Clinic, in-house vet, partnership with hospital..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary-500 focus:bg-white transition-colors duration-150 h-20 resize-none" />
+                </div>
+
+                {/* Row 7: Image */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Shelter Image</label>
+                  <input type="file" accept="image/*"
+                    onChange={(e) => setPrimaryImageFile(e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-slate-600" />
+                </div>
+              </fieldset>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-1 border-t border-slate-100">
+                {canEdit && (
+                  <>
+                    <button type="submit" disabled={saving}
+                      className="bg-primary-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed text-sm">
+                      {saving ? 'Saving…' : 'Save Changes'}
+                    </button>
+                    {shelter && (
+                      <button type="button" onClick={handleSubmitForVerification} disabled={submitting}
+                        className="border border-primary-300 text-primary-700 font-bold px-5 py-2.5 rounded-xl hover:bg-primary-50 disabled:opacity-50 transition-all duration-200 active:scale-95 cursor-pointer disabled:cursor-not-allowed text-sm">
+                        {submitting ? 'Submitting…' : 'Submit for Verification'}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </form>
+          )}
         </div>
 
-        {(status === 'REJECTED' || status === 'CHANGES_REQUIRED') && shelter?.rejectionReason && (
-          <div className="mb-4 text-sm text-rose-600 bg-rose-50 p-3 rounded-xl">
-            Reason: {shelter.rejectionReason}
+        {/* Supporting Documents card (below form on mobile; stays in left col on desktop) */}
+        {!loading && shelter && canEdit && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <h3 className="text-base font-bold text-slate-800 mb-4">Supporting Documents</h3>
+            <div className="space-y-2 mb-4">
+              {!shelter.documents?.length ? (
+                <p className="text-sm text-slate-400">No documents uploaded yet.</p>
+              ) : (
+                shelter.documents.map(doc => (
+                  <div key={doc.id} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-2 text-sm">
+                      <FileText size={15} className="text-slate-400 shrink-0" />
+                      <span className="font-medium text-slate-700">
+                        {DOC_LABELS[doc.documentType] ?? doc.documentType.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <button onClick={() => handleRemoveDocument(doc.id)}
+                      className="text-slate-400 hover:text-rose-600 transition-colors duration-150 cursor-pointer ml-3 shrink-0">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select value={docType} onChange={(e) => setDocType(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 text-sm">
+                <option value="REGISTRATION_CERTIFICATE">Registration Certificate</option>
+                <option value="ID_PROOF">ID Proof</option>
+                <option value="ADDRESS_PROOF">Address Proof</option>
+                <option value="OTHER">Other</option>
+              </select>
+              <input type="file" accept="image/*,.pdf"
+                onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+                className="text-sm text-slate-600 flex-1 min-w-0" />
+              <button onClick={handleUploadDocument} disabled={uploadingDoc}
+                className="flex items-center gap-2 bg-slate-800 text-white font-bold px-4 py-2 rounded-xl hover:bg-slate-900 disabled:opacity-50 text-sm transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed shrink-0">
+                <Upload size={14} /> {uploadingDoc ? 'Uploading…' : 'Upload'}
+              </button>
+            </div>
           </div>
         )}
 
-        {loading ? (
-          <div className="py-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-primary-600"></div></div>
-        ) : (
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <fieldset disabled={!canEdit} className="space-y-4 disabled:opacity-60">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Shelter Name</label>
-                  <input required value={form.shelterName} onChange={(e) => setForm({ ...form, shelterName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Organization Type</label>
-                  <select required value={form.organizationType} onChange={(e) => setForm({ ...form, organizationType: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150">
-                    <option value="" disabled>Select type</option>
-                    {ORG_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Description</label>
-                <textarea required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-24 resize-none" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Registration Number</label>
-                <input required value={form.registrationNumber} onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Address</label>
-                <input required value={form.addressLine} onChange={(e) => setForm({ ...form, addressLine: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">City</label>
-                  <input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">State</label>
-                  <input required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pincode</label>
-                  <input value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Capacity (max animals)</label>
-                <input required type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Veterinary Care Arrangements</label>
-                <textarea value={form.veterinaryCareArrangements} onChange={(e) => setForm({ ...form, veterinaryCareArrangements: e.target.value })}
-                  placeholder="e.g. On-call arrangement with Dr. X Clinic, in-house vet, partnership with hospital..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 h-20 resize-none" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Shelter Image</label>
-                <input type="file" accept="image/*" onChange={(e) => setPrimaryImageFile(e.target.files?.[0] || null)}
-                  className="block w-full text-sm text-slate-600" />
-              </div>
-            </fieldset>
-
-            {canEdit && (
-              <button type="submit" disabled={saving}
-                className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed">
-                {saving ? 'Saving...' : 'Save Profile'}
-              </button>
-            )}
-          </form>
+        {!loading && !shelter && (
+          <p className="text-sm text-slate-500 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            Fill in your shelter details above and save to get started.
+          </p>
         )}
       </div>
 
-      {!loading && shelter && canEdit && (
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-800 mb-4">Supporting Documents</h3>
-          <div className="space-y-2 mb-4">
-            {shelter.documents?.length === 0 ? (
-              <p className="text-sm text-slate-500">No documents uploaded yet.</p>
-            ) : (
-              shelter.documents.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5">
-                  <div className="flex items-center gap-2 text-sm">
-                    <FileText size={16} className="text-slate-400" />
-                    <span className="font-medium text-slate-700">{doc.documentType.replace(/_/g, ' ')}</span>
-                  </div>
-                  <button onClick={() => handleRemoveDocument(doc.id)} className="text-slate-400 hover:text-rose-600 transition-colors duration-150 cursor-pointer">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select value={docType} onChange={(e) => setDocType(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 transition-colors duration-150 text-sm">
-              <option value="REGISTRATION_CERTIFICATE">Registration Certificate</option>
-              <option value="ID_PROOF">ID Proof</option>
-              <option value="ADDRESS_PROOF">Address Proof</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <input type="file" accept="image/*,.pdf" onChange={(e) => setDocFile(e.target.files?.[0] || null)}
-              className="text-sm text-slate-600 flex-1" />
-            <button onClick={handleUploadDocument} disabled={uploadingDoc}
-              className="flex items-center gap-2 bg-slate-800 text-white font-bold px-4 py-2 rounded-xl hover:bg-slate-900 disabled:opacity-50 text-sm transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed">
-              <Upload size={14} /> {uploadingDoc ? 'Uploading...' : 'Upload'}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── RIGHT: Info panel ─────────────────────────────────────────────── */}
+      <div className="space-y-5">
 
-      {!loading && shelter && canEdit && (
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-slate-800">Ready to submit?</h3>
-            <p className="text-sm text-slate-500">Once submitted, your profile will be reviewed by an admin.</p>
-          </div>
-          <button onClick={handleSubmitForVerification} disabled={submitting}
-            className="bg-primary-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 disabled:opacity-50 shrink-0 transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer disabled:cursor-not-allowed">
-            {submitting ? 'Submitting...' : 'Submit for Verification'}
-          </button>
-        </div>
-      )}
+        {/* Verification Status card */}
+        <div className={`rounded-2xl border p-5 ${meta.bg} ${meta.border}`}>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Verification Status</p>
+          <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg ${meta.badge}`}>
+            {meta.icon && <span>{meta.icon}</span>}
+            {meta.label}
+          </span>
 
-      {!loading && !shelter && (
-        <p className="text-sm text-slate-500 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-          Fill in your shelter details above and save to get started.
-        </p>
-      )}
+          {(status === 'REJECTED' || status === 'CHANGES_REQUIRED' || status === 'RESUBMISSION_REQUIRED') && (
+            <div className="mt-4 space-y-2">
+              {shelter?.rejectionReason && (
+                <>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">Reason</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{shelter.rejectionReason}</p>
+                </>
+              )}
+              <p className="text-xs text-slate-500 mt-1">
+                {status === 'CHANGES_REQUIRED' || status === 'RESUBMISSION_REQUIRED'
+                  ? 'Update the information below and resubmit for review.'
+                  : 'Your application was rejected. Please review the reason and resubmit.'}
+              </p>
+            </div>
+          )}
+
+          {status === 'APPROVED' && (
+            <p className="mt-3 text-xs text-emerald-700">
+              Your shelter is verified and active. You can list animals for adoption.
+            </p>
+          )}
+
+          {(status === 'PENDING' || status === 'UNDER_REVIEW') && (
+            <p className="mt-3 text-xs text-amber-700">
+              Your application is being reviewed by our team. We'll notify you once it's processed.
+            </p>
+          )}
+
+          {status === 'SUSPENDED' && (
+            <div className="mt-3 space-y-1">
+              {shelter?.rejectionReason && (
+                <>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">Reason</p>
+                  <p className="text-sm text-slate-700">{shelter.rejectionReason}</p>
+                </>
+              )}
+              <p className="text-xs text-rose-700 mt-1">Please contact support to resolve the suspension.</p>
+            </div>
+          )}
+
+          {status === 'NOT_SUBMITTED' && (
+            <p className="mt-3 text-xs text-slate-500">
+              Complete your profile and submit it for admin review to get verified.
+            </p>
+          )}
+        </div>
+
+        {/* Required Information card — built from what we actually know */}
+        {!loading && shelter && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Profile Checklist</p>
+            <ul className="space-y-2">
+              {[
+                { label: 'Shelter name',     ok: !!form.shelterName },
+                { label: 'Organization type',ok: !!form.organizationType },
+                { label: 'Description',      ok: !!form.description },
+                { label: 'Registration no.', ok: !!form.registrationNumber },
+                { label: 'Address',          ok: !!form.addressLine },
+                { label: 'City & State',     ok: !!(form.city && form.state) },
+                { label: 'Capacity',         ok: !!form.capacity },
+                { label: 'Documents',        ok: !!(shelter.documents?.length) },
+              ].map(({ label, ok }) => (
+                <li key={label} className="flex items-center gap-2.5 text-sm">
+                  <span className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black
+                    ${ok ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                    {ok ? '✓' : '·'}
+                  </span>
+                  <span className={ok ? 'text-slate-700' : 'text-slate-400'}>{label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Uploaded Documents summary */}
+        {!loading && shelter?.documents?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Uploaded Documents</p>
+            <ul className="space-y-2">
+              {shelter.documents.map(doc => (
+                <li key={doc.id} className="flex items-center gap-2.5 text-sm">
+                  <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black">✓</span>
+                  <span className="text-slate-700">{DOC_LABELS[doc.documentType] ?? doc.documentType.replace(/_/g, ' ')}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 
