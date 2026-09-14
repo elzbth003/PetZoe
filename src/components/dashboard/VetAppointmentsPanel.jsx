@@ -303,20 +303,28 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
                 <div className="pt-5 border-t border-slate-100 mt-5 space-y-2">
                   {/* Case 1: PENDING */}
                   {isPending && (
-                    <div className="flex gap-2">
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAccept(appt)}
+                          disabled={actionLoading}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                        >
+                          <CheckCircle size={14} /> Accept Visit
+                        </button>
+                        <button
+                          onClick={() => setRejectDialogAppt(appt)}
+                          disabled={actionLoading}
+                          className="px-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <XCircle size={14} /> Decline
+                        </button>
+                      </div>
                       <button
-                        onClick={() => handleAccept(appt)}
-                        disabled={actionLoading}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                        onClick={() => setActiveChat(appt)}
+                        className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <CheckCircle size={14} /> Accept Visit
-                      </button>
-                      <button
-                        onClick={() => setRejectDialogAppt(appt)}
-                        disabled={actionLoading}
-                        className="px-4 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <XCircle size={14} /> Decline
+                        <MessageSquare size={13} /> Chat with Owner
                       </button>
                     </div>
                   )}
