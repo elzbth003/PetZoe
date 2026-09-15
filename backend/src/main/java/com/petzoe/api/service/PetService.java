@@ -1,12 +1,11 @@
 package com.petzoe.api.service;
 
 import com.petzoe.api.dto.PetDTO;
-import com.petzoe.api.entity.Pet;
-import com.petzoe.api.entity.User;
-import com.petzoe.api.repository.PetRepository;
-import com.petzoe.api.repository.UserRepository;
+import com.petzoe.api.entity.*;
+import com.petzoe.api.repository.*;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,12 +16,31 @@ public class PetService {
     private final PetRepository petRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AppointmentRepository appointmentRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final PetMedicalRecordRepository petMedicalRecordRepository;
+    private final PetVaccinationRecordRepository petVaccinationRecordRepository;
+    private final PetMedicalDocumentRepository petMedicalDocumentRepository;
+    private final PrescriptionRepository prescriptionRepository;
 
-    public PetService(PetRepository petRepository, UserRepository userRepository,
-                      NotificationService notificationService) {
+    public PetService(PetRepository petRepository,
+                      UserRepository userRepository,
+                      NotificationService notificationService,
+                      AppointmentRepository appointmentRepository,
+                      ChatMessageRepository chatMessageRepository,
+                      PetMedicalRecordRepository petMedicalRecordRepository,
+                      PetVaccinationRecordRepository petVaccinationRecordRepository,
+                      PetMedicalDocumentRepository petMedicalDocumentRepository,
+                      PrescriptionRepository prescriptionRepository) {
         this.petRepository = petRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.appointmentRepository = appointmentRepository;
+        this.chatMessageRepository = chatMessageRepository;
+        this.petMedicalRecordRepository = petMedicalRecordRepository;
+        this.petVaccinationRecordRepository = petVaccinationRecordRepository;
+        this.petMedicalDocumentRepository = petMedicalDocumentRepository;
+        this.prescriptionRepository = prescriptionRepository;
     }
 
     public List<PetDTO> getPetsByOwner(String email) {
@@ -88,8 +106,52 @@ public class PetService {
         return convertToDTO(updatedPet);
     }
 
+    @Transactional
     public void deletePet(Long id, String email) {
         Pet pet = getPetEntityOwnedByUser(id, email);
+        Long petId = pet.getId();
+
+        // 1. Fetch appointments for this pet and delete associated chat messages
+        List<Appointment> appointments = appointmentRepository.findByPetId(petId);
+        if (!appointments.isEmpty()) {
+            for (Appointment appointment : appointments) {
+                List<ChatMessage> messages = chatMessageRepository.findByAppointmentIdOrderByCreatedAtAsc(appointment.getId());
+                if (!messages.isEmpty()) {
+                    chatMessageRepository.deleteAll(messages);
+                }
+            }
+        }
+
+        // 2. Delete all medical documents for this pet
+        List<PetMedicalDocument> documents = petMedicalDocumentRepository.findByPetIdOrderByUploadedAtDesc(petId);
+        if (!documents.isEmpty()) {
+            petMedicalDocumentRepository.deleteAll(documents);
+        }
+
+        // 3. Delete all vaccination records for this pet
+        List<PetVaccinationRecord> vaccinations = petVaccinationRecordRepository.findByPetIdOrderByDateAdministeredDesc(petId);
+        if (!vaccinations.isEmpty()) {
+            petVaccinationRecordRepository.deleteAll(vaccinations);
+        }
+
+        // 4. Delete all prescriptions for this pet
+        List<Prescription> prescriptions = prescriptionRepository.findByPetIdOrderByCreatedAtDesc(petId);
+        if (!prescriptions.isEmpty()) {
+            prescriptionRepository.deleteAll(prescriptions);
+        }
+
+        // 5. Delete all clinical/medical records for this pet
+        List<PetMedicalRecord> medicalRecords = petMedicalRecordRepository.findByPetIdOrderByExaminationDateDesc(petId);
+        if (!medicalRecords.isEmpty()) {
+            petMedicalRecordRepository.deleteAll(medicalRecords);
+        }
+
+        // 6. Delete all appointments for this pet
+        if (!appointments.isEmpty()) {
+            appointmentRepository.deleteAll(appointments);
+        }
+
+        // 7. Delete the pet itself
         petRepository.delete(pet);
     }
 
