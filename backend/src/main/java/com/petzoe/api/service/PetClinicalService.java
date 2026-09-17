@@ -101,7 +101,18 @@ public class PetClinicalService {
                 .orElseThrow(() -> new IllegalArgumentException("Pet not found with ID: " + petId));
 
         validatePetAccess(pet, user);
+        return assemblePatientDetail(pet, user);
+    }
 
+    public VetPatientDetailDTO getPatientByPetCode(String petCode, String vetEmail) {
+        User vet = getVetByEmail(vetEmail);
+        Pet pet = petRepository.findByPetCodeIgnoreCase(petCode.trim())
+                .orElseThrow(() -> new IllegalArgumentException("No pet found with Pet ID: " + petCode));
+
+        return assemblePatientDetail(pet, vet);
+    }
+
+    private VetPatientDetailDTO assemblePatientDetail(Pet pet, User user) {
         User owner = pet.getOwner();
         UserDTO ownerDTO = new UserDTO(
                 owner.getId(), owner.getName(), owner.getEmail(), owner.getPhone(),
@@ -109,30 +120,30 @@ public class PetClinicalService {
                 owner.getSpecialization()
         );
 
-        List<AppointmentDTO> appointments = appointmentRepository.findByPetId(petId).stream()
+        List<AppointmentDTO> appointments = appointmentRepository.findByPetId(pet.getId()).stream()
                 .filter(a -> user.getRole().equalsIgnoreCase("ADMIN")
                         || pet.getOwner().getId().equals(user.getId())
-                        || (a.getVeterinarian() != null && a.getVeterinarian().getId().equals(user.getId())))
+                        || user.getRole().equalsIgnoreCase("Veterinarian"))
                 .map(this::toAppointmentDTO)
                 .collect(Collectors.toList());
 
         List<PetMedicalRecordDTO> medicalRecords = petMedicalRecordRepository
-                .findByPetIdOrderByExaminationDateDesc(petId).stream()
+                .findByPetIdOrderByExaminationDateDesc(pet.getId()).stream()
                 .map(PetMedicalRecordDTO::new)
                 .collect(Collectors.toList());
 
         List<PrescriptionDTO> prescriptions = prescriptionRepository
-                .findByPetIdOrderByCreatedAtDesc(petId).stream()
+                .findByPetIdOrderByCreatedAtDesc(pet.getId()).stream()
                 .map(this::toPrescriptionDTO)
                 .collect(Collectors.toList());
 
         List<PetVaccinationDTO> vaccinations = petVaccinationRecordRepository
-                .findByPetIdOrderByDateAdministeredDesc(petId).stream()
+                .findByPetIdOrderByDateAdministeredDesc(pet.getId()).stream()
                 .map(PetVaccinationDTO::new)
                 .collect(Collectors.toList());
 
         List<PetMedicalDocumentDTO> documents = petMedicalDocumentRepository
-                .findByPetIdOrderByUploadedAtDesc(petId).stream()
+                .findByPetIdOrderByUploadedAtDesc(pet.getId()).stream()
                 .map(PetMedicalDocumentDTO::new)
                 .collect(Collectors.toList());
 
@@ -158,8 +169,19 @@ public class PetClinicalService {
         Pet pet = petRepository.findById(petId)
                 .orElseThrow(() -> new IllegalArgumentException("Pet not found with ID: " + petId));
 
-        validateClinicalRelationship(pet, vet);
+        return createAndSaveMedicalRecord(pet, vet, request);
+    }
 
+    @Transactional
+    public PetMedicalRecordDTO addMedicalRecordByPetCode(String petCode, PetMedicalRecordRequestDTO request, String vetEmail) {
+        User vet = getVetByEmail(vetEmail);
+        Pet pet = petRepository.findByPetCodeIgnoreCase(petCode.trim())
+                .orElseThrow(() -> new IllegalArgumentException("No pet found with Pet ID: " + petCode));
+
+        return createAndSaveMedicalRecord(pet, vet, request);
+    }
+
+    private PetMedicalRecordDTO createAndSaveMedicalRecord(Pet pet, User vet, PetMedicalRecordRequestDTO request) {
         Appointment appointment = null;
         if (request.appointmentId() != null) {
             appointment = appointmentRepository.findById(request.appointmentId()).orElse(null);
@@ -194,7 +216,7 @@ public class PetClinicalService {
         notificationService.createNotification(
                 pet.getOwner(),
                 "New Clinical Record Added",
-                "Dr. " + vet.getName() + " recorded a clinical evaluation for " + pet.getName() + ".",
+                "Dr. " + vet.getName() + " recorded a clinical evaluation for " + pet.getName() + " (" + pet.getPetCode() + ").",
                 "APPOINTMENT"
         );
 
@@ -351,6 +373,7 @@ public class PetClinicalService {
     private PetDTO toPetDTO(Pet pet) {
         return new PetDTO(
                 pet.getId(),
+                pet.getPetCode(),
                 pet.getName(),
                 pet.getSpecies(),
                 pet.getBreed(),
@@ -371,6 +394,7 @@ public class PetClinicalService {
         return new AppointmentDTO(
                 a.getId(),
                 a.getPet().getId(),
+                a.getPet().getPetCode(),
                 a.getPet().getName(),
                 a.getOwner().getId(),
                 a.getOwner().getName(),

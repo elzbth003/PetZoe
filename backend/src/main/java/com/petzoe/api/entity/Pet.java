@@ -11,6 +11,9 @@ public class Pet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "pet_code", unique = true, nullable = false, updatable = false, length = 32)
+    private String petCode;
+
     @Column(nullable = false)
     private String name;
 
@@ -75,6 +78,14 @@ public class Pet {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getPetCode() { return petCode; }
+    public void setPetCode(String petCode) {
+        if (this.petCode != null && !this.petCode.equals(petCode)) {
+            throw new IllegalStateException("Pet ID is permanent and cannot be modified once assigned.");
+        }
+        this.petCode = petCode;
+    }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

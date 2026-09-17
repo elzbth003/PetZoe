@@ -231,6 +231,10 @@ export default function VetPatientProfileModal({ petId, isOpen, onClose, onStart
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-400/30">
                       {pet.breed || 'Mixed'}
                     </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-white/20 text-white border border-white/30 flex items-center gap-1">
+                      <span className="text-[10px] uppercase text-sky-200 font-bold">Pet ID:</span>
+                      {pet.petCode || `PZ-PET-${String(pet.id).padStart(6, '0')}`}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-2">
                     <span>{pet.gender || 'Unknown Gender'}</span>

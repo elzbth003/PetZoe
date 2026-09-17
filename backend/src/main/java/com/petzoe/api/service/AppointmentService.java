@@ -524,6 +524,7 @@ public class AppointmentService {
         return new AppointmentDTO(
                 appt.getId(),
                 appt.getPet().getId(),
+                appt.getPet().getPetCode(),
                 appt.getPet().getName(),
                 appt.getOwner().getId(),
                 appt.getOwner().getName(),

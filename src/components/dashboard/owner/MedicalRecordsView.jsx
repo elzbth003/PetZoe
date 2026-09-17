@@ -64,9 +64,19 @@ export default function MedicalRecordsView() {
     <div className="space-y-6 animate-in fade-in duration-200 text-left">
       {/* Pet Selector Header */}
       <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <FileText size={20} className="text-blue-600" /> Complete Pet Health & Clinical History
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <FileText size={20} className="text-blue-600" /> Complete Pet Health & Clinical History
+          </h2>
+          {selectedPet && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 w-fit">
+              <span className="text-[10px] font-black uppercase text-slate-400">Pet ID:</span>
+              <span className="font-mono text-xs font-bold text-blue-700 select-all">
+                {selectedPet.petCode || `PZ-PET-${String(selectedPet.id).padStart(6, '0')}`}
+              </span>
+            </div>
+          )}
+        </div>
 
         {pets.length === 0 ? (
           <p className="text-slate-500 text-sm">You haven't added any pets yet.</p>

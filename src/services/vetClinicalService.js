@@ -18,8 +18,18 @@ export const vetClinicalService = {
     return res.data;
   },
 
+  getPatientByPetCode: async (petCode) => {
+    const res = await api.get(`/vets/patients/by-code/${petCode}`);
+    return res.data;
+  },
+
   addMedicalRecord: async (petId, recordData) => {
     const res = await api.post(`/vets/patients/${petId}/medical-records`, recordData);
+    return res.data;
+  },
+
+  addMedicalRecordByPetCode: async (petCode, recordData) => {
+    const res = await api.post(`/vets/patients/by-code/${petCode}/medical-records`, recordData);
     return res.data;
   },
 
@@ -117,6 +127,16 @@ export const vetClinicalService = {
 
   getPetDocuments: async (petId) => {
     const res = await api.get(`/pets/${petId}/documents`);
+    return res.data;
+  },
+
+  getPetByCode: async (petCode) => {
+    const res = await api.get(`/pets/code/${petCode}`);
+    return res.data;
+  },
+
+  transferPetOwnership: async (petId, newOwnerEmail) => {
+    const res = await api.post(`/pets/${petId}/transfer`, { newOwnerEmail });
     return res.data;
   },
 };

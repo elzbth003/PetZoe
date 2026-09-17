@@ -80,6 +80,11 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Google API Client for verifying Google ID tokens (OAuth2) -->
         <dependency>

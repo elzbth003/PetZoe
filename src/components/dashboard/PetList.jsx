@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Plus, Search, Filter, Edit2, Trash2, X, AlertTriangle,
-  ShieldCheck, ShieldAlert, Shield, Loader2, Sparkles, Palette
+  ShieldCheck, ShieldAlert, Shield, Loader2, Sparkles, Palette,
+  Copy, Check, ArrowRightLeft
 } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -85,6 +86,10 @@ export default function PetList({ onPetsUpdated }) {
   const [editingPet, setEditingPet] = useState(null);
   const [deleteConfirmPet, setDeleteConfirmPet] = useState(null);
   const [isActionSubmitting, setIsActionSubmitting] = useState(false);
+  const [copiedPetCode, setCopiedPetCode] = useState(null);
+  const [transferPet, setTransferPet] = useState(null);
+  const [transferEmail, setTransferEmail] = useState('');
+  const [isTransferSubmitting, setIsTransferSubmitting] = useState(false);
 
   const { showToast } = useToast();
 
@@ -213,6 +218,35 @@ export default function PetList({ onPetsUpdated }) {
       showToast("Failed to remove pet.", "error");
     } finally {
       setIsActionSubmitting(false);
+    }
+  };
+
+  const handleCopyPetId = (e, code) => {
+    e.stopPropagation();
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopiedPetCode(code);
+    showToast(`Pet ID ${code} copied to clipboard!`, "info");
+    setTimeout(() => setCopiedPetCode(null), 2500);
+  };
+
+  const handleTransferSubmit = async (e) => {
+    e.preventDefault();
+    if (!transferPet || !transferEmail.trim()) {
+      showToast("Please enter the new owner's registered email address.", "error");
+      return;
+    }
+    setIsTransferSubmitting(true);
+    try {
+      await api.post(`/pets/${transferPet.id}/transfer`, { newOwnerEmail: transferEmail.trim() });
+      showToast(`Ownership of ${transferPet.name} (${transferPet.petCode}) successfully transferred to ${transferEmail}!`, "success");
+      setTransferPet(null);
+      setTransferEmail('');
+      fetchPets();
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to transfer pet ownership.", "error");
+    } finally {
+      setIsTransferSubmitting(false);
     }
   };
 
@@ -375,6 +409,28 @@ export default function PetList({ onPetsUpdated }) {
                       <Palette size={11} /> {pet.color}
                     </p>
                   )}
+
+                  {/* Permanent Pet ID Badge */}
+                  <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 mt-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400">Pet ID:</span>
+                      <span className="font-mono font-bold text-xs text-[#1E3A5F] truncate select-all">
+                        {pet.petCode || `PZ-PET-${String(pet.id).padStart(6, '0')}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyPetId(e, pet.petCode || `PZ-PET-${String(pet.id).padStart(6, '0')}`)}
+                      className="p-1 hover:bg-slate-200/70 rounded text-slate-400 hover:text-slate-700 transition-colors shrink-0 cursor-pointer"
+                      title="Copy Pet ID"
+                    >
+                      {copiedPetCode === (pet.petCode || `PZ-PET-${String(pet.id).padStart(6, '0')}`) ? (
+                        <Check size={13} className="text-emerald-600" />
+                      ) : (
+                        <Copy size={13} />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-3 text-xs text-slate-500 font-semibold">
@@ -403,6 +459,17 @@ export default function PetList({ onPetsUpdated }) {
                     )}
                   </div>
                 )}
+
+                {/* Transfer Ownership Footer */}
+                <div className="border-t border-slate-100 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => { setTransferPet(pet); setTransferEmail(''); }}
+                    className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-[#1E3A5F] text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <ArrowRightLeft size={13} /> Transfer Ownership
+                  </button>
+                </div>
 
               </div>
 
@@ -671,6 +738,71 @@ export default function PetList({ onPetsUpdated }) {
                 Yes, Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Ownership Dialog */}
+      {transferPet && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white w-full max-w-md rounded-3xl border border-slate-100 shadow-xl overflow-hidden p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="flex gap-3 text-left">
+                <div className="h-10 w-10 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600 shrink-0">
+                  <ArrowRightLeft size={20} />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-900 text-sm">Transfer Ownership</h4>
+                  <p className="text-xs text-slate-500">
+                    Transfer <strong>{transferPet.name}</strong> ({transferPet.petCode}) to a new registered owner.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setTransferPet(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="bg-sky-50/70 border border-sky-100 rounded-2xl p-3 text-[11px] text-sky-800 leading-relaxed">
+              💡 <strong>Permanent Medical History:</strong> The permanent Pet ID (<strong>{transferPet.petCode}</strong>) and all historical medical consultations, vaccinations, documents, and clinical history will remain fully intact and transfer to the new owner seamlessly.
+            </div>
+
+            <form onSubmit={handleTransferSubmit} className="space-y-4">
+              <div>
+                <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
+                  New Owner's Registered Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="newowner@example.com"
+                  value={transferEmail}
+                  onChange={(e) => setTransferEmail(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setTransferPet(null)}
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isTransferSubmitting}
+                  className="px-4 py-2 rounded-xl bg-[#1E3A5F] hover:bg-[#1A3354] text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isTransferSubmitting && <Loader2 size={12} className="animate-spin" />}
+                  Confirm Transfer
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

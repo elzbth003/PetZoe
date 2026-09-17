@@ -39,12 +39,25 @@ public class VetClinicalController {
         return ResponseEntity.ok(petClinicalService.getPatientDetail(petId, auth.getName()));
     }
 
+    @GetMapping("/patients/by-code/{petCode}")
+    public ResponseEntity<VetPatientDetailDTO> getPatientByPetCode(@PathVariable String petCode, Authentication auth) {
+        return ResponseEntity.ok(petClinicalService.getPatientByPetCode(petCode, auth.getName()));
+    }
+
     @PostMapping("/patients/{petId}/medical-records")
     public ResponseEntity<PetMedicalRecordDTO> addMedicalRecord(
             @PathVariable Long petId,
             @Valid @RequestBody PetMedicalRecordRequestDTO request,
             Authentication auth) {
         return ResponseEntity.ok(petClinicalService.addMedicalRecord(petId, request, auth.getName()));
+    }
+
+    @PostMapping("/patients/by-code/{petCode}/medical-records")
+    public ResponseEntity<PetMedicalRecordDTO> addMedicalRecordByPetCode(
+            @PathVariable String petCode,
+            @Valid @RequestBody PetMedicalRecordRequestDTO request,
+            Authentication auth) {
+        return ResponseEntity.ok(petClinicalService.addMedicalRecordByPetCode(petCode, request, auth.getName()));
     }
 
     @PostMapping("/patients/{petId}/vaccinations")

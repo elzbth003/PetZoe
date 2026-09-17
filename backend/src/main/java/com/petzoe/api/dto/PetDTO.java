@@ -13,6 +13,7 @@ import java.time.LocalDate;
 
 public record PetDTO(
     Long id,
+    String petCode,
 
     @NotBlank(message = "Pet name is required")
     @Size(min = 2, max = 50, message = "Pet name must be between 2 and 50 characters")
@@ -62,4 +63,11 @@ public record PetDTO(
     String medicalNotes,
 
     Long ownerId
-) {}
+) {
+    // Backward-compatible constructor without petCode
+    public PetDTO(Long id, String name, String species, String breed, Integer age,
+                  String gender, Double weight, String vaccinationStatus, String photoUrl,
+                  LocalDate dateOfBirth, String color, String allergies, String medicalNotes, Long ownerId) {
+        this(id, null, name, species, breed, age, gender, weight, vaccinationStatus, photoUrl, dateOfBirth, color, allergies, medicalNotes, ownerId);
+    }
+}

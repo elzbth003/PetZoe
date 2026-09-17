@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Activity, PawPrint, Loader2, Search, Filter,
-  Shield, Calendar, ChevronRight, Stethoscope, FileText
+  Shield, Calendar, ChevronRight, Stethoscope, FileText,
+  CheckCircle2, X
 } from 'lucide-react';
 import { vetClinicalService } from '../../services/vetClinicalService';
 import { useToast } from '../../hooks/useToast';
@@ -13,6 +14,9 @@ export default function VetPatientsPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [speciesFilter, setSpeciesFilter] = useState('ALL');
   const [selectedPetId, setSelectedPetId] = useState(null);
+  const [petCodeSearch, setPetCodeSearch] = useState('');
+  const [isSearchingCode, setIsSearchingCode] = useState(false);
+  const [searchedPatient, setSearchedPatient] = useState(null);
 
   const { showToast } = useToast();
 
@@ -32,6 +36,23 @@ export default function VetPatientsPanel() {
     fetchPatients();
   }, []);
 
+  const handlePetCodeSearch = async (e) => {
+    e.preventDefault();
+    const code = petCodeSearch.trim();
+    if (!code) return;
+    setIsSearchingCode(true);
+    setSearchedPatient(null);
+    try {
+      const result = await vetClinicalService.getPatientByPetCode(code);
+      setSearchedPatient(result);
+      showToast(`Found patient profile for ${result.pet?.name}!`, 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || `No pet found with Pet ID: ${code}`, 'error');
+    } finally {
+      setIsSearchingCode(false);
+    }
+  };
+
   const filteredPatients = patients.filter((pet) => {
     if (speciesFilter !== 'ALL' && pet.species?.toUpperCase() !== speciesFilter) {
       return false;
@@ -41,7 +62,8 @@ export default function VetPatientsPanel() {
       const nameMatch = pet.name?.toLowerCase().includes(q);
       const breedMatch = pet.breed?.toLowerCase().includes(q);
       const speciesMatch = pet.species?.toLowerCase().includes(q);
-      return nameMatch || breedMatch || speciesMatch;
+      const codeMatch = pet.petCode?.toLowerCase().includes(q);
+      return nameMatch || breedMatch || speciesMatch || codeMatch;
     }
     return true;
   });
@@ -59,6 +81,76 @@ export default function VetPatientsPanel() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Search by Permanent Pet ID Header */}
+      <div className="bg-gradient-to-r from-sky-900 to-slate-900 text-white rounded-3xl p-5 shadow-sm border border-sky-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold flex items-center gap-2">
+            <Stethoscope size={18} className="text-sky-400" />
+            Lookup Patient by Permanent Pet ID
+          </h3>
+          <p className="text-xs text-sky-200">
+            Access a pet's complete medical history, consultations, vaccinations, and documents across the system.
+          </p>
+        </div>
+        <form onSubmit={handlePetCodeSearch} className="flex gap-2 shrink-0 md:w-80">
+          <input
+            type="text"
+            value={petCodeSearch}
+            onChange={(e) => setPetCodeSearch(e.target.value)}
+            placeholder="e.g. PZ-PET-000001"
+            className="flex-1 px-3.5 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-sky-300/60 text-xs font-mono font-semibold focus:outline-none focus:bg-white/20"
+          />
+          <button
+            type="submit"
+            disabled={isSearchingCode || !petCodeSearch.trim()}
+            className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs shadow transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {isSearchingCode ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+            Lookup
+          </button>
+        </form>
+      </div>
+
+      {/* Verified Patient Search Result Banner */}
+      {searchedPatient && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0">
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-800 font-bold text-sm">Verified Pet ID Record:</span>
+                  <span className="font-mono font-bold text-xs bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-lg border border-emerald-300">
+                    {searchedPatient.pet?.petCode || `PZ-PET-${String(searchedPatient.pet?.id).padStart(6, '0')}`}
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-900 font-semibold mt-0.5">
+                  {searchedPatient.pet?.name} ({searchedPatient.pet?.species} • {searchedPatient.pet?.breed}) — Owner: {searchedPatient.owner?.name || 'Registered Owner'} ({searchedPatient.owner?.email || ''})
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                onClick={() => setSelectedPetId(searchedPatient.pet.id)}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                Open Medical Profile & Add Records <ChevronRight size={14} />
+              </button>
+              <button
+                onClick={() => setSearchedPatient(null)}
+                className="p-2 rounded-xl text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer"
+                title="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Search & Filter Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Species Filter Tabs */}
@@ -85,7 +177,7 @@ export default function VetPatientsPanel() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search patient name, breed..."
+            placeholder="Search patient name, breed, ID..."
             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-sky-500 shadow-sm"
           />
         </div>
@@ -135,6 +227,12 @@ export default function VetPatientsPanel() {
                     <p className="text-xs text-slate-500 font-semibold truncate">
                       {pet.breed || 'Mixed Breed'} • {pet.gender || 'Unknown'}
                     </p>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="text-[9px] font-black uppercase text-slate-400">Pet ID:</span>
+                      <span className="font-mono text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
+                        {pet.petCode || `PZ-PET-${String(pet.id).padStart(6, '0')}`}
+                      </span>
+                    </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-100">
                         {pet.vaccinationStatus || 'Status Unknown'}

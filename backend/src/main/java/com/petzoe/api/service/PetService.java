@@ -75,6 +75,10 @@ public class PetService {
         );
 
         Pet savedPet = petRepository.save(pet);
+        if (savedPet.getPetCode() == null) {
+            savedPet.setPetCode(String.format("PZ-PET-%06d", savedPet.getId()));
+            savedPet = petRepository.save(savedPet);
+        }
 
         // Trigger vaccination notification if needed
         if (!"Up-to-date".equals(petDTO.vaccinationStatus())) {
@@ -101,6 +105,7 @@ public class PetService {
         pet.setColor(petDTO.color());
         pet.setAllergies(petDTO.allergies());
         pet.setMedicalNotes(petDTO.medicalNotes());
+        // Note: petCode is permanent and immutable. It is NEVER modified during update.
 
         Pet updatedPet = petRepository.save(pet);
         return convertToDTO(updatedPet);
@@ -155,6 +160,71 @@ public class PetService {
         petRepository.delete(pet);
     }
 
+    public PetDTO getPetByCode(String petCode, String email) {
+        User requester = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        Pet pet = petRepository.findByPetCodeIgnoreCase(petCode.trim())
+                .orElseThrow(() -> new IllegalArgumentException("No pet found with Pet ID: " + petCode));
+
+        // Pet Owner can view their own pet; Veterinarians and Admins can view any pet
+        boolean isOwner = pet.getOwner().getId().equals(requester.getId());
+        boolean isVetOrAdmin = requester.getRole().equalsIgnoreCase("Veterinarian") || requester.getRole().equalsIgnoreCase("Admin");
+
+        if (!isOwner && !isVetOrAdmin) {
+            throw new SecurityException("Unauthorized: You do not have permission to view this pet.");
+        }
+
+        return convertToDTO(pet);
+    }
+
+    @Transactional
+    public PetDTO transferOwnership(Long petId, String newOwnerEmail, String currentOwnerEmail) {
+        if (newOwnerEmail == null || newOwnerEmail.trim().isEmpty()) {
+            throw new IllegalArgumentException("New owner email cannot be empty.");
+        }
+
+        User currentOwner = getOwner(currentOwnerEmail);
+        Pet pet = petRepository.findById(petId)
+                .orElseThrow(() -> new IllegalArgumentException("Pet not found with ID: " + petId));
+
+        if (!pet.getOwner().getId().equals(currentOwner.getId())) {
+            throw new SecurityException("Unauthorized: You can only transfer pets you currently own.");
+        }
+
+        if (currentOwner.getEmail().equalsIgnoreCase(newOwnerEmail.trim())) {
+            throw new IllegalArgumentException("Cannot transfer pet to yourself.");
+        }
+
+        User newOwner = userRepository.findByEmail(newOwnerEmail.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Recipient user not found with email: " + newOwnerEmail));
+
+        if (!newOwner.isEnabled()) {
+            throw new IllegalArgumentException("Recipient user account is disabled.");
+        }
+
+        // Transfer owner, keeping the permanent petCode and all historical records intact
+        pet.setOwner(newOwner);
+        Pet transferredPet = petRepository.save(pet);
+
+        // Notify previous owner
+        notificationService.createNotification(
+                currentOwner,
+                "Pet Ownership Transferred",
+                "Ownership of " + pet.getName() + " (" + pet.getPetCode() + ") was successfully transferred to " + newOwner.getName() + " (" + newOwner.getEmail() + ").",
+                "SYSTEM"
+        );
+
+        // Notify new owner
+        notificationService.createNotification(
+                newOwner,
+                "New Pet Received! 🐾",
+                "You are now the registered owner of " + pet.getName() + " (" + pet.getPetCode() + "). All medical history has been preserved.",
+                "PROFILE"
+        );
+
+        return convertToDTO(transferredPet);
+    }
+
     private Pet getPetEntityOwnedByUser(Long id, String email) {
         User owner = getOwner(email);
         Pet pet = petRepository.findById(id)
@@ -173,6 +243,7 @@ public class PetService {
     private PetDTO convertToDTO(Pet pet) {
         return new PetDTO(
                 pet.getId(),
+                pet.getPetCode(),
                 pet.getName(),
                 pet.getSpecies(),
                 pet.getBreed(),

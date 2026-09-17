@@ -34,6 +34,21 @@ public class PetController {
         return ResponseEntity.ok(petService.getPetById(id, email));
     }
 
+    @GetMapping("/code/{petCode}")
+    public ResponseEntity<PetDTO> getPetByCode(@PathVariable String petCode, Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(petService.getPetByCode(petCode, email));
+    }
+
+    @PostMapping("/{id}/transfer")
+    public ResponseEntity<PetDTO> transferOwnership(
+            @PathVariable Long id,
+            @Valid @RequestBody PetTransferRequestDTO request,
+            Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(petService.transferOwnership(id, request.newOwnerEmail(), email));
+    }
+
     @PostMapping
     public ResponseEntity<PetDTO> createPet(@Valid @RequestBody PetDTO petDTO, Authentication authentication) {
         String email = authentication.getName();

@@ -10,6 +10,8 @@ public record AppointmentDTO(
     @NotNull(message = "Pet ID is required")
     Long petId,
 
+    String petCode,
+
     String petName,
 
     Long ownerId,
@@ -30,4 +32,11 @@ public record AppointmentDTO(
     String status,
 
     String notes
-) {}
+) {
+    // Backward-compatible constructor without petCode
+    public AppointmentDTO(Long id, Long petId, String petName, Long ownerId, String ownerName,
+                          Long veterinarianId, String veterinarianName, LocalDate appointmentDate,
+                          String appointmentTime, String status, String notes) {
+        this(id, petId, null, petName, ownerId, ownerName, veterinarianId, veterinarianName, appointmentDate, appointmentTime, status, notes);
+    }
+}
