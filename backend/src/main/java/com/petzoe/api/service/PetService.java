@@ -74,6 +74,16 @@ public class PetService {
                 owner
         );
 
+        String generatedCode = null;
+        try {
+            generatedCode = petRepository.getNextPetCode();
+        } catch (Exception e) {
+            // Fallback in environments where sequence might not be invoked directly
+        }
+        if (generatedCode != null && !generatedCode.trim().isEmpty()) {
+            pet.setPetCode(generatedCode);
+        }
+
         Pet savedPet = petRepository.save(pet);
         if (savedPet.getPetCode() == null) {
             savedPet.setPetCode(String.format("PZ-PET-%06d", savedPet.getId()));
