@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -90,8 +90,15 @@ export default function PetList({ onPetsUpdated }) {
   const [transferPet, setTransferPet] = useState(null);
   const [transferEmail, setTransferEmail] = useState('');
   const [isTransferSubmitting, setIsTransferSubmitting] = useState(false);
+  const modalFormRef = useRef(null);
 
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (isModalOpen && modalFormRef.current) {
+      modalFormRef.current.scrollTop = 0;
+    }
+  }, [isModalOpen]);
 
   const {
     register,
@@ -498,8 +505,24 @@ export default function PetList({ onPetsUpdated }) {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 overflow-y-auto">
+            <form ref={modalFormRef} onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 overflow-y-auto">
               
+              {/* Pet ID System Note */}
+              <div className="bg-sky-50/70 border border-sky-100 rounded-2xl p-3 flex items-start gap-2.5">
+                <span className="text-sm shrink-0 mt-0.5">🆔</span>
+                <p className="text-[11px] text-sky-900 leading-snug">
+                  {editingPet ? (
+                    <>
+                      Permanent Pet ID: <strong className="font-mono text-sky-700">{editingPet.petCode || `PZ-PET-${String(editingPet.id).padStart(6, '0')}`}</strong> (Immutable)
+                    </>
+                  ) : (
+                    <>
+                      A unique, permanent <strong>Pet ID</strong> (e.g. <span className="font-mono font-bold">PZ-PET-000025</span>) will be automatically generated upon saving.
+                    </>
+                  )}
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 {/* Pet Name */}
                 <div className="col-span-2 sm:col-span-1">
