@@ -43,6 +43,9 @@ import AdoptionListingsPage from '../pages/adoption/AdoptionListingsPage';
 import AdoptionDetailPage from '../pages/adoption/AdoptionDetailPage';
 import AdoptionApplicationPage from '../pages/adoption/AdoptionApplicationPage';
 
+// Rehoming Pages
+import RehomingBoard from '../pages/rehoming/RehomingBoard';
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -51,6 +54,11 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <LandingPage />
+      },
+      // Public Community Rehoming Board
+      {
+        path: 'rehoming',
+        element: <RehomingBoard />
       },
       // Public Marketplace Routes
       {

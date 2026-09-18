@@ -116,6 +116,10 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/vets/**").permitAll()
                         // Adoption: allow public browsing of approved adoption listings
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/adoption/**").permitAll()
+                        // Rehome: allow public browsing of active rehoming board listings
+                        .requestMatchers("/api/rehome/listings/my").authenticated()
+                        .requestMatchers("/api/rehome/applications/my").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/rehome/listings/**").permitAll()
                         // Uploads: allow public access to uploaded images
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
                         // Admin: restricted to ADMIN role

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { PawPrint, Menu, X, LogOut, User, ShoppingCart, ShoppingBag, Heart } from 'lucide-react';
+import { PawPrint, Menu, X, LogOut, User, ShoppingCart, ShoppingBag, Heart, HeartHandshake } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import marketplaceService from '../services/marketplaceService';
@@ -98,6 +98,9 @@ export default function Navbar() {
               <Heart size={14} /> Adopt
             </Link>
           )}
+          <Link to="/rehoming" className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors">
+            <HeartHandshake size={14} /> Rehome
+          </Link>
         </div>
 
         {/* Auth Actions / Profile Card */}
@@ -196,6 +199,14 @@ export default function Navbar() {
             <Heart size={18} /> Adopt a Pet
           </Link>
         )}
+
+        <Link
+          to="/rehoming"
+          onClick={() => setIsOpen(false)}
+          className="flex items-center gap-2 text-amber-700 bg-amber-50 px-4 py-3 rounded-2xl font-bold"
+        >
+          <HeartHandshake size={18} /> Community Rehoming
+        </Link>
 
         {['features', 'services', 'why-us', 'testimonials', 'faq'].map((section) => (
           <button

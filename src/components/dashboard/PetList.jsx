@@ -5,11 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Plus, Search, Filter, Edit2, Trash2, X, AlertTriangle,
   ShieldCheck, ShieldAlert, Shield, Loader2, Sparkles, Palette,
-  Copy, Check, ArrowRightLeft
+  Copy, Check, ArrowRightLeft, HeartHandshake
 } from 'lucide-react';
 import api from '../../services/api';
+import rehomeService from '../../services/rehomeService';
 import { useToast } from '../../hooks/useToast';
 import ImageUpload from '../ui/ImageUpload';
+import RehomePetModal from '../rehoming/RehomePetModal';
+import RehomeApplicationsReviewModal from '../rehoming/RehomeApplicationsReviewModal';
 
 // Default presets for pet pictures based on species
 const SPECIES_PRESETS = {
@@ -90,6 +93,12 @@ export default function PetList({ onPetsUpdated }) {
   const [transferPet, setTransferPet] = useState(null);
   const [transferEmail, setTransferEmail] = useState('');
   const [isTransferSubmitting, setIsTransferSubmitting] = useState(false);
+
+  // Rehoming states
+  const [rehomeListings, setRehomeListings] = useState([]);
+  const [rehomePet, setRehomePet] = useState(null);
+  const [reviewListing, setReviewListing] = useState(null);
+  const [reviewPet, setReviewPet] = useState(null);
   const modalFormRef = useRef(null);
 
   const { showToast } = useToast();
@@ -140,8 +149,23 @@ export default function PetList({ onPetsUpdated }) {
     }
   };
 
+  // Fetch owner rehoming listings
+  const fetchRehomeListings = async () => {
+    try {
+      const res = await rehomeService.getMyListings();
+      setRehomeListings(res.data || []);
+    } catch (e) {
+      console.error("Failed to load rehome listings", e);
+    }
+  };
+
+  const getActiveListingForPet = (petId) => {
+    return rehomeListings.find(l => l.petId === petId && l.status === 'ACTIVE');
+  };
+
   useEffect(() => {
     fetchPets();
+    fetchRehomeListings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -467,8 +491,30 @@ export default function PetList({ onPetsUpdated }) {
                   </div>
                 )}
 
-                {/* Transfer Ownership Footer */}
-                <div className="border-t border-slate-100 pt-3">
+                {/* Ownership Actions: Rehoming & Direct Transfer */}
+                <div className="border-t border-slate-100 pt-3 space-y-2">
+                  {getActiveListingForPet(pet.id) ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReviewListing(getActiveListingForPet(pet.id));
+                        setReviewPet(pet);
+                      }}
+                      className="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <HeartHandshake size={14} className="text-amber-600" />
+                      Rehoming Active ({getActiveListingForPet(pet.id).applicationCount || 0} {getActiveListingForPet(pet.id).applicationCount === 1 ? 'Applicant' : 'Applicants'})
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setRehomePet(pet)}
+                      className="w-full py-2 px-3 rounded-xl bg-amber-50/60 hover:bg-amber-50 border border-amber-200/80 text-amber-900 hover:text-amber-950 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <HeartHandshake size={14} className="text-amber-600" /> Find a New Home
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => { setTransferPet(pet); setTransferEmail(''); }}
@@ -828,6 +874,38 @@ export default function PetList({ onPetsUpdated }) {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Rehome Pet Modal */}
+      {rehomePet && (
+        <RehomePetModal
+          pet={rehomePet}
+          isOpen={!!rehomePet}
+          onClose={() => setRehomePet(null)}
+          onSuccess={() => {
+            fetchPets();
+            fetchRehomeListings();
+          }}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Rehome Applications Review Modal */}
+      {reviewListing && (
+        <RehomeApplicationsReviewModal
+          listing={reviewListing}
+          pet={reviewPet}
+          isOpen={!!reviewListing}
+          onClose={() => {
+            setReviewListing(null);
+            setReviewPet(null);
+          }}
+          onActionSuccess={() => {
+            fetchPets();
+            fetchRehomeListings();
+          }}
+          showToast={showToast}
+        />
       )}
 
     </div>
