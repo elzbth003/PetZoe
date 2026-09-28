@@ -68,12 +68,17 @@ public class PetIdCentricSeleniumTest {
         WebElement passwordInput = driver.findElement(By.id("password"));
         WebElement submitButton = driver.findElement(By.cssSelector("button[type='submit']"));
 
-        emailInput.sendKeys("alex@gmail.com");
-        passwordInput.sendKeys("Alex@123");
+        emailInput.sendKeys("owner@petverse.com");
+        passwordInput.sendKeys("Password123!");
         submitButton.click();
 
         // Wait for dashboard navigation
         wait.until(ExpectedConditions.urlContains("/dashboard"));
+
+        // Navigate to My Pets tab
+        WebElement myPetsTab = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//nav//button[contains(., 'My Pets')] | //aside//button[contains(., 'My Pets')]")));
+        myPetsTab.click();
 
         // Verify presence of Pet ID labels / badges (PZ-PET-)
         List<WebElement> petIdLabels = wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
@@ -113,18 +118,17 @@ public class PetIdCentricSeleniumTest {
         WebElement passwordInput = driver.findElement(By.id("password"));
         WebElement submitButton = driver.findElement(By.cssSelector("button[type='submit']"));
 
-        emailInput.sendKeys("sarah@gmail.com");
-        passwordInput.sendKeys("Sarah@123");
+        emailInput.sendKeys("vet@petverse.com");
+        passwordInput.sendKeys("Password123!");
         submitButton.click();
 
         // Wait for vet dashboard navigation
         wait.until(ExpectedConditions.urlContains("/dashboard"));
 
-        // If not already on Patients tab, click Patients nav item
-        List<WebElement> patientTabs = driver.findElements(By.xpath("//button[contains(., 'Patients') or contains(., 'Registry')]"));
-        if (!patientTabs.isEmpty()) {
-            patientTabs.get(0).click();
-        }
+        // Click Patients nav item
+        WebElement patientTab = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//nav//button[contains(., 'Patients') or contains(., 'Registry')] | //aside//button[contains(., 'Patients') or contains(., 'Registry')]")));
+        patientTab.click();
 
         // Verify permanent Pet ID lookup section exists
         WebElement lookupHeader = wait.until(ExpectedConditions.visibilityOfElementLocated(
