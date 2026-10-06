@@ -21,12 +21,13 @@ public interface PetRehomeListingRepository extends JpaRepository<PetRehomeListi
     boolean existsByPetIdAndStatus(Long petId, String status);
 
     @Query("SELECT l FROM PetRehomeListing l WHERE l.status = 'ACTIVE' " +
-           "AND (:species IS NULL OR LOWER(l.pet.species) = LOWER(:species)) " +
-           "AND (:query IS NULL OR LOWER(l.title) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "     OR LOWER(l.pet.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "     OR LOWER(l.pet.breed) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "     OR LOWER(l.city) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "     OR LOWER(l.pet.petCode) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+           "AND (CAST(:species AS string) IS NULL OR LOWER(l.pet.species) = LOWER(CAST(:species AS string))) " +
+           "AND (CAST(:query AS string) IS NULL " +
+           "     OR LOWER(l.title) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')) " +
+           "     OR LOWER(l.pet.name) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')) " +
+           "     OR LOWER(l.pet.breed) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')) " +
+           "     OR LOWER(l.city) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')) " +
+           "     OR LOWER(l.pet.petCode) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%'))) " +
            "ORDER BY l.createdAt DESC")
     List<PetRehomeListing> searchActiveListings(@Param("species") String species, @Param("query") String query);
 }
