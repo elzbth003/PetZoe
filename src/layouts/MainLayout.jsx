@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import PetZoeChatbot from '../components/chat/PetZoeChatbot';
 
 export default function MainLayout() {
   return (
@@ -11,6 +12,7 @@ export default function MainLayout() {
         <Outlet />
       </main>
       <Footer />
+      <PetZoeChatbot />
     </div>
   );
 }

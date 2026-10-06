@@ -16,6 +16,7 @@ import { notificationService } from '../../services/notificationService';
 import marketplaceService from '../../services/marketplaceService';
 import api from '../../services/api';
 import MedicalRecordsView from '../../components/dashboard/owner/MedicalRecordsView';
+import PetZoeChatbot from '../../components/chat/PetZoeChatbot';
 
 export default function OwnerDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -447,6 +448,7 @@ export default function OwnerDashboard() {
 
       </main>
 
+      <PetZoeChatbot />
     </div>
   );
 }
