@@ -203,7 +203,7 @@ export default function ProfileManagement() {
   const sections = [
     { id: 'info', label: 'Personal Info' },
     { id: 'password', label: 'Change Password' },
-    { id: 'danger', label: 'Danger Zone' },
+    { id: 'danger', label: 'Delete Your Account' },
   ];
 
   if (loading) {
@@ -474,7 +474,7 @@ export default function ProfileManagement() {
         </motion.div>
       )}
 
-      {/* Danger Zone Section */}
+      {/* Delete Your Account Section */}
       {activeSection === 'danger' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -482,7 +482,7 @@ export default function ProfileManagement() {
           className="bg-white border border-rose-100 rounded-3xl p-6 shadow-sm"
         >
           <h3 className="font-bold text-rose-700 text-sm flex items-center gap-2 mb-2 text-left">
-            <AlertTriangle size={16} /> Danger Zone
+            <AlertTriangle size={16} /> Delete Your Account
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed text-left mb-5">
             Deleting your account is permanent. All your pets, appointments, and data will be removed immediately and cannot be recovered.
