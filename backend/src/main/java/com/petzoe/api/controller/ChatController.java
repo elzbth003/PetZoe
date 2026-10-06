@@ -1,9 +1,11 @@
 package com.petzoe.api.controller;
 
-import com.petzoe.api.dto.ChatMessageDTO;
-import com.petzoe.api.service.ChatService;
+import com.petzoe.api.dto.AiChatRequestDTO;
+import com.petzoe.api.dto.AiChatResponseDTO;
+import com.petzoe.api.dto.AiConversationDTO;
+import com.petzoe.api.service.chat.AiChatService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,35 +16,68 @@ import java.util.Map;
 @RequestMapping("/api/chat")
 public class ChatController {
 
-    private final ChatService chatService;
+    private final AiChatService chatService;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(AiChatService chatService) {
         this.chatService = chatService;
     }
 
-    @PostMapping("/appointment/{appointmentId}")
-    @PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN')")
-    public ResponseEntity<ChatMessageDTO> sendMessage(
-            @PathVariable Long appointmentId, 
-            @RequestBody Map<String, String> payload, 
-            Authentication auth) {
-        return ResponseEntity.ok(chatService.sendMessage(appointmentId, payload.get("content"), auth.getName()));
+    /**
+     * Public Guest Chat Endpoint.
+     * Permitted to all visitors for general pet care, emergency triage, adoption, and platform guidance.
+     * Strictly disallows access to personal data.
+     */
+    @PostMapping("/public/message")
+    public ResponseEntity<AiChatResponseDTO> processPublicMessage(@Valid @RequestBody AiChatRequestDTO request) {
+        AiChatResponseDTO response = chatService.processMessage(request, null, true);
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/appointment/{appointmentId}")
-    @PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN', 'ADMIN')")
-    public ResponseEntity<List<ChatMessageDTO>> getMessages(
-            @PathVariable Long appointmentId, 
-            Authentication auth) {
-        return ResponseEntity.ok(chatService.getMessagesByAppointment(appointmentId, auth.getName()));
+    /**
+     * Authenticated Chat Endpoint.
+     * Accesses personalized pet profiles, appointments, vaccines, and prescriptions.
+     * Identity is derived strictly from Spring Security SecurityContext.
+     */
+    @PostMapping("/message")
+    public ResponseEntity<AiChatResponseDTO> processAuthenticatedMessage(
+            @Valid @RequestBody AiChatRequestDTO request,
+            Authentication authentication) {
+        String email = authentication.getName();
+        AiChatResponseDTO response = chatService.processMessage(request, email, false);
+        return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/appointment/{appointmentId}/read")
-    @PreAuthorize("hasAnyRole('PET_OWNER', 'VETERINARIAN')")
-    public ResponseEntity<Void> markAsRead(
-            @PathVariable Long appointmentId, 
-            Authentication auth) {
-        chatService.markMessagesAsRead(appointmentId, auth.getName());
-        return ResponseEntity.ok().build();
+    /**
+     * List authenticated user's conversations.
+     */
+    @GetMapping("/conversations")
+    public ResponseEntity<List<AiConversationDTO>> getConversations(Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(chatService.getUserConversations(email));
+    }
+
+    /**
+     * Get specific conversation with messages.
+     * Backend strictly verifies conversation belongs to authenticated user.
+     */
+    @GetMapping("/conversations/{id}")
+    public ResponseEntity<AiConversationDTO> getConversation(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(chatService.getConversation(id, email));
+    }
+
+    /**
+     * Delete a conversation.
+     * Backend strictly verifies conversation belongs to authenticated user.
+     */
+    @DeleteMapping("/conversations/{id}")
+    public ResponseEntity<?> deleteConversation(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String email = authentication.getName();
+        chatService.deleteConversation(id, email);
+        return ResponseEntity.ok(Map.of("message", "Conversation deleted successfully."));
     }
 }
