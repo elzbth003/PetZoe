@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Heart, Calendar, FileText, ShoppingBag,
   Bell, User, LogOut, Sparkles, ShieldAlert, CalendarDays,
-  Plus, ArrowRight, Activity, Clock, PawPrint, Menu, X, KeyRound
+  Plus, ArrowRight, Activity, Clock, PawPrint, Menu, X, KeyRound,
+  ScanLine
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import PetList from '../../components/dashboard/PetList';
@@ -16,6 +17,7 @@ import { notificationService } from '../../services/notificationService';
 import marketplaceService from '../../services/marketplaceService';
 import api from '../../services/api';
 import MedicalRecordsView from '../../components/dashboard/owner/MedicalRecordsView';
+import VetScanView from '../../components/dashboard/owner/VetScanView';
 import PetZoeChatbot from '../../components/chat/PetZoeChatbot';
 
 export default function OwnerDashboard() {
@@ -280,6 +282,13 @@ export default function OwnerDashboard() {
         );
       case 'My Pets':
         return <PetList onPetsUpdated={setPetsCount} />;
+      case 'VetScan AI':
+        return (
+          <VetScanView
+            onNavigateToAppointments={() => setActiveTab('Appointments')}
+            onNavigateToRecords={() => setActiveTab('Medical Records')}
+          />
+        );
       case 'Appointments':
         return <AppointmentList onAppointmentsUpdated={setUpcomingAppointments} />;
       case 'My Shop':
@@ -300,6 +309,7 @@ export default function OwnerDashboard() {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard },
     { name: 'My Pets', icon: Heart },
+    { name: 'VetScan AI', icon: ScanLine },
     { name: 'Appointments', icon: Calendar },
     { name: 'My Shop', icon: ShoppingBag, badge: cartItemCount },
     { name: 'Adoptions', icon: Heart },

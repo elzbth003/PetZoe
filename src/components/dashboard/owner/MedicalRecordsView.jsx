@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { prescriptionApi } from '../../../services/medicalApi';
 import { vetClinicalService } from '../../../services/vetClinicalService';
+import vetScanService from '../../../services/vetScanService';
 import api from '../../../services/api';
 import {
   FileText, Calendar, Info, Clock, Shield, Pill, Download,
-  Stethoscope, AlertCircle, CheckCircle2, User as UserIcon, Loader2
+  Stethoscope, AlertCircle, CheckCircle2, User as UserIcon, Loader2,
+  ScanLine, Eye
 } from 'lucide-react';
 
 export default function MedicalRecordsView() {
@@ -16,6 +18,7 @@ export default function MedicalRecordsView() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [vaccinations, setVaccinations] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [vetScanRecords, setVetScanRecords] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -42,17 +45,19 @@ export default function MedicalRecordsView() {
   const loadAllPetRecords = async (petId) => {
     setLoading(true);
     try {
-      const [recRes, rxRes, vacRes, docRes] = await Promise.allSettled([
+      const [recRes, rxRes, vacRes, docRes, scanRes] = await Promise.allSettled([
         vetClinicalService.getPetMedicalRecords(petId),
         prescriptionApi.getByPet(petId),
         vetClinicalService.getPetVaccinations(petId),
         vetClinicalService.getPetDocuments(petId),
+        vetScanService.getScansByPet(petId),
       ]);
 
       if (recRes.status === 'fulfilled') setClinicalRecords(recRes.value || []);
       if (rxRes.status === 'fulfilled') setPrescriptions(rxRes.value.data || []);
       if (vacRes.status === 'fulfilled') setVaccinations(vacRes.value || []);
       if (docRes.status === 'fulfilled') setDocuments(docRes.value || []);
+      if (scanRes.status === 'fulfilled') setVetScanRecords(scanRes.value || []);
     } catch (error) {
       console.error('Error loading complete medical records:', error);
     } finally {
@@ -112,6 +117,7 @@ export default function MedicalRecordsView() {
               { id: 'prescriptions', label: 'Prescriptions (Rx)', icon: Pill, count: prescriptions.length },
               { id: 'vaccines', label: 'Vaccinations', icon: Shield, count: vaccinations.length },
               { id: 'documents', label: 'Lab Reports & Docs', icon: FileText, count: documents.length },
+              { id: 'vetscan', label: 'VetScan AI Reports', icon: ScanLine, count: vetScanRecords.length },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -340,6 +346,109 @@ export default function MedicalRecordsView() {
                                 <Download size={12} /> Download
                               </a>
                             )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 5: VETSCAN AI SCREENING REPORTS */}
+              {activeTab === 'vetscan' && (
+                <div className="space-y-4">
+                  {vetScanRecords.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                      <ScanLine size={32} className="text-slate-300 mx-auto mb-2" />
+                      <p className="text-slate-500 text-xs font-medium">No VetScan lesion screening reports logged yet for {selectedPet.name}.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {vetScanRecords.map((scan) => (
+                        <div key={scan.id} className="border border-slate-200 rounded-3xl p-5 bg-white shadow-sm hover:border-blue-200 hover:shadow-md transition-all space-y-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                              <span className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                                <ScanLine size={16} />
+                              </span>
+                              <div>
+                                <h4 className="font-bold text-sm text-slate-800">
+                                  Preliminary Lesion Screening #{scan.id}
+                                </h4>
+                                <p className="text-[10px] text-slate-400">
+                                  {new Date(scan.createdAt).toLocaleString()} • Model: {scan.modelName} ({scan.modelVersion})
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${
+                                scan.severity === 'SEVERE'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                  : scan.severity === 'MODERATE'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              }`}>
+                                {scan.severity}
+                              </span>
+
+                              <span className="px-2.5 py-1 rounded-xl text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200 uppercase">
+                                {scan.progressionStatus}
+                              </span>
+
+                              {scan.veterinarianReviewStatus && scan.veterinarianReviewStatus !== 'PENDING' && (
+                                <span className="px-2.5 py-1 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                                  Vet Reviewed: {scan.veterinarianReviewStatus}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                            {/* Images: Original & Grad-CAM */}
+                            <div className="md:col-span-5 flex gap-2">
+                              <div className="flex-1 space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Photograph</span>
+                                <img
+                                  src={scan.imageReference}
+                                  alt="Lesion Photograph"
+                                  className="w-full h-32 object-cover rounded-xl border border-slate-200"
+                                />
+                              </div>
+                              {scan.explanationImageReference && (
+                                <div className="flex-1 space-y-1">
+                                  <span className="text-[10px] font-bold text-blue-600 uppercase">Grad-CAM Heatmap</span>
+                                  <img
+                                    src={scan.explanationImageReference}
+                                    alt="Grad-CAM Heatmap"
+                                    className="w-full h-32 object-cover rounded-xl border border-blue-200"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Predictions & Findings */}
+                            <div className="md:col-span-7 space-y-2">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">Screening Indicators</span>
+                              <div className="grid grid-cols-2 gap-2">
+                                {scan.predictions?.map((pred) => (
+                                  <div key={pred.label} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                                    <div className="flex justify-between font-bold">
+                                      <span className="text-slate-700">{pred.displayName}</span>
+                                      <span className={pred.detected ? 'text-blue-700' : 'text-slate-400'}>
+                                        {Math.round(pred.probability * 100)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {scan.veterinarianNotes && (
+                                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-900 mt-2">
+                                  <span className="font-bold">Dr. {scan.veterinarianName || 'Veterinarian'} Notes:</span> {scan.veterinarianNotes}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}

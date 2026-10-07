@@ -96,7 +96,10 @@ export default function PetZoeChatbot() {
           res = await chatService.sendAuthenticatedMessage(message, currentConversationId);
         } catch (authErr) {
           if (authErr.response?.status === 401 || authErr.response?.status === 403) {
-            console.warn('Authenticated chat token expired or rejected, falling back to public chat service');
+            console.warn('Authenticated chat token expired or rejected, clearing stale session');
+            sessionStorage.removeItem('petzoe_token');
+            sessionStorage.removeItem('petzoe_user');
+            window.dispatchEvent(new Event('auth-change'));
             res = await chatService.sendPublicMessage(message);
           } else {
             throw authErr;
@@ -189,6 +192,100 @@ export default function PetZoeChatbot() {
         ]
       }
     ]);
+  };
+
+  const renderInlineFormatting = (text) => {
+    if (!text) return null;
+    // Regex splits text by bold/italic/code markdown tokens
+    const parts = text.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
+    return parts.map((part, idx) => {
+      if (!part) return null;
+      if (part.startsWith('***') && part.endsWith('***') && part.length > 6) {
+        return (
+          <strong key={idx} className="font-semibold italic text-slate-900">
+            {part.slice(3, -3)}
+          </strong>
+        );
+      }
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+        return (
+          <strong key={idx} className="font-semibold text-slate-900">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+        return (
+          <em key={idx} className="italic text-slate-700">
+            {part.slice(1, -1)}
+          </em>
+        );
+      }
+      if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+        return (
+          <code key={idx} className="px-1.5 py-0.5 rounded bg-slate-100 text-sky-800 font-mono text-[10.5px]">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      // Clean any accidental leftover raw asterisks
+      const cleaned = part.replace(/\*{2,}/g, '');
+      return cleaned;
+    });
+  };
+
+  const renderMessageContent = (content) => {
+    if (!content) return null;
+    const lines = content.split('\n');
+
+    return lines.map((line, lineIdx) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        return <div key={lineIdx} className="h-1.5" />;
+      }
+
+      // Subheading: ### Header
+      if (trimmed.startsWith('### ')) {
+        return (
+          <h4 key={lineIdx} className="font-bold text-slate-900 text-xs mt-2 mb-1">
+            {renderInlineFormatting(trimmed.substring(4))}
+          </h4>
+        );
+      }
+
+      // Bullet line: • or -
+      if (trimmed.startsWith('• ') || trimmed.startsWith('- ')) {
+        const bulletContent = trimmed.replace(/^[•\-]\s*/, '');
+        return (
+          <div key={lineIdx} className="flex items-start gap-1.5 my-1 pl-0.5 text-left">
+            <span className="text-sky-600 font-bold shrink-0 leading-relaxed">•</span>
+            <div className="flex-1 leading-relaxed">
+              {renderInlineFormatting(bulletContent)}
+            </div>
+          </div>
+        );
+      }
+
+      // Numbered list: 1. , 2.
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (numMatch) {
+        return (
+          <div key={lineIdx} className="flex items-start gap-1.5 my-1 pl-0.5 text-left">
+            <span className="text-slate-500 font-bold shrink-0 text-[11px] leading-relaxed">{numMatch[1]}.</span>
+            <div className="flex-1 leading-relaxed">
+              {renderInlineFormatting(numMatch[2])}
+            </div>
+          </div>
+        );
+      }
+
+      // Default paragraph
+      return (
+        <p key={lineIdx} className="leading-relaxed">
+          {renderInlineFormatting(line)}
+        </p>
+      );
+    });
   };
 
   return (
@@ -308,8 +405,8 @@ export default function PetZoeChatbot() {
                   )}
 
                   {/* Render content formatted */}
-                  <div className="whitespace-pre-wrap space-y-1">
-                    {msg.message}
+                  <div className="space-y-1">
+                    {renderMessageContent(msg.message)}
                   </div>
 
                   {/* External Sources / Citations Section */}

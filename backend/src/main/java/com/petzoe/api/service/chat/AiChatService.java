@@ -143,7 +143,10 @@ public class AiChatService {
 
         // Check if guest user asks for personal PetZoe data
         if (isGuest && retrievalRouterService.isPersonalPetZoeQuery(rawMessage, intent)) {
-            String promptLogin = "You are currently chatting as a guest. Please log in to your PetZoe account to access your personal pet records, appointments, and medical history!";
+            String promptLogin = "To view your registered pets, immunization history, or appointments directly in chat, Please log in to your PetZoe account.\n\n"
+                    + "Once logged in, you can:\n"
+                    + "• Ask me: *\"Show my pets' vaccination records\"*\n"
+                    + "• Or visit your **Owner Dashboard** → **My Pets** → **Vaccination Details**.";
             return new AiChatResponseDTO(
                     null, null, "ASSISTANT", promptLogin, intent.name(), "AUTH_REQUIRED", null,
                     LocalDateTime.now(), List.of(AiQuickActionDTO.navigateAction("Log In to PetZoe", "/login"))

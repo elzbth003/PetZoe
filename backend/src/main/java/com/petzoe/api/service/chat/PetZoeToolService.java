@@ -139,11 +139,11 @@ public class PetZoeToolService {
 
         StringBuilder sb = new StringBuilder("Here are your upcoming appointments:\n");
         for (Appointment a : appointments) {
-            String doctorName = (a.getVeterinarian() != null) ? a.getVeterinarian().getName() : "Assigned Veterinarian";
+            String doctorDisplay = formatDoctorName(a.getVeterinarian());
             String petName = (a.getPet() != null) ? a.getPet().getName() : "Patient";
-            sb.append(String.format("• **%s** with Dr. %s on **%s** at **%s** (Status: %s) — Reason: %s\n",
+            sb.append(String.format("• **%s** with %s on **%s** at **%s** (Status: %s) — Reason: %s\n",
                     petName,
-                    doctorName,
+                    doctorDisplay,
                     a.getAppointmentDate(),
                     a.getAppointmentTime(),
                     a.getStatus(),
@@ -311,8 +311,8 @@ public class PetZoeToolService {
 
         StringBuilder sb = new StringBuilder("Here are certified PetZoe veterinarians available for consultations:\n");
         for (User v : vets.stream().limit(5).collect(Collectors.toList())) {
-            sb.append(String.format("• **Dr. %s** — Specialization: %s | %s\n",
-                    v.getName(),
+            sb.append(String.format("• **%s** — Specialization: %s | %s\n",
+                    formatDoctorName(v),
                     v.getSpecialization() != null ? v.getSpecialization() : "General Practice",
                     v.getAddress() != null ? v.getAddress() : "Available for online & clinic appointments"));
         }
@@ -398,5 +398,16 @@ public class PetZoeToolService {
             return "Explore high-quality nutrition, pharmacy supplements, and accessories on the **PetZoe Marketplace** (`/marketplace`).";
         }
         return "PetZoe is a complete digital pet healthcare platform offering permanent Pet ID tracking, veterinary telehealth appointments, community rehoming, and a certified pet marketplace.";
+    }
+
+    private String formatDoctorName(User veterinarian) {
+        if (veterinarian == null || veterinarian.getName() == null || veterinarian.getName().isBlank()) {
+            return "Assigned Veterinarian";
+        }
+        String name = veterinarian.getName().trim();
+        if (name.toLowerCase().startsWith("dr.") || name.toLowerCase().startsWith("dr ")) {
+            return name;
+        }
+        return "Dr. " + name;
     }
 }

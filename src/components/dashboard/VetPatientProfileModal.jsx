@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   X, PawPrint, Calendar, Clock, User, Phone, Mail, FileText,
   Shield, Upload, Plus, Activity, AlertCircle, CheckCircle2,
-  ChevronRight, Download, Eye, Stethoscope, Pill, Loader2, Sparkles
+  ChevronRight, Download, Eye, Stethoscope, Pill, Loader2, Sparkles,
+  ScanLine
 } from 'lucide-react';
 import { vetClinicalService } from '../../services/vetClinicalService';
+import vetScanService from '../../services/vetScanService';
 import { useToast } from '../../hooks/useToast';
 
 export default function VetPatientProfileModal({ petId, isOpen, onClose, onStartConsultation }) {
@@ -51,16 +53,37 @@ export default function VetPatientProfileModal({ petId, isOpen, onClose, onStart
 
   const { showToast } = useToast();
 
+  const [vetScanRecords, setVetScanRecords] = useState([]);
+  const [reviewingScanId, setReviewingScanId] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ reviewStatus: 'AGREE', veterinarianNotes: '' });
+
   const fetchPatient = async () => {
     if (!petId) return;
     setLoading(true);
     try {
-      const data = await vetClinicalService.getPatientDetail(petId);
-      setPatientData(data);
+      const [detailRes, scanRes] = await Promise.allSettled([
+        vetClinicalService.getPatientDetail(petId),
+        vetScanService.getScansByPet(petId),
+      ]);
+      if (detailRes.status === 'fulfilled') setPatientData(detailRes.value);
+      if (scanRes.status === 'fulfilled') setVetScanRecords(scanRes.value || []);
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to load patient profile', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReviewScan = async (scanId) => {
+    try {
+      await vetScanService.submitVeterinarianReview(scanId, reviewForm);
+      showToast('Clinical review recorded successfully', 'success');
+      setReviewingScanId(null);
+      setReviewForm({ reviewStatus: 'AGREE', veterinarianNotes: '' });
+      const updatedScans = await vetScanService.getScansByPet(petId);
+      setVetScanRecords(updatedScans || []);
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to submit clinical review', 'error');
     }
   };
 
@@ -283,6 +306,7 @@ export default function VetPatientProfileModal({ petId, isOpen, onClose, onStart
             { id: 'vaccinations', label: 'Vaccinations', icon: Shield, count: patientData?.vaccinations?.length },
             { id: 'documents', label: 'Documents', icon: Upload, count: patientData?.documents?.length },
             { id: 'followups', label: 'Follow-ups', icon: AlertCircle, count: patientData?.followUps?.length },
+            { id: 'vetscan', label: 'VetScan AI Scans', icon: ScanLine, count: vetScanRecords?.length },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -811,6 +835,172 @@ export default function VetPatientProfileModal({ petId, isOpen, onClose, onStart
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 8: VETSCAN AI LESION SCREENING & CLINICAL REVIEW */}
+              {activeTab === 'vetscan' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                        <ScanLine size={18} className="text-sky-600" />
+                        Canine Dermal VetScan AI Reports
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Review preliminary skin lesion screenings, evaluate Grad-CAM feature activations, and record clinical verdicts.
+                      </p>
+                    </div>
+                  </div>
+
+                  {vetScanRecords.length === 0 ? (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-400">
+                      <ScanLine size={36} className="mx-auto mb-2 opacity-50" />
+                      <p className="font-bold">No VetScan lesion screenings logged for this patient.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {vetScanRecords.map((scan) => (
+                        <div key={scan.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-slate-900">
+                                  Screening #{scan.id}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                  scan.severity === 'SEVERE'
+                                    ? 'bg-rose-50 text-rose-700'
+                                    : scan.severity === 'MODERATE'
+                                    ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-emerald-50 text-emerald-700'
+                                }`}>
+                                  Severity: {scan.severity}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-50 text-sky-700 uppercase">
+                                  {scan.progressionStatus}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                Submitted: {new Date(scan.createdAt).toLocaleString()} • Model: {scan.modelName} ({scan.modelVersion})
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {scan.veterinarianReviewStatus && scan.veterinarianReviewStatus !== 'PENDING' ? (
+                                <span className="px-3 py-1 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  Reviewed: {scan.veterinarianReviewStatus} by Dr. {scan.veterinarianName}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setReviewingScanId(scan.id)}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white transition-colors cursor-pointer"
+                                >
+                                  Record Clinical Review
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                            {/* Lesion Photographs */}
+                            <div className="md:col-span-5 flex gap-2">
+                              <div className="flex-1 space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Photograph</span>
+                                <img
+                                  src={scan.imageReference}
+                                  alt="Lesion"
+                                  className="w-full h-32 object-cover rounded-xl border border-slate-200"
+                                />
+                              </div>
+                              {scan.explanationImageReference && (
+                                <div className="flex-1 space-y-1">
+                                  <span className="text-[10px] font-bold text-sky-600 uppercase">Grad-CAM Heatmap</span>
+                                  <img
+                                    src={scan.explanationImageReference}
+                                    alt="Grad-CAM Heatmap"
+                                    className="w-full h-32 object-cover rounded-xl border border-sky-200"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Lesion Scores */}
+                            <div className="md:col-span-7 space-y-2">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">Model Lesion Probabilities</span>
+                              <div className="grid grid-cols-2 gap-2">
+                                {scan.predictions?.map((pred) => (
+                                  <div key={pred.label} className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                                    <div className="flex justify-between font-bold">
+                                      <span className="text-slate-700">{pred.displayName}</span>
+                                      <span className={pred.detected ? 'text-sky-700 font-black' : 'text-slate-400'}>
+                                        {Math.round(pred.probability * 100)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {scan.veterinarianNotes && (
+                                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-900 mt-2">
+                                  <span className="font-bold">Clinical Notes:</span> {scan.veterinarianNotes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Review Action Form Modal/Inline */}
+                          {reviewingScanId === scan.id && (
+                            <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-200 space-y-3 mt-3">
+                              <h4 className="text-xs font-bold text-sky-900">Veterinarian Clinical Review</h4>
+                              <div className="flex gap-2">
+                                {['AGREE', 'DISAGREE', 'REQUIRES_FURTHER_EXAMINATION'].map((stat) => (
+                                  <button
+                                    key={stat}
+                                    type="button"
+                                    onClick={() => setReviewForm((f) => ({ ...f, reviewStatus: stat }))}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                      reviewForm.reviewStatus === stat
+                                        ? 'bg-sky-600 text-white shadow-sm'
+                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                                    }`}
+                                  >
+                                    {stat.replace(/_/g, ' ')}
+                                  </button>
+                                ))}
+                              </div>
+
+                              <textarea
+                                value={reviewForm.veterinarianNotes}
+                                onChange={(e) => setReviewForm((f) => ({ ...f, veterinarianNotes: e.target.value }))}
+                                placeholder="Enter clinical assessment notes, confirmatory diagnosis, or diagnostic cytology recommendations..."
+                                rows={2}
+                                className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-sky-500"
+                              />
+
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setReviewingScanId(null)}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReviewScan(scan.id)}
+                                  className="px-4 py-1.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors cursor-pointer"
+                                >
+                                  Save Review
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
