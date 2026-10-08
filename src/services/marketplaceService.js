@@ -56,6 +56,20 @@ const marketplaceService = {
   getAllOrders: () => api.get('/marketplace/orders/all'),
   updateOrderStatus: (id, status) => api.put(`/marketplace/orders/${id}/status`, { status }),
 
+  // === Payments (Razorpay) ===
+  createPayment: (orderId = null) =>
+    api.post('/marketplace/payments/create', orderId ? { orderId } : {}),
+  verifyPayment: (data) =>
+    api.post('/marketplace/payments/verify', data),
+  cancelPayment: (orderId, reason) =>
+    api.post('/marketplace/payments/cancel', { orderId, reason }),
+  getOrderPayments: (orderId) =>
+    api.get(`/marketplace/payments/order/${orderId}`),
+  getMyPayments: () =>
+    api.get('/marketplace/payments/my-payments'),
+  getAllPaymentsAdmin: () =>
+    api.get('/marketplace/payments/admin/all'),
+
   // === Reviews ===
   getProductReviews: (productId) => api.get(`/marketplace/products/${productId}/reviews`),
   addReview: (productId, data) => api.post(`/marketplace/products/${productId}/reviews`, data),

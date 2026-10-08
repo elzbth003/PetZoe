@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle2, XCircle, ChevronRight, Receipt } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle2, XCircle, ChevronRight, Receipt, CreditCard, AlertCircle } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 
 export default function OrderHistoryPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [payingOrderId, setPayingOrderId] = useState(null);
 
   useEffect(() => {
     if (user) fetchOrders();
@@ -26,10 +29,123 @@ export default function OrderHistoryPage() {
     }
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleRetryPayment = async (orderId) => {
+    try {
+      setPayingOrderId(orderId);
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        showToast('Failed to load Razorpay SDK. Please check your connection.', 'error');
+        setPayingOrderId(null);
+        return;
+      }
+
+      // Re-initiate payment for this specific existing order
+      const initRes = await marketplaceService.createPayment(orderId);
+      const paymentData = initRes.data;
+
+      const isMock = paymentData.razorpayOrderId?.startsWith('order_mock_') || paymentData.keyId?.includes('placeholder');
+
+      if (isMock) {
+        const confirmed = window.confirm(`[PetZoe Test Mode Payment Retry]\n\nOrder #${paymentData.orderId}\nTotal Amount: ₹${paymentData.amount}\nSimulated Order ID: ${paymentData.razorpayOrderId}\n\nClick OK to simulate successful payment, or Cancel to abort.`);
+        if (confirmed) {
+          try {
+            await marketplaceService.verifyPayment({
+              orderId: paymentData.orderId,
+              razorpayOrderId: paymentData.razorpayOrderId,
+              razorpayPaymentId: `pay_mock_${Date.now()}`,
+              razorpaySignature: 'simulated_valid_test_signature'
+            });
+            showToast('Test payment retry verified successfully!', 'success');
+            fetchOrders();
+          } catch (verifyErr) {
+            console.error('Payment verification failed', verifyErr);
+            showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
+            fetchOrders();
+          } finally {
+            setPayingOrderId(null);
+          }
+        } else {
+          setPayingOrderId(null);
+          showToast('Payment retry aborted', 'warning');
+        }
+        return;
+      }
+
+      const options = {
+        key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: paymentData.amountInPaise,
+        currency: paymentData.currency || 'INR',
+        name: 'PetZoe Marketplace',
+        description: `Order #${paymentData.orderId} Payment Retry`,
+        order_id: paymentData.razorpayOrderId,
+        prefill: {
+          name: paymentData.customerName || '',
+          email: paymentData.customerEmail || '',
+          contact: paymentData.customerPhone || ''
+        },
+        theme: {
+          color: '#0d9488'
+        },
+        handler: async function (response) {
+          try {
+            await marketplaceService.verifyPayment({
+              orderId: paymentData.orderId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature
+            });
+            showToast('Payment verified successfully!', 'success');
+            fetchOrders();
+          } catch (verifyErr) {
+            console.error('Payment verification failed', verifyErr);
+            showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
+            fetchOrders();
+          } finally {
+            setPayingOrderId(null);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setPayingOrderId(null);
+            showToast('Payment cancelled or dismissed', 'warning');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        showToast(response.error.description || 'Payment failed', 'error');
+        setPayingOrderId(null);
+      });
+      rzp.open();
+    } catch (err) {
+      console.error('Failed to retry payment', err);
+      showToast(err.response?.data?.message || 'Failed to retry payment', 'error');
+      setPayingOrderId(null);
+    }
+  };
+
   const getStatusConfig = (status) => {
     switch (status) {
       case 'Pending':
+      case 'Pending Payment':
         return { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200' };
+      case 'Payment Failed':
+        return { icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-100', border: 'border-rose-200' };
       case 'Processing':
         return { icon: Package, color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-200' };
       case 'Shipped':
@@ -118,9 +234,21 @@ export default function OrderHistoryPage() {
                   {/* Order Content */}
                   <div className="p-5 md:p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
-                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
-                        <StatusIcon size={18} />
-                        <span className="font-bold">{order.status}</span>
+                      <div className="flex items-center gap-3">
+                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+                          <StatusIcon size={18} />
+                          <span className="font-bold">{order.status}</span>
+                        </div>
+                        {(order.status === 'Pending' || order.status === 'Pending Payment' || order.status === 'Payment Failed') && (
+                          <button
+                            onClick={() => handleRetryPayment(order.id)}
+                            disabled={payingOrderId === order.id}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                          >
+                            <CreditCard size={14} />
+                            {payingOrderId === order.id ? 'Opening Gateway...' : 'Retry Payment'}
+                          </button>
+                        )}
                       </div>
                       {order.status === 'Delivered' && (
                         <div className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
