@@ -1,0 +1,353 @@
+package com.petzoe.api.service;
+
+import com.petzoe.api.dto.CreatePaymentRequestDTO;
+import com.petzoe.api.dto.CreatePaymentResponseDTO;
+import com.petzoe.api.dto.PaymentResponseDTO;
+import com.petzoe.api.dto.VerifyPaymentRequestDTO;
+import com.petzoe.api.entity.*;
+import com.petzoe.api.repository.CartItemRepository;
+import com.petzoe.api.repository.OrderRepository;
+import com.petzoe.api.repository.PaymentRepository;
+import com.petzoe.api.repository.ProductRepository;
+import com.petzoe.api.repository.UserRepository;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+import com.razorpay.Utils;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class PaymentService {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
+
+    private final PaymentRepository paymentRepository;
+    private final OrderRepository orderRepository;
+    private final CartItemRepository cartItemRepository;
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final NotificationService notificationService;
+    private final RazorpayClient razorpayClient;
+
+    @Value("${petzoe.razorpay.mode:auto}")
+    private String mode;
+
+    @Value("${petzoe.razorpay.key-id}")
+    private String keyId;
+
+    @Value("${petzoe.razorpay.key-secret}")
+    private String keySecret;
+
+    @Value("${petzoe.razorpay.currency:INR}")
+    private String currency;
+
+    public PaymentService(PaymentRepository paymentRepository,
+                          OrderRepository orderRepository,
+                          CartItemRepository cartItemRepository,
+                          UserRepository userRepository,
+                          ProductRepository productRepository,
+                          NotificationService notificationService,
+                          RazorpayClient razorpayClient) {
+        this.paymentRepository = paymentRepository;
+        this.orderRepository = orderRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.userRepository = userRepository;
+        this.productRepository = productRepository;
+        this.notificationService = notificationService;
+        this.razorpayClient = razorpayClient;
+    }
+
+    /**
+     * Initializes or retries checkout payment.
+     * If orderId is provided, checks if order belongs to user and is still payable.
+     * If orderId is null, creates a pending order from user cart and reserves stock with pessimistic locking.
+     */
+    @Transactional
+    public CreatePaymentResponseDTO initiatePayment(String email, CreatePaymentRequestDTO request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found: " + email));
+
+        com.petzoe.api.entity.Order order;
+        if (request != null && request.getOrderId() != null) {
+            order = orderRepository.findById(request.getOrderId())
+                    .orElseThrow(() -> new RuntimeException("Order not found: " + request.getOrderId()));
+            if (!order.getUser().getId().equals(user.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Not authorized for this order");
+            }
+            if ("Delivered".equalsIgnoreCase(order.getStatus()) || "Shipped".equalsIgnoreCase(order.getStatus())
+                    || "Processing".equalsIgnoreCase(order.getStatus())) {
+                throw new IllegalStateException("Order is already paid and in status: " + order.getStatus());
+            }
+        } else {
+            // Create pending order from cart and reserve inventory under lock
+            List<CartItem> cartItems = cartItemRepository.findByUser(user);
+            if (cartItems.isEmpty()) {
+                throw new IllegalStateException("Cart is empty. Cannot checkout.");
+            }
+
+            order = new com.petzoe.api.entity.Order();
+            order.setUser(user);
+            order.setStatus("Pending Payment");
+
+            double totalAmount = 0.0;
+            for (CartItem cartItem : cartItems) {
+                Product product = productRepository.findByIdForUpdate(cartItem.getProduct().getId())
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProduct().getId()));
+
+                if (product.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new IllegalStateException("Insufficient stock for '" + product.getName() + "'. Only "
+                            + product.getStockQuantity() + " left.");
+                }
+
+                double effectivePrice = product.getDiscountPrice() != null
+                        ? product.getDiscountPrice()
+                        : product.getPrice();
+
+                OrderItem orderItem = new OrderItem(
+                        cartItem.getQuantity(),
+                        effectivePrice,
+                        order,
+                        product
+                );
+                order.getItems().add(orderItem);
+                totalAmount += effectivePrice * cartItem.getQuantity();
+
+                // Reserve stock
+                product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
+            }
+
+            // Authoritative server-side rounding to 2 decimals
+            BigDecimal totalBd = BigDecimal.valueOf(totalAmount).setScale(2, RoundingMode.HALF_UP);
+            order.setTotalAmount(totalBd.doubleValue());
+            order = orderRepository.save(order);
+            // Clear user's cart now that order is locked in
+            cartItemRepository.deleteByUser(user);
+        }
+
+        // Calculate paise (Amount * 100)
+        BigDecimal amountBd = BigDecimal.valueOf(order.getTotalAmount()).setScale(2, RoundingMode.HALF_UP);
+        long amountInPaise = amountBd.multiply(BigDecimal.valueOf(100)).longValue();
+
+        String razorpayOrderId;
+        boolean isPlaceholderKey = keyId == null || keyId.isBlank() || keyId.contains("placeholder") || keySecret == null || keySecret.contains("placeholder");
+        if ("mock".equalsIgnoreCase(mode) || (("auto".equalsIgnoreCase(mode) || mode == null) && isPlaceholderKey)) {
+            razorpayOrderId = "order_mock_" + order.getId() + "_" + System.currentTimeMillis();
+            log.info("Using simulated Razorpay Order ID {} (test/dev mode active)", razorpayOrderId);
+        } else {
+            try {
+                JSONObject orderRequest = new JSONObject();
+                orderRequest.put("amount", amountInPaise);
+                orderRequest.put("currency", currency);
+                orderRequest.put("receipt", "order_rcpt_" + order.getId() + "_" + System.currentTimeMillis());
+                JSONObject notes = new JSONObject();
+                notes.put("petzoe_order_id", order.getId().toString());
+                notes.put("customer_email", user.getEmail());
+                orderRequest.put("notes", notes);
+
+                Order rzpOrder = razorpayClient.orders.create(orderRequest);
+                razorpayOrderId = rzpOrder.get("id");
+                log.info("Created Razorpay Order {} for PetZoe Order {}", razorpayOrderId, order.getId());
+            } catch (RazorpayException e) {
+                log.error("Failed to create Razorpay Order for PetZoe Order {}: {}", order.getId(), e.getMessage());
+                throw new RuntimeException("Payment gateway initialization failed: " + e.getMessage(), e);
+            }
+        }
+
+        // Record new Payment
+        Payment payment = new Payment();
+        payment.setUser(user);
+        payment.setOrder(order);
+        payment.setRazorpayOrderId(razorpayOrderId);
+        payment.setAmount(amountBd);
+        payment.setAmountInPaise(amountInPaise);
+        payment.setCurrency(currency);
+        payment.setStatus(PaymentStatus.CREATED);
+        payment.setPaymentType(PaymentType.MARKETPLACE_ORDER);
+        payment.setInventoryRestored(false);
+        Payment savedPayment = paymentRepository.save(payment);
+
+        CreatePaymentResponseDTO response = new CreatePaymentResponseDTO();
+        response.setPaymentId(savedPayment.getId());
+        response.setOrderId(order.getId());
+        response.setRazorpayOrderId(razorpayOrderId);
+        response.setAmountInPaise(amountInPaise);
+        response.setAmount(amountBd.doubleValue());
+        response.setCurrency(currency);
+        response.setKeyId(keyId);
+        response.setCustomerName(user.getName() != null ? user.getName() : user.getUsername());
+        response.setCustomerEmail(user.getEmail());
+        response.setCustomerPhone(user.getPhone());
+
+        return response;
+    }
+
+    /**
+     * Cryptographically verifies the Razorpay payment signature.
+     */
+    @Transactional
+    public PaymentResponseDTO verifyPayment(String email, VerifyPaymentRequestDTO request) {
+        if (request.getRazorpayOrderId() == null || request.getRazorpayPaymentId() == null || request.getRazorpaySignature() == null) {
+            throw new IllegalArgumentException("Missing required payment verification parameters");
+        }
+
+        Payment payment = paymentRepository.findByRazorpayOrderId(request.getRazorpayOrderId())
+                .orElseThrow(() -> new RuntimeException("Payment record not found for Razorpay Order: " + request.getRazorpayOrderId()));
+
+        if (!payment.getUser().getEmail().equalsIgnoreCase(email)) {
+            throw new org.springframework.security.access.AccessDeniedException("Not authorized to verify this payment");
+        }
+
+        boolean isValidSignature = false;
+        boolean isPlaceholderKey = keyId == null || keyId.isBlank() || keyId.contains("placeholder") || keySecret == null || keySecret.contains("placeholder");
+        boolean isMockOrder = request.getRazorpayOrderId().startsWith("order_mock_");
+        boolean isSimulatedSig = "simulated_valid_test_signature".equals(request.getRazorpaySignature());
+
+        if ((isMockOrder || "mock".equalsIgnoreCase(mode) || (("auto".equalsIgnoreCase(mode) || mode == null) && isPlaceholderKey)) && isSimulatedSig) {
+            // In local development / mock test mode, accept simulated test signatures
+            isValidSignature = true;
+            log.info("Simulated signature verification passed for order {}", request.getRazorpayOrderId());
+        } else {
+            try {
+                JSONObject options = new JSONObject();
+                options.put("razorpay_order_id", request.getRazorpayOrderId());
+                options.put("razorpay_payment_id", request.getRazorpayPaymentId());
+                options.put("razorpay_signature", request.getRazorpaySignature());
+
+                isValidSignature = Utils.verifyPaymentSignature(options, keySecret);
+            } catch (Exception e) {
+                log.error("Signature verification exception: {}", e.getMessage());
+                isValidSignature = false;
+            }
+        }
+
+        com.petzoe.api.entity.Order order = payment.getOrder();
+
+        if (isValidSignature) {
+            payment.setRazorpayPaymentId(request.getRazorpayPaymentId());
+            payment.setRazorpaySignature(request.getRazorpaySignature());
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setUpdatedAt(LocalDateTime.now());
+            paymentRepository.save(payment);
+
+            if (order != null) {
+                order.setStatus("Processing");
+                orderRepository.save(order);
+
+                // Notify User
+                try {
+                    notificationService.createNotification(
+                            order.getUser(),
+                            "Payment Successful!",
+                            "Your payment of ₹" + payment.getAmount() + " for Order #" + order.getId() + " was successful.",
+                            "MARKETPLACE"
+                    );
+                } catch (Exception notifEx) {
+                    log.warn("Failed to send order notification: {}", notifEx.getMessage());
+                }
+            }
+            log.info("Payment SUCCESS for Razorpay Order {}", request.getRazorpayOrderId());
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setFailureReason("Cryptographic signature mismatch");
+            payment.setUpdatedAt(LocalDateTime.now());
+            paymentRepository.save(payment);
+
+            if (order != null) {
+                order.setStatus("Payment Failed");
+                orderRepository.save(order);
+            }
+            log.warn("Payment FAILED (invalid signature) for Razorpay Order {}", request.getRazorpayOrderId());
+            throw new IllegalArgumentException("Invalid payment signature verification failed");
+        }
+
+        return PaymentResponseDTO.fromEntity(payment);
+    }
+
+    /**
+     * Cancel payment and safely restore reserved stock idempotently.
+     */
+    @Transactional
+    public PaymentResponseDTO cancelPayment(String email, Long orderId, String reason) {
+        com.petzoe.api.entity.Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+        if (!order.getUser().getEmail().equalsIgnoreCase(email)) {
+            throw new org.springframework.security.access.AccessDeniedException("Not authorized for this order");
+        }
+
+        List<Payment> payments = paymentRepository.findByOrderId(orderId);
+        Payment latestPayment = payments.isEmpty() ? null : payments.get(payments.size() - 1);
+
+        if (latestPayment != null && latestPayment.getStatus() == PaymentStatus.SUCCESS) {
+            throw new IllegalStateException("Cannot cancel an already completed payment");
+        }
+
+        if (latestPayment != null) {
+            latestPayment.setStatus(PaymentStatus.CANCELLED);
+            latestPayment.setFailureReason(reason != null ? reason : "Cancelled by user");
+            restoreStockForOrder(order, latestPayment);
+            paymentRepository.save(latestPayment);
+        } else {
+            // Restore stock directly on order
+            restoreStockForOrder(order, null);
+        }
+
+        order.setStatus("Cancelled");
+        orderRepository.save(order);
+
+        return latestPayment != null ? PaymentResponseDTO.fromEntity(latestPayment) : null;
+    }
+
+    private void restoreStockForOrder(com.petzoe.api.entity.Order order, Payment payment) {
+        if (payment != null && payment.isInventoryRestored()) {
+            return; // Idempotent check
+        }
+        for (OrderItem item : order.getItems()) {
+            Product product = productRepository.findById(item.getProduct().getId()).orElse(null);
+            if (product != null) {
+                product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+                productRepository.save(product);
+                log.info("Restored {} units of stock for Product {}", item.getQuantity(), product.getName());
+            }
+        }
+        if (payment != null) {
+            payment.setInventoryRestored(true);
+        }
+    }
+
+    public List<PaymentResponseDTO> getPaymentsForOrder(Long orderId, String email) {
+        com.petzoe.api.entity.Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        if (!order.getUser().getEmail().equalsIgnoreCase(email)) {
+            throw new org.springframework.security.access.AccessDeniedException("Not authorized");
+        }
+        return paymentRepository.findByOrderId(orderId).stream()
+                .map(PaymentResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<PaymentResponseDTO> getUserPayments(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return paymentRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
+                .map(PaymentResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<PaymentResponseDTO> getAllPayments() {
+        return paymentRepository.findAll().stream()
+                .map(PaymentResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+}
