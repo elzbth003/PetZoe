@@ -3,9 +3,9 @@ import { useAuth } from '../../hooks/useAuth';
 import {
   Stethoscope, Calendar, Users, LogOut, Activity, PawPrint,
   HeartPulse, Menu, X, Bell, ShieldCheck, ShieldAlert, CheckCircle2,
-  Clock, ArrowRight, FileText, AlertCircle, RefreshCw
+  Clock, ArrowRight, FileText, AlertCircle, RefreshCw, Home
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import VetAnimalCarePanel from '../../components/dashboard/VetAnimalCarePanel';
 import VetAppointmentsPanel from '../../components/dashboard/VetAppointmentsPanel';
 import VetPatientsPanel from '../../components/dashboard/VetPatientsPanel';
@@ -302,16 +302,20 @@ export default function VetDashboard() {
       >
         <div className="space-y-8">
           <div className="flex items-center justify-between gap-1.5 select-none">
-            <span className="font-display font-black text-xl text-white flex items-center">
+            <Link
+              to="/"
+              title="Return to PetZoe Home Page"
+              className="font-display font-black text-xl text-white flex items-center hover:opacity-90 transition-opacity cursor-pointer group"
+            >
               PetZ
-              <span className="inline-block hover:rotate-12 transition-transform duration-300">
+              <span className="inline-block group-hover:rotate-12 transition-transform duration-300">
                 <PawPrint size={20} className="fill-current text-[#38BDF8] mx-0.5 animate-pulse" />
               </span>
               e
               <span className="ml-2 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-sky-500/20 text-sky-400 border border-sky-400/30">
                 Doctor
               </span>
-            </span>
+            </Link>
             <button
               onClick={() => setIsSidebarOpen(false)}
               className="md:hidden text-slate-400 hover:text-white transition-colors cursor-pointer"
@@ -366,9 +370,18 @@ export default function VetDashboard() {
             </div>
           </div>
 
+          <Link
+            to="/"
+            title="Return to PetZoe Home Page"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-[#38BDF8] font-semibold text-xs transition-all cursor-pointer text-left w-full group"
+          >
+            <Home size={16} className="group-hover:scale-110 transition-transform" />
+            <span>Home Page</span>
+          </Link>
+
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 font-semibold text-xs transition-all cursor-pointer text-left w-full hover:bg-rose-950/20 hover:text-rose-300"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 font-semibold text-xs transition-all cursor-pointer text-left w-full hover:bg-rose-950/20 hover:text-rose-300"
           >
             <LogOut size={16} /> Sign Out
           </button>
@@ -429,6 +442,16 @@ export default function VetDashboard() {
                 </>
               )}
             </button>
+
+            {/* Quick Home Link */}
+            <Link
+              to="/"
+              title="Return to PetZoe Home Page"
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-sky-600 bg-white border border-slate-200 hover:border-sky-300 px-3 py-1.5 rounded-xl shadow-sm transition-all cursor-pointer"
+            >
+              <Home size={13} />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
           </div>
         </header>
 

@@ -24,6 +24,7 @@ export default function PetZoeChatbot() {
       createdAt: new Date().toISOString(),
       quickActions: [
         { label: 'My Pets', prompt: 'Show my registered pets', actionType: 'PROMPT' },
+        { label: 'Book a Vet', targetUrl: '/dashboard/owner?tab=Appointments', actionType: 'NAVIGATE' },
         { label: 'My Appointments', prompt: 'When is my next vet appointment?', actionType: 'PROMPT' },
         { label: 'Core Vaccines', prompt: 'What are the core vaccines for dogs and cats?', actionType: 'PROMPT' },
         { label: 'Find a Vet', prompt: 'Show certified veterinarians', actionType: 'PROMPT' },
@@ -168,7 +169,39 @@ export default function PetZoeChatbot() {
   const handleQuickAction = (action) => {
     if (action.actionType === 'NAVIGATE' && action.targetUrl) {
       setIsOpen(false);
-      navigate(action.targetUrl);
+      let target = action.targetUrl;
+      let targetTab = null;
+
+      // Check if target contains query param tab=
+      if (target.includes('tab=')) {
+        try {
+          const queryString = target.split('?')[1] || '';
+          const params = new URLSearchParams(queryString);
+          targetTab = params.get('tab');
+        } catch (_) {}
+      }
+
+      // If no tab in query param, infer from label or destination
+      if (!targetTab) {
+        const lbl = (action.label || '').toLowerCase();
+        if (lbl.includes('vet') || lbl.includes('visit') || lbl.includes('appoint') || lbl.includes('book') || lbl.includes('doctor')) {
+          targetTab = 'Appointments';
+          target = '/dashboard/owner?tab=Appointments';
+        } else if (lbl.includes('pet')) {
+          targetTab = 'My Pets';
+          target = '/dashboard/owner?tab=My Pets';
+        } else if (lbl.includes('record') || lbl.includes('immuniz') || lbl.includes('medical') || lbl.includes('vaccin')) {
+          targetTab = 'Medical Records';
+          target = '/dashboard/owner?tab=Medical Records';
+        }
+      }
+
+      if (targetTab) {
+        sessionStorage.setItem('petzoe_owner_tab', targetTab);
+        window.dispatchEvent(new CustomEvent('petzoe:switch-owner-tab', { detail: { tab: targetTab } }));
+      }
+
+      navigate(target);
     } else if (action.prompt) {
       handleSendMessage(action.prompt);
     }
@@ -187,6 +220,7 @@ export default function PetZoeChatbot() {
         createdAt: new Date().toISOString(),
         quickActions: [
           { label: 'My Pets', prompt: 'Show my registered pets', actionType: 'PROMPT' },
+          { label: 'Book a Vet', targetUrl: '/dashboard/owner?tab=Appointments', actionType: 'NAVIGATE' },
           { label: 'My Appointments', prompt: 'When is my next vet appointment?', actionType: 'PROMPT' },
           { label: 'Core Vaccines', prompt: 'What are the core vaccines for dogs and cats?', actionType: 'PROMPT' }
         ]

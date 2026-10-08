@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Heart, Calendar, FileText, ShoppingBag,
   Bell, User, LogOut, Sparkles, ShieldAlert, CalendarDays,
   Plus, ArrowRight, Activity, Clock, PawPrint, Menu, X, KeyRound,
-  ScanLine
+  ScanLine, Home
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import PetList from '../../components/dashboard/PetList';
@@ -22,14 +22,87 @@ import PetZoeChatbot from '../../components/chat/PetZoeChatbot';
 
 export default function OwnerDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const resolveTabName = (tabStr) => {
+    if (!tabStr) return null;
+    const clean = tabStr.trim().toLowerCase().replace(/[-_ ]/g, '');
+    if (clean.includes('appoint') || clean.includes('book') || clean.includes('vetvisit') || clean.includes('doctor')) {
+      return 'Appointments';
+    }
+    if (clean.includes('mypet') || clean.includes('pet')) {
+      return 'My Pets';
+    }
+    if (clean.includes('vetscan')) {
+      return 'VetScan AI';
+    }
+    if (clean.includes('record') || clean.includes('immuniz') || clean.includes('medical') || clean.includes('vaccin')) {
+      return 'Medical Records';
+    }
+    if (clean.includes('shop') || clean.includes('cart') || clean.includes('market')) {
+      return 'My Shop';
+    }
+    if (clean.includes('adopt') || clean.includes('rehom')) {
+      return 'Adoptions';
+    }
+    if (clean.includes('notif')) {
+      return 'Notifications';
+    }
+    if (clean.includes('profile')) {
+      return 'Profile';
+    }
+    if (clean.includes('dash')) {
+      return 'Dashboard';
+    }
+    return null;
+  };
+
   const [activeTab, setActiveTab] = useState(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    const resolvedUrl = resolveTabName(urlTab);
+    if (resolvedUrl) return resolvedUrl;
+
     const jumpTo = sessionStorage.getItem('petzoe_owner_tab');
     if (jumpTo) {
       sessionStorage.removeItem('petzoe_owner_tab');
-      return jumpTo;
+      return resolveTabName(jumpTo) || jumpTo;
     }
     return 'Dashboard';
   });
+
+  // Sync tab with URL query parameters and location transitions
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      const resolved = resolveTabName(tabFromUrl);
+      if (resolved) {
+        setActiveTab(resolved);
+      }
+    } else {
+      const sessionTab = sessionStorage.getItem('petzoe_owner_tab');
+      if (sessionTab) {
+        sessionStorage.removeItem('petzoe_owner_tab');
+        const resolved = resolveTabName(sessionTab);
+        if (resolved) {
+          setActiveTab(resolved);
+        }
+      }
+    }
+  }, [searchParams, location]);
+
+  // Listen for immediate in-page tab switch events from Chatbot and widgets
+  useEffect(() => {
+    const handleSwitchTab = (e) => {
+      const requestedTab = e.detail?.tab;
+      if (requestedTab) {
+        const resolved = resolveTabName(requestedTab) || requestedTab;
+        setActiveTab(resolved);
+      }
+    };
+    window.addEventListener('petzoe:switch-owner-tab', handleSwitchTab);
+    return () => window.removeEventListener('petzoe:switch-owner-tab', handleSwitchTab);
+  }, []);
   const [petsCount, setPetsCount] = useState(0);
   const [upcomingAppointments, setUpcomingAppointments] = useState(0);
   const [vaccineAlerts, setVaccineAlerts] = useState(0);
@@ -335,13 +408,17 @@ export default function OwnerDashboard() {
         {/* Brand Header */}
         <div className="space-y-8">
           <div className="flex items-center justify-between gap-1.5 px-2 select-none">
-            <span className="font-display font-black text-xl text-white flex items-center">
+            <Link
+              to="/"
+              title="Return to PetZoe Home Page"
+              className="font-display font-black text-xl text-white flex items-center hover:opacity-90 transition-opacity cursor-pointer group"
+            >
               PetZ
-              <span className="inline-block hover:rotate-12 transition-transform duration-300">
+              <span className="inline-block group-hover:rotate-12 transition-transform duration-300">
                 <PawPrint size={20} className="fill-current text-[#38BDF8] mx-0.5 animate-pulse" />
               </span>
               e
-            </span>
+            </Link>
             <button
               onClick={() => setIsSidebarOpen(false)}
               className="md:hidden text-slate-400 hover:text-white transition-colors cursor-pointer"
@@ -390,15 +467,25 @@ export default function OwnerDashboard() {
           </nav>
         </div>
 
-        {/* Logout Footer */}
-        <button
-          onClick={handleLogout}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 font-bold text-xs transition-all cursor-pointer text-left w-full
-            hover:bg-rose-950/20 hover:text-rose-300`}
-        >
-          <LogOut size={16} />
-          <span>Sign Out</span>
-        </button>
+        {/* Sidebar Footer Actions */}
+        <div className="space-y-1 pt-4 border-t border-slate-800">
+          <Link
+            to="/"
+            title="Return to PetZoe Home Page"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-[#38BDF8] font-bold text-xs transition-all cursor-pointer text-left w-full group"
+          >
+            <Home size={16} className="group-hover:scale-110 transition-transform" />
+            <span>Home Page</span>
+          </Link>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 font-bold text-xs transition-all cursor-pointer text-left w-full hover:bg-rose-950/20 hover:text-rose-300"
+          >
+            <LogOut size={16} />
+            <span>Sign Out</span>
+          </button>
+        </div>
 
       </aside>
 
@@ -448,6 +535,14 @@ export default function OwnerDashboard() {
             <span className="hidden sm:inline-flex items-center gap-1.5 text-slate-500 text-xs font-semibold bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-sm">
               <KeyRound size={12} /> {user?.role}
             </span>
+            <Link
+              to="/"
+              title="Return to PetZoe Home Page"
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-sky-600 bg-white border border-slate-200 hover:border-sky-300 px-3 py-1.5 rounded-xl shadow-sm transition-all cursor-pointer"
+            >
+              <Home size={13} />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
           </div>
         </header>
 

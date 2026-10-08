@@ -113,8 +113,8 @@ public class AiChatService {
         if (intent == ChatIntent.EMERGENCY) {
             String emergencyText = safetyService.generateEmergencyResponse();
             List<AiQuickActionDTO> emergencyActions = List.of(
-                    AiQuickActionDTO.navigateAction("Find Emergency Vet", "/dashboard/owner"),
-                    AiQuickActionDTO.navigateAction("Veterinarian Directory", "/dashboard/owner")
+                    AiQuickActionDTO.navigateAction("Find Emergency Vet", "/dashboard/owner?tab=Appointments"),
+                    AiQuickActionDTO.navigateAction("Veterinarian Directory", "/dashboard/owner?tab=Appointments")
             );
             return persistAndBuildResponse(request.getConversationId(), userEmail, rawMessage, emergencyText,
                     intent.name(), "EMERGENCY_OVERRIDE", null, emergencyActions, null, null);
@@ -125,7 +125,7 @@ public class AiChatService {
         if (intent == ChatIntent.MEDICAL_QUESTION && !asksForWebResearch) {
             String medicalGuidance = safetyService.formatMedicalSafetyGuidance(rawMessage);
             List<AiQuickActionDTO> medicalActions = List.of(
-                    AiQuickActionDTO.navigateAction("Book a Vet Visit", "/dashboard/owner"),
+                    AiQuickActionDTO.navigateAction("Book a Vet Visit", "/dashboard/owner?tab=Appointments"),
                     AiQuickActionDTO.promptAction("Vaccination Guidelines", "What vaccinations does my pet need?")
             );
             return persistAndBuildResponse(request.getConversationId(), userEmail, rawMessage, medicalGuidance,
@@ -321,7 +321,10 @@ public class AiChatService {
         List<AiQuickActionDTO> actions = new ArrayList<>();
         if (!isGuest) {
             actions.add(AiQuickActionDTO.promptAction("My Pets", "Show my registered pets"));
+            actions.add(AiQuickActionDTO.navigateAction("Book a Vet", "/dashboard/owner?tab=Appointments"));
             actions.add(AiQuickActionDTO.promptAction("My Appointments", "When is my next vet appointment?"));
+        } else {
+            actions.add(AiQuickActionDTO.navigateAction("Book a Vet", "/login"));
         }
         actions.add(AiQuickActionDTO.promptAction("Vaccination Guide", "What are the core vaccines for dogs and cats?"));
         actions.add(AiQuickActionDTO.promptAction("Adopt a Pet", "Show me pets available for adoption"));
@@ -335,15 +338,19 @@ public class AiChatService {
             case PET_INFORMATION:
                 actions.add(AiQuickActionDTO.promptAction("Vaccination Status", "Check my pet's vaccination status"));
                 actions.add(AiQuickActionDTO.promptAction("Medical History", "Show my pet's medical records"));
-                actions.add(AiQuickActionDTO.navigateAction("Manage Pets", "/dashboard/owner"));
+                actions.add(AiQuickActionDTO.navigateAction("Manage Pets", "/dashboard/owner?tab=My Pets"));
                 break;
             case APPOINTMENT:
-                actions.add(AiQuickActionDTO.navigateAction("Book New Visit", "/dashboard/owner"));
+                actions.add(AiQuickActionDTO.navigateAction("Book a Vet", "/dashboard/owner?tab=Appointments"));
                 actions.add(AiQuickActionDTO.promptAction("Find a Veterinarian", "Show certified veterinarians"));
+                break;
+            case VETERINARIAN_SEARCH:
+                actions.add(AiQuickActionDTO.navigateAction("Book a Vet", "/dashboard/owner?tab=Appointments"));
+                actions.add(AiQuickActionDTO.promptAction("Search Vets", "Find veterinarians near me"));
                 break;
             case VACCINATION:
                 actions.add(AiQuickActionDTO.promptAction("Vaccination Schedule", "What is the recommended core vaccination schedule?"));
-                actions.add(AiQuickActionDTO.navigateAction("Immunization Records", "/dashboard/owner"));
+                actions.add(AiQuickActionDTO.navigateAction("Immunization Records", "/dashboard/owner?tab=Medical Records"));
                 break;
             case ADOPTION:
             case SHELTER:
