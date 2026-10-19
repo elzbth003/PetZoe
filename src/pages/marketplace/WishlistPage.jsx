@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Trash2, ShoppingCart } from 'lucide-react';
+import { Heart, Trash2, ShoppingCart, ArrowRight, Package } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
+
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=500';
 
 export default function WishlistPage() {
   const { user } = useAuth();
@@ -21,7 +23,7 @@ export default function WishlistPage() {
     try {
       setLoading(true);
       const res = await marketplaceService.getWishlist();
-      setWishlistItems(res.data);
+      setWishlistItems(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Failed to fetch wishlist", err);
     } finally {
@@ -53,12 +55,12 @@ export default function WishlistPage() {
   if (!user) {
     return (
       <div className="pt-32 pb-20 flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
-        <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center text-rose-300 mb-6">
-          <Heart size={40} className="fill-current" />
+        <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-400 mb-5">
+          <Heart size={36} className="fill-current" />
         </div>
-        <h2 className="font-display font-black text-3xl text-slate-800 mb-4">Your Wishlist is Empty</h2>
-        <p className="text-slate-500 font-medium mb-8">Please login to view your saved items.</p>
-        <Link to="/login" className="bg-primary-600 text-white font-bold px-8 py-3.5 rounded-full hover:bg-primary-700 transition-colors shadow-lg">
+        <h2 className="font-display font-black text-2xl sm:text-3xl text-slate-800 mb-2">Login to View Wishlist</h2>
+        <p className="text-slate-500 font-medium text-sm mb-6 max-w-sm">Sign in to access your saved pet supplies across all devices.</p>
+        <Link to="/login" className="bg-teal-600 text-white font-bold text-xs px-7 py-3 rounded-full hover:bg-teal-700 transition-colors shadow-md">
           Login to Continue
         </Link>
       </div>
@@ -68,7 +70,7 @@ export default function WishlistPage() {
   if (loading) {
     return (
       <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-primary-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent border-teal-600"></div>
       </div>
     );
   }
@@ -76,13 +78,13 @@ export default function WishlistPage() {
   if (wishlistItems.length === 0) {
     return (
       <div className="pt-32 pb-20 flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
-        <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center text-rose-300 mb-6">
-          <Heart size={40} className="fill-current" />
+        <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-400 mb-5">
+          <Heart size={36} />
         </div>
-        <h2 className="font-display font-black text-3xl text-slate-800 mb-4">Your Wishlist is Empty</h2>
-        <p className="text-slate-500 font-medium mb-8 max-w-md">Save items you love and buy them later when you're ready.</p>
-        <Link to="/marketplace" className="bg-primary-600 text-white font-bold px-8 py-3.5 rounded-full hover:bg-primary-700 transition-colors shadow-lg">
-          Explore Products
+        <h2 className="font-display font-black text-2xl sm:text-3xl text-slate-800 mb-2">Your Wishlist is Empty</h2>
+        <p className="text-slate-500 font-medium text-sm mb-6 max-w-sm">Save items you love while browsing to buy them whenever you're ready.</p>
+        <Link to="/marketplace/products" className="bg-teal-600 text-white font-bold text-xs px-7 py-3 rounded-full hover:bg-teal-700 transition-colors shadow-md inline-flex items-center gap-2">
+          <span>Explore Products</span> <ArrowRight size={14} />
         </Link>
       </div>
     );
@@ -91,61 +93,94 @@ export default function WishlistPage() {
   return (
     <div className="pt-24 pb-20 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center gap-4 mb-8">
-          <h1 className="font-display font-black text-3xl text-slate-800">My Wishlist</h1>
-          <span className="bg-rose-100 text-rose-600 font-bold px-3 py-1 rounded-full text-sm">
-            {wishlistItems.length} items
+        
+        {/* Breadcrumbs */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-6">
+          <Link to="/" className="hover:text-teal-700 transition-colors">Home</Link>
+          <span>/</span>
+          <Link to="/marketplace" className="hover:text-teal-700 transition-colors">Marketplace</Link>
+          <span>/</span>
+          <span className="text-slate-800 font-bold">My Wishlist</span>
+        </nav>
+
+        <div className="flex items-center gap-3 mb-8">
+          <h1 className="font-display font-black text-3xl text-slate-900 tracking-tight">My Wishlist</h1>
+          <span className="bg-rose-100 text-rose-700 font-bold px-3 py-0.5 rounded-full text-xs">
+            {wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlistItems.map((item) => {
-            const hasDiscount = item.product.discountPrice != null;
-            const currentPrice = hasDiscount ? item.product.discountPrice : item.product.price;
+            const hasDiscount = item.product?.discountPrice != null && item.product.discountPrice < item.product.price;
+            const currentPrice = hasDiscount ? item.product.discountPrice : item.product?.price;
 
             return (
-              <div key={item.id} className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col relative group">
+              <div 
+                key={item.id} 
+                className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl hover:border-teal-400/60 transition-all duration-300 flex flex-col relative group"
+              >
+                {/* Remove button */}
                 <button 
+                  type="button"
                   onClick={() => removeFromWishlist(item.id)}
-                  className={`absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full text-slate-400 shadow-sm transition-colors
-                    hover:bg-rose-50 hover:text-rose-500`}
+                  className="absolute top-3.5 right-3.5 z-10 p-2 bg-white/90 backdrop-blur-md rounded-full text-slate-400 hover:text-rose-600 shadow-sm transition-all cursor-pointer border border-slate-100"
                   title="Remove from Wishlist"
+                  aria-label="Remove from Wishlist"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={15} />
                 </button>
 
-                <div className="relative aspect-square w-full bg-slate-50">
-                  <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
-                  {item.product.stockQuantity === 0 && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
-                      <span className="bg-slate-800 text-white font-bold px-4 py-2 rounded-xl shadow-lg">Out of Stock</span>
+                {/* Product image */}
+                <div className="relative aspect-square w-full bg-slate-50 overflow-hidden">
+                  <img 
+                    src={item.product?.imageUrl || FALLBACK_IMAGE} 
+                    alt={item.product?.name || 'Product'} 
+                    onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    loading="lazy" 
+                  />
+                  {item.product?.stockQuantity === 0 && (
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                      <span className="bg-slate-900 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-lg">
+                        Out of Stock
+                      </span>
                     </div>
                   )}
                 </div>
 
+                {/* Product details */}
                 <div className="p-5 flex flex-col flex-grow">
-                  <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">{item.product.brand}</div>
-                  <Link to={`/marketplace/products/${item.product.id}`}>
-                    <h3 className="font-bold text-slate-800 text-base leading-tight mb-3 line-clamp-2 hover:text-primary-600 transition-colors">
-                      {item.product.name}
+                  <div className="text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">
+                    {item.product?.brand || 'PetZoe'}
+                  </div>
+                  <Link to={`/marketplace/products/${item.product?.id}`}>
+                    <h3 className="font-bold text-slate-800 text-sm leading-snug mb-3 line-clamp-2 hover:text-teal-700 transition-colors">
+                      {item.product?.name}
                     </h3>
                   </Link>
                   
-                  <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+                  <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
                     <div>
                       {hasDiscount && (
-                        <div className="text-xs text-slate-400 line-through mb-0.5">₹{item.product.price.toLocaleString()}</div>
+                        <div className="text-xs text-slate-400 line-through">
+                          ₹{Number(item.product.price).toLocaleString()}
+                        </div>
                       )}
-                      <div className="font-black text-lg text-slate-900">₹{currentPrice.toLocaleString()}</div>
+                      <div className="font-extrabold text-lg text-slate-900">
+                        ₹{Number(currentPrice || 0).toLocaleString()}
+                      </div>
                     </div>
                     
                     <button 
+                      type="button"
                       onClick={() => moveToCart(item.id)}
-                      disabled={item.product.stockQuantity === 0}
-                      className="bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white font-bold p-2.5 rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={item.product?.stockQuantity === 0}
+                      className="bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white font-bold p-2.5 rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-95 cursor-pointer"
                       title="Move to Cart"
+                      aria-label="Move to Cart"
                     >
-                      <ShoppingCart size={20} />
+                      <ShoppingCart size={18} />
                     </button>
                   </div>
                 </div>

@@ -57,31 +57,40 @@ export default function OrderHistoryPage() {
       const initRes = await marketplaceService.createPayment(orderId);
       const paymentData = initRes.data;
 
-      const isMock = paymentData.razorpayOrderId?.startsWith('order_mock_') || paymentData.keyId?.includes('placeholder');
-
+      // If order was generated with a simulated mock order ID from a local dev mock
       if (isMock) {
-        const confirmed = window.confirm(`[PetZoe Test Mode Payment Retry]\n\nOrder #${paymentData.orderId}\nTotal Amount: ₹${paymentData.amount}\nSimulated Order ID: ${paymentData.razorpayOrderId}\n\nClick OK to simulate successful payment, or Cancel to abort.`);
-        if (confirmed) {
-          try {
-            await marketplaceService.verifyPayment({
-              orderId: paymentData.orderId,
-              razorpayOrderId: paymentData.razorpayOrderId,
-              razorpayPaymentId: `pay_mock_${Date.now()}`,
-              razorpaySignature: 'simulated_valid_test_signature'
-            });
-            showToast('Test payment retry verified successfully!', 'success');
-            fetchOrders();
-          } catch (verifyErr) {
-            console.error('Payment verification failed', verifyErr);
-            showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
-            fetchOrders();
-          } finally {
+        // If window.Razorpay is available and key is configured, still try to open standard modal
+        const hasValidKey = paymentData.keyId && !paymentData.keyId.includes('placeholder');
+        if (!hasValidKey || paymentData.razorpayOrderId?.startsWith('order_mock_')) {
+          const confirmed = window.confirm(`[PetZoe Test Mode Payment Retry]\n\nOrder #${paymentData.orderId}\nTotal Amount: ₹${paymentData.amount}\nSimulated Order ID: ${paymentData.razorpayOrderId}\n\nClick OK to simulate successful payment, or Cancel to abort.`);
+          if (confirmed) {
+            try {
+              await marketplaceService.verifyPayment({
+                orderId: paymentData.orderId,
+                razorpayOrderId: paymentData.razorpayOrderId,
+                razorpayPaymentId: `pay_mock_${Date.now()}`,
+                razorpaySignature: 'simulated_valid_test_signature'
+              });
+              showToast('Test payment retry verified successfully!', 'success');
+              fetchOrders();
+            } catch (verifyErr) {
+              console.error('Payment verification failed', verifyErr);
+              showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
+              fetchOrders();
+            } finally {
+              setPayingOrderId(null);
+            }
+          } else {
             setPayingOrderId(null);
+            showToast('Payment retry aborted', 'warning');
           }
-        } else {
-          setPayingOrderId(null);
-          showToast('Payment retry aborted', 'warning');
+          return;
         }
+      }
+
+      if (!window.Razorpay) {
+        showToast('Razorpay SDK could not be initialized in this browser.', 'error');
+        setPayingOrderId(null);
         return;
       }
 
@@ -128,13 +137,14 @@ export default function OrderHistoryPage() {
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
-        showToast(response.error.description || 'Payment failed', 'error');
+        console.error('Razorpay payment failed:', response.error);
+        showToast(response.error?.description || 'Payment failed', 'error');
         setPayingOrderId(null);
       });
       rzp.open();
     } catch (err) {
       console.error('Failed to retry payment', err);
-      showToast(err.response?.data?.message || 'Failed to retry payment', 'error');
+      showToast(err.response?.data?.message || err.message || 'Failed to retry payment', 'error');
       setPayingOrderId(null);
     }
   };
@@ -167,7 +177,7 @@ export default function OrderHistoryPage() {
         </div>
         <h2 className="font-display font-black text-3xl text-slate-800 mb-4">View Your Orders</h2>
         <p className="text-slate-500 font-medium mb-8">Please login to track your recent purchases.</p>
-        <Link to="/login" className="bg-primary-600 text-white font-bold px-8 py-3.5 rounded-full hover:bg-primary-700 transition-colors shadow-lg">
+        <Link to="/login" className="bg-teal-600 text-white font-bold text-xs px-7 py-3 rounded-full hover:bg-teal-700 transition-colors shadow-md">
           Login to Continue
         </Link>
       </div>
@@ -194,7 +204,7 @@ export default function OrderHistoryPage() {
             </div>
             <h3 className="font-display font-bold text-xl text-slate-800 mb-2">No orders found</h3>
             <p className="text-slate-500 mb-6">You haven't placed any orders yet.</p>
-            <Link to="/marketplace" className="bg-primary-50 text-primary-600 font-bold px-6 py-2.5 rounded-full hover:bg-primary-100 transition-colors">
+            <Link to="/marketplace" className="bg-teal-50 text-teal-700 font-bold px-6 py-2.5 rounded-full hover:bg-teal-100 transition-colors inline-block">
               Start Shopping
             </Link>
           </div>
@@ -246,7 +256,7 @@ export default function OrderHistoryPage() {
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
                           >
                             <CreditCard size={14} />
-                            {payingOrderId === order.id ? 'Opening Gateway...' : 'Retry Payment'}
+                            {payingOrderId === order.id ? 'Opening Razorpay...' : 'Pay Now'}
                           </button>
                         )}
                       </div>

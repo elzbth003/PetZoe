@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, Lock } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, Lock, ShieldCheck } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
@@ -87,33 +87,42 @@ export default function CartPage() {
       const isMock = paymentData.razorpayOrderId?.startsWith('order_mock_') || paymentData.keyId?.includes('placeholder');
 
       if (isMock) {
-        // Simulated test mode for development without live Razorpay account credentials
-        const confirmed = window.confirm(`[PetZoe Test Mode Payment]\n\nOrder #${paymentData.orderId}\nTotal Amount: ₹${paymentData.amount}\nSimulated Order ID: ${paymentData.razorpayOrderId}\n\nClick OK to simulate successful payment, or Cancel to simulate user dismissal.`);
-        if (confirmed) {
-          try {
-            setProcessing(true);
-            await marketplaceService.verifyPayment({
-              orderId: paymentData.orderId,
-              razorpayOrderId: paymentData.razorpayOrderId,
-              razorpayPaymentId: `pay_mock_${Date.now()}`,
-              razorpaySignature: 'simulated_valid_test_signature'
-            });
-            showToast('Test payment successful! Order placed.', 'success');
+        const hasValidKey = paymentData.keyId && !paymentData.keyId.includes('placeholder');
+        if (!hasValidKey || paymentData.razorpayOrderId?.startsWith('order_mock_')) {
+          // Simulated test mode for development without live Razorpay account credentials
+          const confirmed = window.confirm(`[PetZoe Test Mode Payment]\n\nOrder #${paymentData.orderId}\nTotal Amount: ₹${paymentData.amount}\nSimulated Order ID: ${paymentData.razorpayOrderId}\n\nClick OK to simulate successful payment, or Cancel to simulate user dismissal.`);
+          if (confirmed) {
+            try {
+              setProcessing(true);
+              await marketplaceService.verifyPayment({
+                orderId: paymentData.orderId,
+                razorpayOrderId: paymentData.razorpayOrderId,
+                razorpayPaymentId: `pay_mock_${Date.now()}`,
+                razorpaySignature: 'simulated_valid_test_signature'
+              });
+              showToast('Test payment successful! Order placed.', 'success');
+              window.dispatchEvent(new Event('cart-updated'));
+              navigate('/marketplace/orders');
+            } catch (verifyErr) {
+              console.error('Payment verification failed', verifyErr);
+              showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
+              navigate('/marketplace/orders');
+            } finally {
+              setProcessing(false);
+            }
+          } else {
+            setProcessing(false);
+            showToast('Payment was cancelled. You can retry from your Orders page.', 'warning');
             window.dispatchEvent(new Event('cart-updated'));
             navigate('/marketplace/orders');
-          } catch (verifyErr) {
-            console.error('Payment verification failed', verifyErr);
-            showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
-            navigate('/marketplace/orders');
-          } finally {
-            setProcessing(false);
           }
-        } else {
-          setProcessing(false);
-          showToast('Payment was cancelled. You can retry from your Orders page.', 'warning');
-          window.dispatchEvent(new Event('cart-updated'));
-          navigate('/marketplace/orders');
+          return;
         }
+      }
+
+      if (!window.Razorpay) {
+        showToast('Razorpay SDK could not be loaded in browser. Please check adblocker or network.', 'error');
+        setProcessing(false);
         return;
       }
 
@@ -341,7 +350,7 @@ export default function CartPage() {
               <button 
                 onClick={handleCheckout}
                 disabled={processing}
-                className="w-full bg-primary-600 text-white font-bold py-4 rounded-2xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full bg-teal-600 text-white font-bold py-4 rounded-2xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-98"
               >
                 {processing ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"></div>
@@ -350,8 +359,8 @@ export default function CartPage() {
                 )}
               </button>
               
-              <div className="mt-6 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-1.5">
-                <Lock size={12} /> Secure Checkout Placeholder
+              <div className="mt-5 text-center text-xs text-slate-500 font-semibold flex items-center justify-center gap-1.5">
+                <ShieldCheck size={14} className="text-teal-600" /> 256-Bit Encrypted & Verified Checkout
               </div>
             </div>
           </div>

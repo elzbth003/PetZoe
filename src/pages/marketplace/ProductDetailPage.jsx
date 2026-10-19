@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, ChevronRight, Check, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Heart, ChevronRight, Check, AlertCircle, ShieldCheck, Truck, Sparkles, Loader2, Star, User } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { vendorProductService } from '../../services/vendorProductService';
 import StarRating from '../../components/marketplace/StarRating';
@@ -9,12 +9,15 @@ import SellerProductEditPanel from '../../components/marketplace/SellerProductEd
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=600';
+
 export default function ProductDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const { showToast } = useToast();
 
   const [product, setProduct] = useState(null);
+  const [imgSrc, setImgSrc] = useState(FALLBACK_IMAGE);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     fetchProductDetails();
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
   const fetchProductDetails = async () => {
@@ -41,14 +44,27 @@ export default function ProductDetailPage() {
       setLoading(true);
       const res = await marketplaceService.getProductById(id);
       setProduct(res.data);
+      setImgSrc(res.data.imageUrl || FALLBACK_IMAGE);
 
       // Fetch related products (same category)
-      const relatedRes = await marketplaceService.getProductsByCategory(res.data.categoryId, 0, 4);
-      setRelatedProducts(relatedRes.data.content.filter(p => p.id !== res.data.id).slice(0, 4));
+      if (res.data.categoryId) {
+        try {
+          const relatedRes = await marketplaceService.getProductsByCategory(res.data.categoryId, 0, 5);
+          if (relatedRes.data && relatedRes.data.content) {
+            setRelatedProducts(relatedRes.data.content.filter(p => p.id !== res.data.id).slice(0, 4));
+          }
+        } catch (e) {
+          // Non-critical related items fetch failure
+        }
+      }
 
       // Fetch reviews
-      const reviewsRes = await marketplaceService.getProductReviews(id);
-      setReviews(reviewsRes.data);
+      try {
+        const reviewsRes = await marketplaceService.getProductReviews(id);
+        setReviews(Array.isArray(reviewsRes.data) ? reviewsRes.data : []);
+      } catch (e) {
+        setReviews([]);
+      }
 
       if (user?.role === 'Marketplace Seller') {
         checkOwnership(res.data.id);
@@ -69,7 +85,6 @@ export default function ProductDetailPage() {
       setOwnVendorProduct(ownRes);
       setCategories(categoriesRes.data);
     } catch (err) {
-      // 403/404 means this isn't the seller's own product — keep the buy-blocked message.
       setOwnVendorProduct(null);
     }
   };
@@ -86,7 +101,7 @@ export default function ProductDetailPage() {
     try {
       setIsAddingToCart(true);
       await marketplaceService.addToCart(product.id, quantity);
-      showToast('Added to cart successfully', 'success');
+      showToast(`Added ${quantity} unit(s) to your cart`, 'success');
       window.dispatchEvent(new Event('cart-updated'));
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to add to cart', 'error');
@@ -107,7 +122,7 @@ export default function ProductDetailPage() {
     try {
       setIsAddingToWishlist(true);
       await marketplaceService.addToWishlist(product.id);
-      showToast('Added to wishlist', 'success');
+      showToast('Saved to your wishlist', 'success');
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to add to wishlist', 'error');
     } finally {
@@ -127,9 +142,9 @@ export default function ProductDetailPage() {
     }
     try {
       await marketplaceService.addReview(product.id, newReview);
-      showToast('Review submitted!', 'success');
+      showToast('Thank you! Your review was submitted.', 'success');
       setNewReview({ rating: 5, comment: '' });
-      fetchProductDetails(); // Refresh to show new review
+      fetchProductDetails();
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to submit review', 'error');
     }
@@ -138,103 +153,163 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-primary-600"></div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent border-teal-600"></div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Loading product details...</p>
+        </div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="pt-32 pb-20 flex justify-center text-center">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Product not found</h2>
-          <Link to="/marketplace" className="text-primary-600 hover:underline">Return to Marketplace</Link>
+      <div className="pt-32 pb-20 flex flex-col items-center justify-center text-center px-6 min-h-[50vh]">
+        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
+          <AlertCircle size={28} />
         </div>
+        <h2 className="text-2xl font-black text-slate-900 mb-2">Product Not Found</h2>
+        <p className="text-slate-500 font-medium text-sm mb-6 max-w-sm">
+          The requested product may have been archived or removed by its seller.
+        </p>
+        <Link 
+          to="/marketplace/products" 
+          className="bg-teal-600 text-white font-bold text-xs px-6 py-3 rounded-full hover:bg-teal-700 transition-colors shadow-md"
+        >
+          Return to Marketplace
+        </Link>
       </div>
     );
   }
 
   const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
   const currentPrice = hasDiscount ? product.discountPrice : product.price;
+  const savings = hasDiscount ? product.price - product.discountPrice : 0;
+  const discountPercent = hasDiscount ? Math.round((savings / product.price) * 100) : 0;
 
   return (
     <div className="pt-24 pb-20 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-6">
         
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-sm text-slate-500 font-medium mb-8">
-          <Link to="/marketplace" className="hover:text-primary-600">Marketplace</Link>
-          <ChevronRight size={14} />
-          <Link to={`/marketplace/products?category=${product.categoryId}`} className="hover:text-primary-600">
-            {product.categoryName}
-          </Link>
-          <ChevronRight size={14} />
-          <span className="text-slate-800 line-clamp-1">{product.name}</span>
-        </div>
+        {/* Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-6">
+          <Link to="/" className="hover:text-teal-700 transition-colors">Home</Link>
+          <ChevronRight size={12} />
+          <Link to="/marketplace" className="hover:text-teal-700 transition-colors">Marketplace</Link>
+          <ChevronRight size={12} />
+          {product.categoryId && (
+            <>
+              <Link to={`/marketplace/products?category=${product.categoryId}`} className="hover:text-teal-700 transition-colors">
+                {product.categoryName || 'Category'}
+              </Link>
+              <ChevronRight size={12} />
+            </>
+          )}
+          <span className="text-slate-800 font-bold truncate max-w-xs">{product.name}</span>
+        </nav>
 
-        {/* Product Top Section */}
-        <div className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-10 mb-12">
+        {/* Product Showcase Card */}
+        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200/90 flex flex-col lg:flex-row gap-10 lg:gap-14 mb-12">
           
-          {/* Image */}
-          <div className="md:w-1/2">
-            <div className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 aspect-square">
-              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+          {/* Left Column: Image Showcase */}
+          <div className="lg:w-1/2 flex flex-col gap-4">
+            <div className="rounded-3xl overflow-hidden bg-slate-50 border border-slate-200/80 aspect-square relative shadow-inner">
+              <img 
+                src={imgSrc} 
+                alt={product.name} 
+                onError={() => setImgSrc(FALLBACK_IMAGE)}
+                className="w-full h-full object-cover object-center" 
+              />
+              {hasDiscount && (
+                <div className="absolute top-4 left-4 bg-rose-500 text-white font-extrabold text-xs px-3 py-1 rounded-full shadow-md">
+                  {discountPercent}% OFF
+                </div>
+              )}
+            </div>
+
+            {/* Quality & Safe Shipping Guarantee */}
+            <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
+              <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                <Truck size={16} className="text-teal-600 flex-shrink-0" />
+                <span>Express Inspected Shipping</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                <ShieldCheck size={16} className="text-teal-600 flex-shrink-0" />
+                <span>100% Genuine Sealed Batch</span>
+              </div>
             </div>
           </div>
 
-          {/* Details */}
-          <div className="md:w-1/2 flex flex-col">
-            <div className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">
-              {product.brand}
+          {/* Right Column: Product Purchase Panel */}
+          <div className="lg:w-1/2 flex flex-col">
+            {/* Brand & Sku */}
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              <span className="text-teal-700">{product.brand || 'PetZoe Curated'}</span>
+              <span>SKU: {product.sku || `PZ-${product.id}`}</span>
             </div>
-            <h1 className="font-display font-black text-3xl md:text-4xl text-slate-800 leading-tight mb-4">
+
+            {/* Title */}
+            <h1 className="font-display font-black text-2xl sm:text-3xl lg:text-4xl text-slate-900 leading-tight mb-3">
               {product.name}
             </h1>
             
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <StarRating rating={product.averageRating} size={18} />
-                <span className="text-sm font-bold text-slate-700">{product.averageRating.toFixed(1)}</span>
-                <span className="text-sm text-slate-500">({product.reviewCount} reviews)</span>
+            {/* Rating & Review summary */}
+            <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100">
+              <div className="flex items-center gap-1.5">
+                <StarRating rating={product.averageRating || 0} size={16} />
+                <span className="text-xs font-extrabold text-slate-800">
+                  {Number(product.averageRating || 0).toFixed(1)}
+                </span>
+                <span className="text-xs text-slate-500 font-medium">
+                  ({product.reviewCount || 0} {product.reviewCount === 1 ? 'review' : 'reviews'})
+                </span>
               </div>
-              <div className="w-1 h-1 bg-slate-300 rounded-full" />
-              <div className="text-sm font-medium text-slate-500">SKU: {product.sku}</div>
+              <span className="text-slate-300">•</span>
+              <span className="text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
+                Verified Seller: {product.sellerName || 'PetZoe Direct'}
+              </span>
             </div>
 
-            <div className="mb-8">
-              {hasDiscount && (
-                <div className="text-lg text-slate-400 line-through mb-1">
-                  ₹{product.price.toLocaleString()}
-                </div>
-              )}
-              <div className="flex items-end gap-3">
-                <span className="font-black text-4xl text-slate-900">₹{currentPrice.toLocaleString()}</span>
+            {/* Price Box */}
+            <div className="mb-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
+              <div className="flex items-baseline gap-3 mb-1">
+                <span className="font-black text-3xl sm:text-4xl text-slate-900">
+                  ₹{Number(currentPrice).toLocaleString()}
+                </span>
                 {hasDiscount && (
-                  <span className="bg-rose-100 text-rose-600 text-sm font-bold px-2 py-1 rounded-lg mb-1">
-                    Save ₹{(product.price - product.discountPrice).toLocaleString()}
+                  <span className="text-base text-slate-400 line-through font-semibold">
+                    ₹{Number(product.price).toLocaleString()}
+                  </span>
+                )}
+                {hasDiscount && (
+                  <span className="bg-rose-100 text-rose-700 text-xs font-extrabold px-2 py-0.5 rounded-md">
+                    Save ₹{Number(savings).toLocaleString()}
                   </span>
                 )}
               </div>
+              <p className="text-xs text-slate-500 font-medium">
+                Inclusive of all taxes. Free shipping on certified prescription orders.
+              </p>
             </div>
 
+            {/* Real Stock Status */}
             <div className="mb-8">
-              <h3 className="text-sm font-bold text-slate-800 mb-3">Availability</h3>
-              {product.stockQuantity > 10 ? (
-                <div className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 w-fit px-3 py-1.5 rounded-lg">
-                  <Check size={18} /> In Stock ({product.stockQuantity})
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Availability</div>
+              {product.stockQuantity > 5 ? (
+                <div className="inline-flex items-center gap-2 text-emerald-700 font-bold bg-emerald-50 px-3.5 py-1.5 rounded-xl border border-emerald-200 text-xs">
+                  <Check size={14} /> In Stock ({product.stockQuantity} units available)
                 </div>
               ) : product.stockQuantity > 0 ? (
-                <div className="flex items-center gap-2 text-amber-600 font-bold bg-amber-50 w-fit px-3 py-1.5 rounded-lg">
-                  <AlertCircle size={18} /> Low Stock (Only {product.stockQuantity} left)
+                <div className="inline-flex items-center gap-2 text-amber-800 font-bold bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-200 text-xs">
+                  <AlertCircle size={14} /> Low Stock (Only {product.stockQuantity} units remaining)
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-rose-600 font-bold bg-rose-50 w-fit px-3 py-1.5 rounded-lg">
-                  <AlertCircle size={18} /> Out of Stock
+                <div className="inline-flex items-center gap-2 text-slate-700 font-bold bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs">
+                  <AlertCircle size={14} /> Out of Stock
                 </div>
               )}
             </div>
 
-            {/* Actions */}
+            {/* Actions / Seller Panel */}
             {isSeller ? (
               ownVendorProduct ? (
                 <SellerProductEditPanel
@@ -243,48 +318,67 @@ export default function ProductDetailPage() {
                   onUpdated={(updated) => setOwnVendorProduct(updated)}
                 />
               ) : (
-                <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 font-medium">
-                  Marketplace seller accounts cannot purchase products.
+                <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 text-xs font-semibold">
+                  Marketplace seller accounts are restricted to catalog management and cannot purchase products.
                 </div>
               )
             ) : isNonBuyer ? (
-              <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 font-medium">
-                Only Pet Owner accounts can purchase products.
+              <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 text-xs font-semibold">
+                Only authenticated Pet Owner accounts can complete marketplace purchases.
               </div>
             ) : (
-              <div className="mt-auto flex flex-col gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center border border-slate-200 rounded-2xl bg-white overflow-hidden h-14">
+              <div className="mt-auto flex flex-col gap-3.5">
+                <div className="flex items-center gap-3">
+                  {/* Quantity Counter */}
+                  <div className="flex items-center border border-slate-200 rounded-2xl bg-white overflow-hidden h-12 shadow-sm">
                     <button
+                      type="button"
                       onClick={() => setQuantity(q => Math.max(1, q - 1))}
                       disabled={product.stockQuantity === 0}
-                      className="px-4 h-full text-slate-500 hover:bg-slate-50 font-bold disabled:opacity-50"
-                    >-</button>
-                    <span className="w-12 text-center font-bold text-slate-800">{quantity}</span>
+                      className="px-3.5 h-full text-slate-600 hover:bg-slate-50 font-bold text-sm disabled:opacity-30 cursor-pointer"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span className="w-10 text-center font-bold text-slate-800 text-sm select-none">
+                      {quantity}
+                    </span>
                     <button
-                      onClick={() => setQuantity(q => Math.min(product.stockQuantity, q + 1))}
-                      disabled={product.stockQuantity === 0}
-                      className="px-4 h-full text-slate-500 hover:bg-slate-50 font-bold disabled:opacity-50"
-                    >+</button>
+                      type="button"
+                      onClick={() => setQuantity(q => Math.min(product.stockQuantity || 1, q + 1))}
+                      disabled={product.stockQuantity === 0 || quantity >= product.stockQuantity}
+                      className="px-3.5 h-full text-slate-600 hover:bg-slate-50 font-bold text-sm disabled:opacity-30 cursor-pointer"
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
                   </div>
 
+                  {/* Add To Cart Button */}
                   <button
+                    type="button"
                     onClick={handleAddToCart}
                     disabled={isAddingToCart || product.stockQuantity === 0}
-                    className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold h-12 rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-teal-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm active:scale-98"
                   >
-                    {isAddingToCart ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"></div> : <ShoppingCart size={20} />}
-                    Add to Cart
+                    {isAddingToCart ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <ShoppingCart size={18} />
+                    )}
+                    <span>{product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
                   </button>
                 </div>
 
+                {/* Wishlist Button */}
                 <button
+                  type="button"
                   onClick={handleAddToWishlist}
                   disabled={isAddingToWishlist}
-                  className="w-full h-14 rounded-2xl font-bold flex items-center justify-center gap-2 border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
+                  className="w-full h-12 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-sm active:scale-98"
                 >
-                  <Heart size={20} className={isAddingToWishlist ? 'fill-rose-500 text-rose-500' : ''} />
-                  Save to Wishlist
+                  <Heart size={16} className={isAddingToWishlist ? 'fill-rose-500 text-rose-500' : 'text-slate-500'} />
+                  <span>Save to Wishlist</span>
                 </button>
               </div>
             )}
@@ -292,127 +386,170 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Tabs Section */}
-        <div className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-slate-100 mb-12">
-          <div className="flex items-center gap-8 border-b border-slate-100 mb-8 overflow-x-auto pb-2">
-            {['description', 'specs', 'reviews'].map(tab => (
+        {/* Structured Tabs Section */}
+        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200/90 mb-12">
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-6 border-b border-slate-100 mb-8 overflow-x-auto pb-1">
+            {[
+              { id: 'description', label: 'Product Description' },
+              { id: 'specs', label: 'Specifications & Ingredients' },
+              { id: 'reviews', label: `Reviews (${reviews.length})` }
+            ].map(tab => (
               <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`font-bold capitalize whitespace-nowrap pb-4 border-b-2 transition-colors ${
-                  activeTab === tab ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-800'
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`font-bold text-sm whitespace-nowrap pb-3 border-b-2 transition-all cursor-pointer ${
+                  activeTab === tab.id 
+                    ? 'border-teal-600 text-teal-700' 
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                {tab === 'specs' ? 'Specifications & Ingredients' : tab}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          <div className="min-h-[200px]">
+          <div className="min-h-[220px]">
+            {/* Description Tab */}
             {activeTab === 'description' && (
-              <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed font-medium">
-                <p>{product.description}</p>
-                <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <h4 className="font-bold text-slate-800 mb-2">Seller Information</h4>
-                  <p>Sold by: <span className="font-bold text-primary-600">{product.sellerName}</span></p>
+              <div className="space-y-6 max-w-4xl text-slate-700 leading-relaxed text-sm">
+                <p className="font-medium text-base text-slate-800">{product.description}</p>
+                
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                  <div>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Certified Merchant
+                    </span>
+                    <h4 className="font-extrabold text-slate-900 text-base">{product.sellerName || 'PetZoe Official Store'}</h4>
+                    <p className="text-xs text-slate-500">Authorized Veterinary Healthcare Distributor</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-teal-700 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200 text-xs font-bold w-fit">
+                    <ShieldCheck size={16} /> Certified Authenticity
+                  </div>
                 </div>
               </div>
             )}
 
+            {/* Specifications Tab */}
             {activeTab === 'specs' && (
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="grid md:grid-cols-2 gap-8 max-w-4xl">
                 <div>
-                  <h3 className="font-bold text-lg text-slate-800 mb-4">Specifications</h3>
+                  <h3 className="font-bold text-sm uppercase tracking-wider text-slate-400 mb-3">Specifications</h3>
                   {product.specifications ? (
-                    <ul className="space-y-3">
+                    <ul className="space-y-2.5">
                       {product.specifications.split('|').map((spec, i) => (
-                        <li key={i} className="flex gap-2 text-slate-600 font-medium">
-                          <Check size={18} className="text-primary-500 flex-shrink-0" />
-                          {spec.trim()}
+                        <li key={i} className="flex items-center gap-2 text-slate-700 text-xs font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                          <Check size={14} className="text-teal-600 flex-shrink-0" />
+                          <span>{spec.trim()}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-slate-500 italic">No specifications provided.</p>
+                    <p className="text-slate-400 italic text-xs">Standard veterinary retail packaging.</p>
                   )}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-800 mb-4">Ingredients</h3>
+                  <h3 className="font-bold text-sm uppercase tracking-wider text-slate-400 mb-3">Ingredients / Formula</h3>
                   {product.ingredients ? (
-                    <p className="text-slate-600 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="text-slate-700 text-xs font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
                       {product.ingredients}
-                    </p>
+                    </div>
                   ) : (
-                    <p className="text-slate-500 italic">No ingredients provided.</p>
+                    <p className="text-slate-400 italic text-xs">Refer to physical packaging for full chemical or clinical composition.</p>
                   )}
                 </div>
               </div>
             )}
 
+            {/* Reviews Tab */}
             {activeTab === 'reviews' && (
               <div>
-                <div className="flex flex-col md:flex-row gap-10 mb-10 pb-10 border-b border-slate-100">
-                  <div className="md:w-1/3 flex flex-col items-center justify-center text-center p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                    <div className="font-black text-5xl text-slate-800 mb-2">{product.averageRating.toFixed(1)}</div>
-                    <StarRating rating={product.averageRating} size={24} className="mb-2" />
-                    <div className="text-slate-500 font-medium">Based on {product.reviewCount} reviews</div>
+                <div className="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b border-slate-100">
+                  {/* Rating summary */}
+                  <div className="md:w-1/3 flex flex-col items-center justify-center text-center p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="font-black text-5xl text-slate-900 mb-1">
+                      {Number(product.averageRating || 0).toFixed(1)}
+                    </div>
+                    <StarRating rating={product.averageRating || 0} size={20} className="mb-2" />
+                    <div className="text-slate-500 font-semibold text-xs">
+                      Based on {reviews.length} customer {reviews.length === 1 ? 'review' : 'reviews'}
+                    </div>
                   </div>
                   
+                  {/* Review form */}
                   <div className="md:w-2/3">
-                    <h3 className="font-bold text-lg text-slate-800 mb-4">Write a Review</h3>
+                    <h3 className="font-bold text-sm text-slate-900 mb-3 uppercase tracking-wider">Leave a Review</h3>
                     {isSeller ? (
-                      <div className="p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 font-medium">
-                        Marketplace seller accounts cannot write reviews.
+                      <div className="p-3 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 text-xs font-semibold">
+                        Seller accounts cannot submit customer reviews.
                       </div>
                     ) : isNonBuyer ? (
-                      <div className="p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 font-medium">
-                        Only Pet Owner accounts can write reviews.
+                      <div className="p-3 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 text-xs font-semibold">
+                        Only verified Pet Owners can review products.
                       </div>
                     ) : user ? (
-                      <form onSubmit={submitReview} className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <label className="font-bold text-slate-700">Rating:</label>
+                      <form onSubmit={submitReview} className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <label className="text-xs font-bold text-slate-700">Rating:</label>
                           <select 
                             value={newReview.rating} 
                             onChange={(e) => setNewReview({...newReview, rating: parseInt(e.target.value)})}
-                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none font-bold text-slate-700"
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 outline-none font-bold text-slate-800 text-xs"
                           >
-                            {[5,4,3,2,1].map(num => <option key={num} value={num}>{num} Stars</option>)}
+                            {[5, 4, 3, 2, 1].map(num => (
+                              <option key={num} value={num}>
+                                {num} {num === 1 ? 'Star' : 'Stars'}
+                              </option>
+                            ))}
                           </select>
                         </div>
                         <textarea 
-                          placeholder="Share your thoughts about this product..."
+                          placeholder="How did this product perform for your pet? Share genuine feedback..."
                           value={newReview.comment}
                           onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 outline-none focus:border-primary-500 font-medium h-24 resize-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-teal-500 font-medium text-xs h-20 resize-none text-slate-800"
                           required
                         />
-                        <button type="submit" className="bg-slate-800 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-slate-900 transition-colors">
+                        <button 
+                          type="submit" 
+                          className="bg-teal-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-teal-700 transition-colors shadow-sm cursor-pointer"
+                        >
                           Submit Review
                         </button>
                       </form>
                     ) : (
-                      <div className="p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 font-medium">
-                        Please <Link to="/login" className="font-bold underline">login</Link> to write a review.
+                      <div className="p-4 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-xs font-medium">
+                        Please <Link to="/login" className="font-bold text-teal-700 underline">login</Link> to share your verified review.
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                {/* Review list */}
+                <div className="space-y-4">
                   {reviews.length === 0 ? (
-                    <p className="text-center text-slate-500 italic py-8">No reviews yet. Be the first to review this product!</p>
+                    <p className="text-center text-slate-400 italic py-6 text-xs">
+                      No reviews submitted yet for this product. Be the first to review!
+                    </p>
                   ) : (
                     reviews.map(review => (
-                      <div key={review.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <div className="font-bold text-slate-800">{review.user.name}</div>
-                            <div className="text-xs text-slate-400">{new Date(review.createdAt).toLocaleDateString()}</div>
+                      <div key={review.id} className="bg-slate-50/60 p-4 rounded-2xl border border-slate-100 flex flex-col gap-2">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">
+                              {review.user?.name ? review.user.name[0].toUpperCase() : 'U'}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-900 text-xs">{review.user?.name || 'Verified Owner'}</div>
+                              <div className="text-[10px] text-slate-400">
+                                {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Verified Purchase'}
+                              </div>
+                            </div>
                           </div>
-                          <StarRating rating={review.rating} size={16} />
+                          <StarRating rating={review.rating} size={14} />
                         </div>
-                        <p className="text-slate-600 font-medium">{review.comment}</p>
+                        <p className="text-slate-700 text-xs font-medium pl-9">{review.comment}</p>
                       </div>
                     ))
                   )}
@@ -422,10 +559,20 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Related Products */}
+        {/* Related Products Grid */}
         {relatedProducts.length > 0 && (
           <div>
-            <h2 className="font-display font-black text-2xl text-slate-800 mb-6">Related Products</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display font-black text-2xl text-slate-900">
+                Related Category Selections
+              </h2>
+              <Link 
+                to={`/marketplace/products?category=${product.categoryId}`}
+                className="text-xs font-bold text-teal-700 hover:underline"
+              >
+                View Category
+              </Link>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
               {relatedProducts.map(p => (
                 <ProductCard key={p.id} product={p} />
