@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -299,6 +302,17 @@ public class AppointmentService {
             "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
     );
 
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
+
+    private LocalTime parseSlotTime(String slotStr) {
+        if (slotStr == null || slotStr.isBlank()) return null;
+        try {
+            return LocalTime.parse(slotStr.trim(), TIME_FORMATTER);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public DoctorDayScheduleDTO getDoctorSlotAvailability(Long veterinarianId, LocalDate date) {
         User vet = userRepository.findById(veterinarianId)
                 .orElseThrow(() -> new IllegalArgumentException("Veterinarian not found with ID: " + veterinarianId));
@@ -348,10 +362,19 @@ public class AppointmentService {
                 .map(String::trim)
                 .collect(Collectors.toSet());
 
+        boolean isToday = date.equals(LocalDate.now());
+        LocalTime nowTime = LocalTime.now();
+
         List<SlotAvailabilityDTO> slots = ALL_TIME_SLOTS.stream()
                 .map(slot -> {
                     if (bookedTimes.contains(slot)) {
                         return new SlotAvailabilityDTO(slot, "BOOKED", false);
+                    }
+                    if (isToday) {
+                        LocalTime slotTime = parseSlotTime(slot);
+                        if (slotTime != null && slotTime.isBefore(nowTime)) {
+                            return new SlotAvailabilityDTO(slot, "EXPIRED", false);
+                        }
                     }
                     return new SlotAvailabilityDTO(slot, "AVAILABLE", true);
                 })
@@ -376,11 +399,20 @@ public class AppointmentService {
         if (dto.appointmentDate() == null) {
             throw new IllegalArgumentException("Appointment date is required.");
         }
-        if (dto.appointmentDate().isBefore(LocalDate.now())) {
+        LocalDate today = LocalDate.now();
+        if (dto.appointmentDate().isBefore(today)) {
             throw new IllegalArgumentException("Cannot book an appointment in the past.");
         }
         if (dto.appointmentTime() == null || dto.appointmentTime().isBlank()) {
             throw new IllegalArgumentException("Time slot is required.");
+        }
+
+        // Validate that time slot has not passed if booking for today
+        if (dto.appointmentDate().equals(today)) {
+            LocalTime slotTime = parseSlotTime(dto.appointmentTime());
+            if (slotTime != null && slotTime.isBefore(LocalTime.now())) {
+                throw new IllegalArgumentException("The selected time slot (" + dto.appointmentTime() + ") has already passed today. Please select an upcoming slot.");
+            }
         }
 
         Pet pet = petRepository.findById(dto.petId())

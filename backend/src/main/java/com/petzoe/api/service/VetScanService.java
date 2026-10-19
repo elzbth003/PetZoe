@@ -449,9 +449,10 @@ public class VetScanService {
     private void validatePetAccess(Pet pet, User user) {
         boolean isOwner = pet.getOwner().getId().equals(user.getId());
         boolean isAdmin = user.getRole().equalsIgnoreCase("ADMIN");
+        boolean isVet = user.getRole().equalsIgnoreCase("Veterinarian");
         boolean isVetWithAppointment = appointmentRepository.existsByPetIdAndVeterinarianId(pet.getId(), user.getId());
 
-        if (!isOwner && !isAdmin && !isVetWithAppointment) {
+        if (!isOwner && !isAdmin && !isVet && !isVetWithAppointment) {
             throw new AccessDeniedException("Unauthorized: You do not have permission to view this pet's VetScan records.");
         }
     }

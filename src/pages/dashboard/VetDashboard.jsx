@@ -5,7 +5,7 @@ import {
   HeartPulse, Menu, X, Bell, ShieldCheck, ShieldAlert, CheckCircle2,
   Clock, ArrowRight, FileText, AlertCircle, RefreshCw, Home
 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import VetAnimalCarePanel from '../../components/dashboard/VetAnimalCarePanel';
 import VetAppointmentsPanel from '../../components/dashboard/VetAppointmentsPanel';
 import VetPatientsPanel from '../../components/dashboard/VetPatientsPanel';
@@ -16,7 +16,24 @@ import { notificationService } from '../../services/notificationService';
 
 export default function VetDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('Overview');
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab) {
+      const clean = urlTab.trim().toLowerCase().replace(/[-_ ]/g, '');
+      if (clean.includes('appoint')) return 'Appointments';
+      if (clean.includes('patient')) return 'Patients';
+      if (clean.includes('shelter')) return 'Shelter Animals';
+      if (clean.includes('profile') || clean.includes('verif')) return 'Profile & Verification';
+      if (clean.includes('notif')) return 'Notifications';
+      if (clean.includes('overview')) return 'Overview';
+    }
+    const sessionTab = sessionStorage.getItem('petzoe_vet_tab');
+    if (sessionTab) {
+      sessionStorage.removeItem('petzoe_vet_tab');
+      return sessionTab;
+    }
+    return 'Overview';
+  });
   const [stats, setStats] = useState({
     todaysAppointments: 0,
     pendingAppointments: 0,
@@ -33,6 +50,21 @@ export default function VetDashboard() {
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      const clean = tabFromUrl.trim().toLowerCase().replace(/[-_ ]/g, '');
+      if (clean.includes('appoint')) setActiveTab('Appointments');
+      else if (clean.includes('patient')) setActiveTab('Patients');
+      else if (clean.includes('shelter')) setActiveTab('Shelter Animals');
+      else if (clean.includes('profile') || clean.includes('verif')) setActiveTab('Profile & Verification');
+      else if (clean.includes('notif')) setActiveTab('Notifications');
+      else if (clean.includes('overview')) setActiveTab('Overview');
+    }
+  }, [searchParams, location]);
 
   const handleLogout = () => {
     logout();

@@ -19,6 +19,19 @@ const TIME_SLOTS = [
   "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
 ];
 
+// Helper to convert "hh:mm AM/PM" to minutes from midnight
+const parseSlotToMinutes = (timeStr) => {
+  if (!timeStr) return null;
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return null;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && hours < 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+};
+
 // Zod validation schema
 const appointmentSchema = z.object({
   petId: z.coerce.number().positive({ message: "Select a registered pet" }),
@@ -32,6 +45,21 @@ const appointmentSchema = z.object({
     }, { message: "Appointment date cannot be in the past" }),
   appointmentTime: z.string().min(1, { message: "Select a time slot" }),
   notes: z.string().max(1000, { message: "Notes cannot exceed 1000 characters" }).optional()
+}).refine((data) => {
+  if (!data.appointmentDate || !data.appointmentTime) return true;
+  const today = new Date().toISOString().split('T')[0];
+  if (data.appointmentDate === today) {
+    const slotMinutes = parseSlotToMinutes(data.appointmentTime);
+    if (slotMinutes !== null) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      return slotMinutes > currentMinutes;
+    }
+  }
+  return true;
+}, {
+  message: "Selected time slot has already passed today",
+  path: ["appointmentTime"]
 });
 
 export default function AppointmentList({ onAppointmentsUpdated }) {
@@ -118,10 +146,15 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
         const data = await appointmentService.getAvailableSlots(selectedVetId, selectedDate);
         if (isMounted) {
           setScheduleData(data);
-          // If the currently selected time is not available in the new schedule, clear it
+          // If the currently selected time is not available in the new schedule or is in the past, clear it
           if (selectedTime) {
             const currentSlot = data.slots?.find(s => s.slot === selectedTime);
-            if (!currentSlot || !currentSlot.available) {
+            const isToday = selectedDate === new Date().toISOString().split('T')[0];
+            const slotMins = parseSlotToMinutes(selectedTime);
+            const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+            const isPastTime = isToday && slotMins !== null && slotMins <= nowMins;
+
+            if (!currentSlot || !currentSlot.available || isPastTime) {
               setValue("appointmentTime", "", { shouldValidate: true });
             }
           }
@@ -275,9 +308,17 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
               <div className="grid grid-cols-3 gap-2">
                 {TIME_SLOTS.map(slot => {
                   const slotInfo = scheduleData?.slots?.find(s => s.slot === slot);
-                  const isAvailable = !scheduleData || (slotInfo ? slotInfo.available : true);
                   const isBooked = slotInfo?.status === 'BOOKED';
                   const isOffDuty = slotInfo?.status === 'OFF_DUTY';
+                  
+                  // Check if slot has already passed today
+                  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+                  const slotMins = parseSlotToMinutes(slot);
+                  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+                  const isPastTime = isToday && slotMins !== null && slotMins <= nowMins;
+                  const isExpired = slotInfo?.status === 'EXPIRED' || isPastTime;
+
+                  const isAvailable = (!scheduleData || (slotInfo ? slotInfo.available : true)) && !isPastTime && !isExpired;
                   const isSelected = selectedTime === slot;
 
                   let buttonStyle = 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 cursor-pointer';
@@ -285,6 +326,9 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
 
                   if (isSelected) {
                     buttonStyle = 'bg-[#38BDF8] border-[#38BDF8] text-white shadow-sm shadow-sky-500/30';
+                  } else if (isExpired) {
+                    buttonStyle = 'bg-slate-100/50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
+                    statusBadge = <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Passed</span>;
                   } else if (isBooked) {
                     buttonStyle = 'bg-slate-100/90 border-slate-200 text-slate-400 cursor-not-allowed opacity-75';
                     statusBadge = <span className="block text-[8px] font-bold text-rose-500 uppercase tracking-wider mt-0.5">Booked</span>;

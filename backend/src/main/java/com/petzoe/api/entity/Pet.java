@@ -58,6 +58,11 @@ public class Pet {
     public Pet() {}
 
     public Pet(String name, String species, String breed, Integer age, String gender,
+               Double weight, String vaccinationStatus, User owner) {
+        this(name, species, breed, age, gender, weight, vaccinationStatus, null, null, null, null, null, owner);
+    }
+
+    public Pet(String name, String species, String breed, Integer age, String gender,
                Double weight, String vaccinationStatus, String photoUrl,
                LocalDate dateOfBirth, String color, String allergies, String medicalNotes,
                User owner) {

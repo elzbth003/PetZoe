@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, Stethoscope, PawPrint, Calendar, Clock, User, Plus, Trash2,
-  AlertCircle, CheckCircle2, Pill, Loader2, Sparkles, Shield
+  AlertCircle, CheckCircle2, Pill, Loader2, Sparkles, Shield,
+  FileText, ScanLine, Eye, ChevronDown, ChevronUp, History
 } from 'lucide-react';
 import { vetClinicalService } from '../../services/vetClinicalService';
+import vetScanService from '../../services/vetScanService';
 import { useToast } from '../../hooks/useToast';
 
 export default function ConsultationModal({ appointment, isOpen, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
+  const [patientDetail, setPatientDetail] = useState(null);
+  const [patientLoading, setPatientLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
+  const [historyTab, setHistoryTab] = useState('scans'); // 'scans', 'records', 'prescriptions'
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -27,6 +33,26 @@ export default function ConsultationModal({ appointment, isOpen, onClose, onSucc
   const [prescriptionItems, setPrescriptionItems] = useState([
     { medicineName: '', dosage: '', frequency: '', duration: '', instructions: '' },
   ]);
+
+  useEffect(() => {
+    if (isOpen && appointment?.petId) {
+      const loadPatient = async () => {
+        setPatientLoading(true);
+        try {
+          const data = await vetClinicalService.getPatientDetail(appointment.petId);
+          setPatientDetail(data);
+          if (data?.pet?.weight && !formData.weightKg) {
+            setFormData(prev => ({ ...prev, weightKg: data.pet.weight }));
+          }
+        } catch (err) {
+          console.error("Failed to load patient history in consultation room", err);
+        } finally {
+          setPatientLoading(false);
+        }
+      };
+      loadPatient();
+    }
+  }, [isOpen, appointment?.petId]);
 
   if (!isOpen || !appointment) return null;
 
@@ -124,6 +150,200 @@ export default function ConsultationModal({ appointment, isOpen, onClose, onSucc
 
         {/* Scrollable Form Content */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6 bg-slate-50/50">
+          
+          {/* Patient 360 & Medical Records Banner */}
+          <div className="bg-white rounded-2xl border border-sky-100 shadow-sm overflow-hidden">
+            <div 
+              onClick={() => setShowHistory(!showHistory)}
+              className="p-4 bg-gradient-to-r from-sky-50 to-blue-50/50 flex items-center justify-between cursor-pointer border-b border-sky-100"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center">
+                  <History size={16} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    Patient Medical History & Diagnostic Scans
+                    {patientLoading && <Loader2 size={12} className="animate-spin text-sky-500" />}
+                  </h3>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Review past clinical records, prescriptions, and AI screening reports for this patient
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-sky-700 bg-white px-2.5 py-1 rounded-lg border border-sky-200">
+                  {patientDetail?.medicalRecords?.length || 0} Records • {patientDetail?.vetScanRecords?.length || 0} AI Scans
+                </span>
+                {showHistory ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+              </div>
+            </div>
+
+            {showHistory && (
+              <div className="p-4 space-y-3 bg-white">
+                {/* History tabs */}
+                <div className="flex gap-2 border-b border-slate-100 pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryTab('scans')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      historyTab === 'scans'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <ScanLine size={13} /> AI VetScan Reports ({patientDetail?.vetScanRecords?.length || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryTab('records')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      historyTab === 'records'
+                        ? 'bg-sky-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <FileText size={13} /> Past Clinical Records ({patientDetail?.medicalRecords?.length || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryTab('prescriptions')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      historyTab === 'prescriptions'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Pill size={13} /> Prescriptions ({patientDetail?.prescriptions?.length || 0})
+                  </button>
+                </div>
+
+                {/* Tab content */}
+                {patientLoading ? (
+                  <div className="py-8 flex justify-center items-center gap-2 text-slate-400 text-xs">
+                    <Loader2 size={16} className="animate-spin text-sky-500" /> Loading patient medical records...
+                  </div>
+                ) : historyTab === 'scans' ? (
+                  patientDetail?.vetScanRecords?.length > 0 ? (
+                    <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                      {patientDetail.vetScanRecords.map((scan) => (
+                        <div key={scan.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900">
+                                Scan #{scan.id} — {scan.severityDescription || scan.severity}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                                scan.severity === 'SEVERE' ? 'bg-rose-100 text-rose-700' :
+                                scan.severity === 'MODERATE' ? 'bg-amber-100 text-amber-700' :
+                                'bg-emerald-100 text-emerald-700'
+                              }`}>
+                                {scan.severity}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-100 text-sky-700">
+                                {scan.progressionStatus || 'BASELINE'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(scan.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                            <div className="sm:col-span-4 flex gap-2">
+                              {scan.imageReference && (
+                                <img
+                                  src={scan.imageReference}
+                                  alt="Lesion Photo"
+                                  className="w-16 h-16 object-cover rounded-lg border border-slate-200"
+                                />
+                              )}
+                              {scan.explanationImageReference && (
+                                <img
+                                  src={scan.explanationImageReference}
+                                  alt="Grad-CAM Heatmap"
+                                  className="w-16 h-16 object-cover rounded-lg border border-sky-300"
+                                  title="Grad-CAM Heatmap"
+                                />
+                              )}
+                            </div>
+                            <div className="sm:col-span-8 space-y-1">
+                              <div className="flex flex-wrap gap-1">
+                                {scan.predictions?.map((pred) => (
+                                  <span
+                                    key={pred.label}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
+                                      pred.detected
+                                        ? 'bg-rose-50 border-rose-200 text-rose-700 font-bold'
+                                        : 'bg-white border-slate-200 text-slate-500'
+                                    }`}
+                                  >
+                                    {pred.displayName}: {Math.round(pred.probability * 100)}%
+                                  </span>
+                                ))}
+                              </div>
+                              {scan.veterinarianNotes && (
+                                <p className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-1 rounded">
+                                  Notes: {scan.veterinarianNotes}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 py-3 text-center">No AI skin screening records found for this patient.</p>
+                  )
+                ) : historyTab === 'records' ? (
+                  patientDetail?.medicalRecords?.length > 0 ? (
+                    <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                      {patientDetail.medicalRecords.map((rec) => (
+                        <div key={rec.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800">
+                              {rec.diagnosis} • {rec.healthStatus}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {rec.examinationDate} (Dr. {rec.veterinarianName})
+                            </span>
+                          </div>
+                          {rec.symptoms && (
+                            <p className="text-slate-600 text-[11px]"><span className="font-semibold">Symptoms:</span> {rec.symptoms}</p>
+                          )}
+                          {rec.treatment && (
+                            <p className="text-slate-600 text-[11px]"><span className="font-semibold">Treatment:</span> {rec.treatment}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 py-3 text-center">No previous clinical examination records on file.</p>
+                  )
+                ) : (
+                  patientDetail?.prescriptions?.length > 0 ? (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      {patientDetail.prescriptions.map((rx) => (
+                        <div key={rx.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-purple-800">{rx.medicineName}</span>
+                            <span className="text-slate-500 text-[11px] ml-2">({rx.dosage} • {rx.frequency} • {rx.duration})</span>
+                            {rx.instructions && <p className="text-[10px] text-slate-400">{rx.instructions}</p>}
+                          </div>
+                          <span className="text-[10px] text-slate-400 shrink-0">
+                            {rx.createdAt ? new Date(rx.createdAt).toLocaleDateString() : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 py-3 text-center">No previous prescriptions recorded.</p>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Section 1: Vitals & Evaluation */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm space-y-4">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">

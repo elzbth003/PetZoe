@@ -25,6 +25,7 @@ public class PetClinicalService {
     private final AnimalRepository animalRepository;
     private final AnimalResponseAssembler animalResponseAssembler;
     private final NotificationService notificationService;
+    private final VetScanService vetScanService;
 
     public PetClinicalService(PetRepository petRepository,
                               UserRepository userRepository,
@@ -35,7 +36,8 @@ public class PetClinicalService {
                               PrescriptionRepository prescriptionRepository,
                               AnimalRepository animalRepository,
                               AnimalResponseAssembler animalResponseAssembler,
-                              NotificationService notificationService) {
+                              NotificationService notificationService,
+                              VetScanService vetScanService) {
         this.petRepository = petRepository;
         this.userRepository = userRepository;
         this.appointmentRepository = appointmentRepository;
@@ -46,6 +48,7 @@ public class PetClinicalService {
         this.animalRepository = animalRepository;
         this.animalResponseAssembler = animalResponseAssembler;
         this.notificationService = notificationService;
+        this.vetScanService = vetScanService;
     }
 
     public VetDashboardStatsDTO getDashboardStats(String vetEmail) {
@@ -151,6 +154,13 @@ public class PetClinicalService {
                 .filter(PetMedicalRecordDTO::followUpRequired)
                 .collect(Collectors.toList());
 
+        List<com.petzoe.api.dto.vetscan.VetScanResponseDTO> vetScanRecords;
+        try {
+            vetScanRecords = vetScanService.getScansByPet(pet.getId(), user.getEmail());
+        } catch (Exception e) {
+            vetScanRecords = Collections.emptyList();
+        }
+
         return new VetPatientDetailDTO(
                 toPetDTO(pet),
                 ownerDTO,
@@ -159,7 +169,8 @@ public class PetClinicalService {
                 prescriptions,
                 vaccinations,
                 documents,
-                followUps
+                followUps,
+                vetScanRecords
         );
     }
 

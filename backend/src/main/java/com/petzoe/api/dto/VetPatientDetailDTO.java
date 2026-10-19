@@ -1,5 +1,6 @@
 package com.petzoe.api.dto;
 
+import com.petzoe.api.dto.vetscan.VetScanResponseDTO;
 import java.util.List;
 
 public record VetPatientDetailDTO(
@@ -10,5 +11,6 @@ public record VetPatientDetailDTO(
         List<PrescriptionDTO> prescriptions,
         List<PetVaccinationDTO> vaccinations,
         List<PetMedicalDocumentDTO> documents,
-        List<PetMedicalRecordDTO> followUps
+        List<PetMedicalRecordDTO> followUps,
+        List<VetScanResponseDTO> vetScanRecords
 ) {}
