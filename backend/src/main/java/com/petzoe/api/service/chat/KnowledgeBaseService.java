@@ -40,6 +40,14 @@ public class KnowledgeBaseService {
                 "- **Nails**: Trim every 2-4 weeks. Ensure nail clipper avoids the 'quick' (blood vessel). Have styptic powder ready.\n" +
                 "- **Brushing**: Reduces shedding and prevents painful matting.");
 
+        knowledgeArticles.put("PREVENTIVE_CARE",
+                "**CAPC & WSAVA Guidelines for Deworming & Parasite Control**:\n" +
+                "- **Puppy & Kitten Protocol**: Puppies and kittens should begin preventive deworming at 2-3 weeks of age, repeated every 2-3 weeks until 12 weeks of age (at 2, 4, 6, 8, 10, 12 weeks), followed by monthly treatments until 6 months. Therefore, at 2 months (8 weeks) old, routine deworming is strongly recommended and is standard veterinary practice.\n" +
+                "- **Common Parasites**: Roundworms (*Toxocara*) and hookworms (*Ancylostoma*) passed through mother's milk (transmammary) or placenta, plus tapeworms from fleas.\n" +
+                "- **Anthelmintics**: Common veterinary medications include pyrantel pamoate, fenbendazole, or veterinary spot-ons approved for age and weight.\n" +
+                "- **Critical Safety Alert**: NEVER give dog dewormers or flea medications to cats (permethrin is fatal to felines). Never use human medications. Accurate weighing on a pediatric scale is required before dosing.\n" +
+                "- **Next Step**: Consult a licensed veterinarian on PetZoe to weigh the pet and prescribe the exact safe medication and dosage.");
+
         knowledgeArticles.put("PLATFORM_HELP", 
                 "**PetZoe Platform Features**:\n" +
                 "- **Pet Management**: Register pets with universal lifetime Pet IDs (`petCode`), track weights and vaccination schedules (`/dashboard/owner`).\n" +

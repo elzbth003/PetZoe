@@ -5,6 +5,7 @@ import com.petzoe.api.dto.AiChatResponseDTO;
 import com.petzoe.api.dto.AiCitationDTO;
 import com.petzoe.api.dto.AiConversationDTO;
 import com.petzoe.api.dto.AiQuickActionDTO;
+import com.petzoe.api.dto.PatientContextDTO;
 import com.petzoe.api.entity.AiChatConversation;
 import com.petzoe.api.entity.AiChatMessage;
 import com.petzoe.api.entity.User;
@@ -36,6 +37,8 @@ public class AiChatService {
     private final RetrievalRouterService retrievalRouterService;
     private final WebSearchService webSearchService;
     private final SourceAttributionService sourceAttributionService;
+    private final com.petzoe.api.service.chat.rag.VectorKnowledgeRetrievalService vectorRetrievalService;
+    private final PatientContextService patientContextService;
 
     public AiChatService(UserRepository userRepository,
                          AiChatConversationRepository conversationRepository,
@@ -45,7 +48,7 @@ public class AiChatService {
                          KnowledgeBaseService knowledgeBaseService,
                          ChatModelService chatModelService) {
         this(userRepository, conversationRepository, messageRepository, safetyService, toolService, knowledgeBaseService, chatModelService,
-             new RetrievalRouterService(), null, new SourceAttributionService(new com.fasterxml.jackson.databind.ObjectMapper()));
+             new RetrievalRouterService(), null, new SourceAttributionService(new com.fasterxml.jackson.databind.ObjectMapper()), null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -58,7 +61,9 @@ public class AiChatService {
                          ChatModelService chatModelService,
                          RetrievalRouterService retrievalRouterService,
                          WebSearchService webSearchService,
-                         SourceAttributionService sourceAttributionService) {
+                         SourceAttributionService sourceAttributionService,
+                         com.petzoe.api.service.chat.rag.VectorKnowledgeRetrievalService vectorRetrievalService,
+                         PatientContextService patientContextService) {
         this.userRepository = userRepository;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
@@ -69,6 +74,8 @@ public class AiChatService {
         this.retrievalRouterService = retrievalRouterService;
         this.webSearchService = webSearchService;
         this.sourceAttributionService = sourceAttributionService;
+        this.vectorRetrievalService = vectorRetrievalService;
+        this.patientContextService = patientContextService;
     }
 
     private static final String SYSTEM_INSTRUCTION =
@@ -132,14 +139,16 @@ public class AiChatService {
                     intent.name(), "MEDICAL_SAFETY_GUARD", null, medicalActions, null, null);
         }
 
-        // 5. Intelligent Retrieval Routing (Determines PETZOE_ONLY, KNOWLEDGE_BASE_ONLY, WEB_ONLY, etc.)
+        // 5. Intelligent Retrieval Routing (Determines Composable Retrieval Plan)
         boolean isAuthenticated = (!isGuest && userEmail != null && !userEmail.isBlank());
-        RetrievalMode routeMode = retrievalRouterService.determineRoute(rawMessage, intent, isAuthenticated);
+        RetrievalPlan plan = retrievalRouterService.createRetrievalPlan(rawMessage, intent, isAuthenticated);
+        RetrievalMode routeMode = plan.getMode();
 
         String toolUsed = null;
         String sourceType = "AI_GENERATED";
         String contextData = null;
         List<AiCitationDTO> citations = null;
+        PatientContextDTO patientContext = null;
 
         // Check if guest user asks for personal PetZoe data
         if (isGuest && retrievalRouterService.isPersonalPetZoeQuery(rawMessage, intent)) {
@@ -153,8 +162,67 @@ public class AiChatService {
             );
         }
 
+        // Resolve patient context if plan includes PATIENT_CONTEXT and user is authenticated
+        if (plan.hasSource(RetrievalPlan.EvidenceSource.PATIENT_CONTEXT) && isAuthenticated && plan.getCandidatePetName() != null && patientContextService != null) {
+            patientContext = patientContextService.resolvePatientContext(userEmail, plan.getCandidatePetName(), rawMessage);
+        }
+
         // Execute Grounded Retrieval according to Routing Decision
-        if (routeMode == RetrievalMode.PETZOE_ONLY) {
+        if (routeMode == RetrievalMode.PETZOE_PLUS_KNOWLEDGE || routeMode == RetrievalMode.PETZOE_PLUS_KNOWLEDGE_PLUS_WEB) {
+            sourceType = "PATIENT_AND_VECTOR_KNOWLEDGE";
+            toolUsed = "patientContext+vectorRetrieval";
+
+            StringBuilder combined = new StringBuilder();
+            if (patientContext != null) {
+                combined.append(patientContext.toContextString()).append("\n\n");
+            }
+
+            // Retrieve Vector Knowledge
+            citations = new ArrayList<>();
+            int idx = 1;
+            List<com.petzoe.api.dto.KnowledgeChunkSearchResultDTO> vectorChunks = (vectorRetrievalService != null)
+                    ? vectorRetrievalService.search(rawMessage)
+                    : List.of();
+
+            if (!vectorChunks.isEmpty()) {
+                combined.append("VERIFIED VETERINARY KNOWLEDGE (RETRIEVED VIA VECTOR SEARCH):\n");
+                for (var vc : vectorChunks) {
+                    citations.add(new AiCitationDTO(
+                            idx,
+                            vc.getDocumentTitle() + " (" + (vc.getSectionTitle() != null ? vc.getSectionTitle() : "General") + ")",
+                            vc.getPublisher() != null ? vc.getPublisher() : "Veterinary Literature",
+                            vc.getSourceUrl(),
+                            "Version " + (vc.getDocumentVersion() != null ? vc.getDocumentVersion() : "Current"),
+                            LocalDateTime.now().toString(),
+                            vc.getContent(),
+                            "VERIFIED_KNOWLEDGE",
+                            "VECTOR_PG"
+                    ));
+                    combined.append(String.format("[%d] %s — %s (Relevance: %.2f)\n%s\n\n",
+                            idx, vc.getDocumentTitle(), vc.getSectionTitle() != null ? vc.getSectionTitle() : "",
+                            vc.getSimilarityScore(), vc.getContent()));
+                    idx++;
+                }
+            } else if (knowledgeBaseService.hasKnowledge(intent)) {
+                combined.append("CURATED PETZOE KNOWLEDGE:\n").append(knowledgeBaseService.getKnowledgeForIntent(intent)).append("\n\n");
+            }
+
+            if (routeMode == RetrievalMode.PETZOE_PLUS_KNOWLEDGE_PLUS_WEB && webSearchService != null) {
+                List<WebSearchResult> webResults = webSearchService.searchTrustedSources(rawMessage);
+                for (WebSearchResult res : webResults) {
+                    citations.add(new AiCitationDTO(
+                            idx++, res.getTitle(), res.getDomain(), res.getUrl(),
+                            res.getPublicationDate() != null ? res.getPublicationDate() : "Date unverified",
+                            res.getRetrievedAt(), res.getSnippet(), res.getTrustStatus(), res.getProviderType()
+                    ));
+                }
+                if (!citations.isEmpty()) {
+                    combined.append(sourceAttributionService.formatPromptContext(citations));
+                }
+            }
+            contextData = combined.toString();
+
+        } else if (routeMode == RetrievalMode.PETZOE_ONLY) {
             sourceType = "PETZOE_DATA";
             if (isAuthenticated) {
                 String petQuery = extractPetQuery(rawMessage);
@@ -211,23 +279,95 @@ public class AiChatService {
                 }
             }
         } else if (routeMode == RetrievalMode.KNOWLEDGE_BASE_ONLY) {
-            sourceType = "KNOWLEDGE_BASE";
-            if (knowledgeBaseService.hasKnowledge(intent)) {
+            sourceType = "VECTOR_KNOWLEDGE_BASE";
+            toolUsed = "vectorRetrieval";
+
+            // True Semantic Vector Search in PostgreSQL
+            List<com.petzoe.api.dto.KnowledgeChunkSearchResultDTO> vectorChunks = (vectorRetrievalService != null)
+                    ? vectorRetrievalService.search(rawMessage)
+                    : List.of();
+
+            if (!vectorChunks.isEmpty()) {
+                // Convert vector chunks to citations for full provenance in UI
+                citations = new ArrayList<>();
+                int idx = 1;
+                StringBuilder sb = new StringBuilder("VERIFIED VETERINARY KNOWLEDGE (RETRIEVED VIA VECTOR SEARCH):\n");
+                for (var vc : vectorChunks) {
+                    citations.add(new AiCitationDTO(
+                            idx,
+                            vc.getDocumentTitle() + " (" + (vc.getSectionTitle() != null ? vc.getSectionTitle() : "General") + ")",
+                            vc.getPublisher() != null ? vc.getPublisher() : "Veterinary Literature",
+                            vc.getSourceUrl(),
+                            "Version " + (vc.getDocumentVersion() != null ? vc.getDocumentVersion() : "Current"),
+                            LocalDateTime.now().toString(),
+                            vc.getContent(),
+                            "VERIFIED_KNOWLEDGE",
+                            "VECTOR_PG"
+                    ));
+                    sb.append(String.format("[%d] %s — %s (Relevance: %.2f)\n%s\n\n",
+                            idx, vc.getDocumentTitle(), vc.getSectionTitle() != null ? vc.getSectionTitle() : "",
+                            vc.getSimilarityScore(), vc.getContent()));
+                    idx++;
+                }
+                contextData = sb.toString();
+            } else if (knowledgeBaseService.hasKnowledge(intent)) {
+                // Graceful fallback to static KB if vector index has no matches above threshold
                 contextData = knowledgeBaseService.getKnowledgeForIntent(intent);
-                toolUsed = "knowledgeBase:" + intent.name();
+                toolUsed = "knowledgeBaseFallback:" + intent.name();
             }
         } else if (routeMode == RetrievalMode.KNOWLEDGE_PLUS_WEB) {
             sourceType = "KNOWLEDGE_PLUS_WEB";
-            toolUsed = "knowledgeBase+webSearch";
-
-            String kbData = knowledgeBaseService.hasKnowledge(intent) ? knowledgeBaseService.getKnowledgeForIntent(intent) : "";
-            List<WebSearchResult> webResults = webSearchService.searchTrustedSources(rawMessage);
-            citations = sourceAttributionService.buildCitations(webResults);
+            toolUsed = "vectorRetrieval+webSearch";
 
             StringBuilder combined = new StringBuilder();
-            if (!kbData.isBlank()) {
-                combined.append("CURATED PETZOE KNOWLEDGE:\n").append(kbData).append("\n\n");
+            citations = new ArrayList<>();
+            int idx = 1;
+
+            // 1. Vector Chunks
+            List<com.petzoe.api.dto.KnowledgeChunkSearchResultDTO> vectorChunks = (vectorRetrievalService != null)
+                    ? vectorRetrievalService.search(rawMessage)
+                    : List.of();
+
+            if (!vectorChunks.isEmpty()) {
+                combined.append("CURATED VETERINARY GUIDELINES (VECTOR RETRIEVAL):\n");
+                for (var vc : vectorChunks) {
+                    citations.add(new AiCitationDTO(
+                            idx,
+                            vc.getDocumentTitle() + " (" + (vc.getSectionTitle() != null ? vc.getSectionTitle() : "General") + ")",
+                            vc.getPublisher() != null ? vc.getPublisher() : "Veterinary Literature",
+                            vc.getSourceUrl(),
+                            "Version " + (vc.getDocumentVersion() != null ? vc.getDocumentVersion() : "Current"),
+                            LocalDateTime.now().toString(),
+                            vc.getContent(),
+                            "VERIFIED_KNOWLEDGE",
+                            "VECTOR_PG"
+                    ));
+                    combined.append(String.format("[%d] %s — %s\n%s\n\n",
+                            idx, vc.getDocumentTitle(), vc.getSectionTitle() != null ? vc.getSectionTitle() : "", vc.getContent()));
+                    idx++;
+                }
+            } else if (knowledgeBaseService.hasKnowledge(intent)) {
+                combined.append("CURATED PETZOE KNOWLEDGE:\n").append(knowledgeBaseService.getKnowledgeForIntent(intent)).append("\n\n");
             }
+
+            // 2. Web search
+            if (webSearchService != null) {
+                List<WebSearchResult> webResults = webSearchService.searchTrustedSources(rawMessage);
+                for (WebSearchResult res : webResults) {
+                    citations.add(new AiCitationDTO(
+                            idx++,
+                            res.getTitle(),
+                            res.getDomain(),
+                            res.getUrl(),
+                            res.getPublicationDate() != null ? res.getPublicationDate() : "Date unverified",
+                            res.getRetrievedAt(),
+                            res.getSnippet(),
+                            res.getTrustStatus(),
+                            res.getProviderType()
+                    ));
+                }
+            }
+
             if (!citations.isEmpty()) {
                 combined.append(sourceAttributionService.formatPromptContext(citations));
             }
@@ -236,13 +376,15 @@ public class AiChatService {
             sourceType = "WEB_SEARCH";
             toolUsed = "webSearch";
 
-            List<WebSearchResult> webResults = webSearchService.searchTrustedSources(rawMessage);
-            citations = sourceAttributionService.buildCitations(webResults);
+            if (webSearchService != null) {
+                List<WebSearchResult> webResults = webSearchService.searchTrustedSources(rawMessage);
+                citations = sourceAttributionService.buildCitations(webResults);
 
-            if (!citations.isEmpty()) {
-                contextData = sourceAttributionService.formatPromptContext(citations);
-            } else {
-                contextData = "External veterinary research sources could not be retrieved at this time. Please consult a certified veterinarian.";
+                if (!citations.isEmpty()) {
+                    contextData = sourceAttributionService.formatPromptContext(citations);
+                } else {
+                    contextData = "External veterinary research sources could not be retrieved at this time. Please consult a certified veterinarian.";
+                }
             }
         }
 
@@ -251,7 +393,7 @@ public class AiChatService {
         String generatedResponse = chatModelService.generateResponse(SYSTEM_INSTRUCTION, contextData, rawMessage, history);
 
         // 7. Dynamic Quick Action Suggestions
-        List<AiQuickActionDTO> quickActions = buildContextualQuickActions(intent, isGuest);
+        List<AiQuickActionDTO> quickActions = buildContextualQuickActions(intent, patientContext, isGuest);
 
         // 8. Persist & Return
         return persistAndBuildResponse(request.getConversationId(), userEmail, rawMessage, generatedResponse,
@@ -293,7 +435,7 @@ public class AiChatService {
             AiChatMessage userRecord = new AiChatMessage(conversation, "USER", userMsg, intent, "USER_INPUT", null, null);
             messageRepository.save(userRecord);
 
-            String citationsJson = sourceAttributionService.toJson(citations);
+            String citationsJson = sourceAttributionService != null ? sourceAttributionService.toJson(citations) : null;
             AiChatMessage assistantRecord = new AiChatMessage(conversation, "ASSISTANT", assistantMsg, intent, sourceType, toolUsed, citationsJson);
             AiChatMessage saved = messageRepository.save(assistantRecord);
             msgId = saved.getId();
@@ -332,9 +474,22 @@ public class AiChatService {
         return actions;
     }
 
-    private List<AiQuickActionDTO> buildContextualQuickActions(ChatIntent intent, boolean isGuest) {
+    private List<AiQuickActionDTO> buildContextualQuickActions(ChatIntent intent, PatientContextDTO patientContext, boolean isGuest) {
         List<AiQuickActionDTO> actions = new ArrayList<>();
+
+        if (patientContext != null && patientContext.isAccessAuthorized() && patientContext.getName() != null) {
+            actions.add(AiQuickActionDTO.navigateAction("Book a Vet Consultation", "/dashboard/owner?tab=Appointments"));
+            actions.add(AiQuickActionDTO.navigateAction("View " + patientContext.getName() + "'s Profile", "/dashboard/owner?tab=My Pets"));
+            actions.add(AiQuickActionDTO.promptAction("Vaccination Schedule", "What vaccinations does " + patientContext.getName() + " need?"));
+            return actions;
+        }
+
         switch (intent) {
+            case PREVENTIVE_CARE:
+                actions.add(AiQuickActionDTO.navigateAction("Book a Vet Consultation", "/dashboard/owner?tab=Appointments"));
+                actions.add(AiQuickActionDTO.promptAction("Puppy Deworming Schedule", "What is the recommended deworming schedule for puppies?"));
+                actions.add(AiQuickActionDTO.promptAction("Kitten Deworming Schedule", "What is the recommended deworming schedule for kittens?"));
+                break;
             case PET_INFORMATION:
                 actions.add(AiQuickActionDTO.promptAction("Vaccination Status", "Check my pet's vaccination status"));
                 actions.add(AiQuickActionDTO.promptAction("Medical History", "Show my pet's medical records"));
@@ -406,7 +561,7 @@ public class AiChatService {
                         m.getToolUsed(),
                         m.getCreatedAt(),
                         List.of(),
-                        sourceAttributionService.fromJson(m.getCitationsJson()),
+                        sourceAttributionService != null ? sourceAttributionService.fromJson(m.getCitationsJson()) : List.of(),
                         null
                 ))
                 .collect(Collectors.toList());
@@ -414,56 +569,7 @@ public class AiChatService {
     }
 
     private String extractPetQuery(String rawMessage) {
-        if (rawMessage == null || rawMessage.isBlank()) return null;
-
-        // 1. Permanent Pet ID: PZ-PET-XXXXXX
-        Matcher idMatcher = Pattern.compile("(?i)\\b(PZ-PET-[A-Z0-9]+)\\b").matcher(rawMessage);
-        if (idMatcher.find()) {
-            return idMatcher.group(1).toUpperCase();
-        }
-
-        // 2. Possessive pet name: e.g. "ShadowTest's", "BrunoTest's", "Luna's", "Bella's"
-        Matcher possMatcher = Pattern.compile("(?i)\\b([A-Za-z0-9_]{2,25})'s\\b").matcher(rawMessage);
-        if (possMatcher.find()) {
-            String candidate = possMatcher.group(1);
-            if (!candidate.equalsIgnoreCase("pet") && !candidate.equalsIgnoreCase("dog") &&
-                !candidate.equalsIgnoreCase("cat") && !candidate.equalsIgnoreCase("puppy") &&
-                !candidate.equalsIgnoreCase("kitten") && !candidate.equalsIgnoreCase("today") &&
-                !candidate.equalsIgnoreCase("user")) {
-                return candidate;
-            }
-        }
-
-        // 3. Phrasing like: "pet BrunoTest", "dog Bella", "cat Luna"
-        Matcher prefixMatcher = Pattern.compile("(?i)\\b(?:pet|dog|cat|puppy|kitten)\\s+([A-Za-z0-9_]{2,25})\\b").matcher(rawMessage);
-        if (prefixMatcher.find()) {
-            String candidate = prefixMatcher.group(1);
-            if (!candidate.equalsIgnoreCase("details") && !candidate.equalsIgnoreCase("record") &&
-                !candidate.equalsIgnoreCase("records") && !candidate.equalsIgnoreCase("history") &&
-                !candidate.equalsIgnoreCase("vaccine") && !candidate.equalsIgnoreCase("vaccination") &&
-                !candidate.equalsIgnoreCase("appointment") && !candidate.equalsIgnoreCase("status") &&
-                !candidate.equalsIgnoreCase("code") && !candidate.equalsIgnoreCase("id") &&
-                !candidate.equalsIgnoreCase("here") && !candidate.equalsIgnoreCase("care")) {
-                return candidate;
-            }
-        }
-
-        // 4. Phrasing like: "for Luna", "of Bella"
-        Matcher ofMatcher = Pattern.compile("(?i)\\b(?:of|for)\\s+([A-Za-z0-9_]{2,25})\\b").matcher(rawMessage);
-        if (ofMatcher.find()) {
-            String candidate = ofMatcher.group(1);
-            if (!candidate.equalsIgnoreCase("my") && !candidate.equalsIgnoreCase("the") &&
-                !candidate.equalsIgnoreCase("our") && !candidate.equalsIgnoreCase("a") &&
-                !candidate.equalsIgnoreCase("an") && !candidate.equalsIgnoreCase("pet") &&
-                !candidate.equalsIgnoreCase("dog") && !candidate.equalsIgnoreCase("cat") &&
-                !candidate.equalsIgnoreCase("all") && !candidate.equalsIgnoreCase("puppy") &&
-                !candidate.equalsIgnoreCase("kitten") && !candidate.equalsIgnoreCase("dogs") &&
-                !candidate.equalsIgnoreCase("cats") && !candidate.equalsIgnoreCase("pets")) {
-                return candidate;
-            }
-        }
-
-        return null;
+        return retrievalRouterService.extractCandidatePetName(rawMessage);
     }
 
     private String extractSpeciesQuery(String rawMessage) {

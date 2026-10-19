@@ -100,12 +100,8 @@ public class ChatSafetyService {
             return ChatIntent.VETERINARIAN_SEARCH;
         }
 
-        if (isMedicalQuestion(lower)) {
-            return ChatIntent.MEDICAL_QUESTION;
-        }
-
-        if (lower.contains("my pet") || lower.contains("my pets") || lower.contains("registered pet") || lower.contains("registered pets") || lower.contains("my dog") || lower.contains("my cat") || lower.contains("pet details") || lower.contains("pet code") || lower.contains("pet id") || lower.contains("show pets") || lower.contains("list pets") || lower.matches(".*pz-pet-[a-z0-9]+.*")) {
-            return ChatIntent.PET_INFORMATION;
+        if (lower.contains("deworm") || lower.contains("deworming") || lower.contains("worm") || lower.contains("parasite") || lower.contains("heartworm") || lower.contains("preventive care") || lower.contains("preventative care")) {
+            return ChatIntent.PREVENTIVE_CARE;
         }
 
         if (lower.contains("shop") || lower.contains("buy") || lower.contains("marketplace") || lower.contains("product") || lower.contains("order")) {
@@ -128,6 +124,25 @@ public class ChatSafetyService {
             return ChatIntent.PET_BEHAVIOR;
         }
 
+        if (isMedicalQuestion(lower)) {
+            return ChatIntent.MEDICAL_QUESTION;
+        }
+
+        boolean isExplicitPetProfileRequest = lower.matches(".*\\b(show|list|view|display|what|who|see|my registered)\\s+.*(pets?|dogs?|cats?|profile|code|id).*")
+                || lower.equals("show me my registered pets")
+                || lower.equals("show pets")
+                || lower.equals("list pets")
+                || lower.equals("my pets")
+                || lower.equals("registered pets")
+                || lower.matches("^(view\\s+)?(pet\\s+profile|profile\\s+of\\s+.*)$")
+                || lower.matches("^pz-pet-[a-z0-9]+$")
+                || (lower.contains("pet details") || lower.contains("pet code") || lower.contains("pet id"));
+
+        if (isExplicitPetProfileRequest) {
+            return ChatIntent.PET_INFORMATION;
+        }
+
+
         if (lower.contains("adopt") || lower.contains("rehome") || lower.contains("rehoming") || lower.contains("hoe to adopt") || lower.contains("how to adopt")) {
             return ChatIntent.ADOPTION;
         }
@@ -136,7 +151,7 @@ public class ChatSafetyService {
             return ChatIntent.SHELTER;
         }
 
-        if (lower.contains("help") || lower.contains("how to use") || lower.contains("navigate") || lower.contains("profile") || lower.contains("petzoe")) {
+        if (lower.contains("help") || lower.contains("how to use") || lower.contains("navigate") || lower.contains("petzoe")) {
             return ChatIntent.PLATFORM_HELP;
         }
 

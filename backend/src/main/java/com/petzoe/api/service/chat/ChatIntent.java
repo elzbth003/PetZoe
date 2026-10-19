@@ -19,5 +19,6 @@ public enum ChatIntent {
     PLATFORM_HELP,
     EMERGENCY,
     MEDICAL_QUESTION,
+    PREVENTIVE_CARE,
     UNKNOWN
 }
