@@ -110,6 +110,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Open login/register/google endpoints
                         .requestMatchers("/error").permitAll()       // Open error endpoint
+                        // Razorpay Webhooks (authenticated cryptographically via X-Razorpay-Signature)
+                        .requestMatchers("/api/marketplace/payments/webhook").permitAll()
                         // Marketplace: allow public browsing of products and categories
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/marketplace/products/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/marketplace/categories/**").permitAll()

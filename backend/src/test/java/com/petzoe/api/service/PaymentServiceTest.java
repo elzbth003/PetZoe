@@ -195,4 +195,74 @@ public class PaymentServiceTest {
         paymentService.cancelPayment(testUser.getEmail(), 42L, "Repeat call");
         assertEquals(13, testProduct.getStockQuantity()); // Not added again!
     }
+
+    @Test
+    void testProcessWebhookEvent_PaymentCaptured_UpdatesStatusToSuccess() {
+        ReflectionTestUtils.setField(paymentService, "webhookSecret", "dummyWebhookSecret123");
+
+        com.petzoe.api.entity.Order mockOrder = new com.petzoe.api.entity.Order();
+        mockOrder.setId(10L);
+        mockOrder.setUser(testUser);
+        mockOrder.setStatus("Pending Payment");
+
+        Payment payment = new Payment();
+        payment.setId(99L);
+        payment.setOrder(mockOrder);
+        payment.setUser(testUser);
+        payment.setRazorpayOrderId("order_rzp_hook_123");
+        payment.setStatus(PaymentStatus.CREATED);
+
+        when(paymentRepository.findByRazorpayOrderId("order_rzp_hook_123")).thenReturn(Optional.of(payment));
+
+        String rawPayload = "{"
+                + "\"event\":\"payment.captured\","
+                + "\"payload\":{"
+                + "  \"payment\":{"
+                + "    \"entity\":{"
+                + "      \"id\":\"pay_rzp_hook_999\","
+                + "      \"order_id\":\"order_rzp_hook_123\","
+                + "      \"method\":\"upi\""
+                + "    }"
+                + "  }"
+                + "}"
+                + "}";
+
+        // Calculate expected HMAC SHA-256 for dummyWebhookSecret123
+        String signature;
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec("dummyWebhookSecret123".getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] hash = mac.doFinal(rawPayload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            signature = hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        paymentService.processWebhookEvent(rawPayload, signature);
+
+        assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
+        assertEquals("pay_rzp_hook_999", payment.getRazorpayPaymentId());
+        assertEquals(PaymentMethod.UPI, payment.getMethod());
+        assertEquals("Processing", mockOrder.getStatus());
+        verify(paymentRepository, times(1)).save(payment);
+        verify(orderRepository, times(1)).save(mockOrder);
+    }
+
+    @Test
+    void testProcessWebhookEvent_InvalidSignature_ThrowsException() {
+        ReflectionTestUtils.setField(paymentService, "webhookSecret", "dummyWebhookSecret123");
+
+        String rawPayload = "{\"event\":\"payment.captured\"}";
+        String invalidSignature = "invalid_hash_value_12345";
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            paymentService.processWebhookEvent(rawPayload, invalidSignature);
+        });
+    }
 }

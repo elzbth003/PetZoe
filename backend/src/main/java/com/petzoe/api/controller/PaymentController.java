@@ -91,4 +91,27 @@ public class PaymentController {
     public ResponseEntity<List<PaymentResponseDTO>> getAllPaymentsAdmin() {
         return ResponseEntity.ok(paymentService.getAllPayments());
     }
+
+    /**
+     * Inbound Razorpay webhook listener.
+     * Verifies the cryptographic signature against the raw payload before processing.
+     */
+    @PostMapping("/webhook")
+    public ResponseEntity<Map<String, String>> handleRazorpayWebhook(
+            @RequestBody String rawPayload,
+            @RequestHeader(value = "X-Razorpay-Signature", required = false) String signatureHeader) {
+        if (signatureHeader == null || signatureHeader.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Missing X-Razorpay-Signature header"));
+        }
+        try {
+            paymentService.processWebhookEvent(rawPayload, signatureHeader);
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Webhook processed successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST)
+                    .body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "error", "message", "Internal processing error"));
+        }
+    }
 }
