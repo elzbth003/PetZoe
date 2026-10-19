@@ -12,4 +12,7 @@ public interface AdoptionApplicationRepository extends JpaRepository<AdoptionApp
     List<AdoptionApplication> findByAdopterIdOrderByCreatedAtDesc(Long adopterId);
     Optional<AdoptionApplication> findByAnimalIdAndAdopterId(Long animalId, Long adopterId);
     List<AdoptionApplication> findByAnimal_Shelter_ManagerIdOrderByCreatedAtDesc(Long managerId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.status, COUNT(a) FROM AdoptionApplication a GROUP BY a.status")
+    List<Object[]> countByStatusGrouped();
 }

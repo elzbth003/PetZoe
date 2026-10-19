@@ -30,5 +30,13 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findByVeterinarianIdAndAppointmentDateAndStatusIn(Long veterinarianId, LocalDate appointmentDate, List<String> statuses);
 
     boolean existsByVeterinarianIdAndAppointmentDateAndAppointmentTimeAndStatusIn(Long veterinarianId, LocalDate appointmentDate, String appointmentTime, List<String> statuses);
+
+    long countByStatusIgnoreCase(String status);
+
+    @Query("SELECT a.status, COUNT(a) FROM Appointment a GROUP BY a.status")
+    List<Object[]> countAppointmentsByStatusGrouped();
+
+    @Query("SELECT a.appointmentDate, COUNT(a) FROM Appointment a WHERE a.appointmentDate >= :since GROUP BY a.appointmentDate ORDER BY a.appointmentDate")
+    List<Object[]> countDailyAppointments(@Param("since") LocalDate since);
 }
 

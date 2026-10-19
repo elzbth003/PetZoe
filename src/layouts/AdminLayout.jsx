@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { notificationService } from '../services/notificationService';
 import { adminApi } from '../services/adminApi';
-import { useToast } from '../hooks/useToast';
-import { Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope, ShoppingBag, Bell, Settings, Menu, X, Check, Trash2, Loader2 } from 'lucide-react';
+import { Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope, ShoppingBag, Bell, Settings, Menu, X, Check, Trash2, Loader2, ArrowUpRight } from 'lucide-react';
+import { getNotificationDestination } from '../utils/notificationNavigator';
 
 function timeAgo(dateString) {
   const now = new Date();
@@ -134,6 +135,17 @@ export default function AdminLayout() {
       if (wasUnread) setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to delete notification', 'error');
+    }
+  };
+
+  const handleNotificationClick = async (notif) => {
+    if (!notif.isRead) {
+      handleMarkRead(notif.id);
+    }
+    setNotifOpen(false);
+    const dest = getNotificationDestination(notif, 'Admin');
+    if (dest && dest.path) {
+      navigate(dest.path);
     }
   };
 
@@ -284,16 +296,19 @@ export default function AdminLayout() {
                         <p className="text-slate-500 text-xs font-semibold">No new notifications</p>
                       </div>
                     ) : (
-                      notifications.slice(0, 15).map((notif) => (
+                      notifications.slice(0, 15).map((notif) => {
+                        const dest = getNotificationDestination(notif, 'Admin');
+                        return (
                         <div 
                           key={notif.id} 
-                          className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50/50 transition-colors flex items-start gap-3 ${
-                            !notif.isRead ? 'bg-blue-50/30' : ''
+                          onClick={() => handleNotificationClick(notif)}
+                          className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-100/80 transition-colors flex items-start gap-3 cursor-pointer group ${
+                            !notif.isRead ? 'bg-blue-50/40' : ''
                           }`}
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                              <p className={`text-xs leading-snug ${!notif.isRead ? 'font-bold text-slate-900' : 'font-semibold text-slate-600'}`}>
+                              <p className={`text-xs leading-snug group-hover:text-primary-700 transition-colors ${!notif.isRead ? 'font-bold text-slate-900' : 'font-semibold text-slate-600'}`}>
                                 {notif.title}
                               </p>
                               {!notif.isRead && (
@@ -301,7 +316,14 @@ export default function AdminLayout() {
                               )}
                             </div>
                             <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                            <p className="text-[10px] text-slate-400 font-semibold mt-1">{timeAgo(notif.createdAt)}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-[10px] text-slate-400 font-semibold">{timeAgo(notif.createdAt)}</p>
+                              {dest && dest.label && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
+                                  {dest.label} <ArrowUpRight size={10} />
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="flex gap-1 shrink-0">
                             {!notif.isRead && (
@@ -324,7 +346,8 @@ export default function AdminLayout() {
                             </button>
                           </div>
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
 

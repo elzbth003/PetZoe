@@ -22,6 +22,12 @@ public class AdminService {
     private final com.petzoe.api.repository.AdoptionApplicationRepository adoptionApplicationRepository;
     private final com.petzoe.api.repository.AdoptionListingRepository adoptionListingRepository;
 
+    private final com.petzoe.api.repository.PetRepository petRepository;
+    private final com.petzoe.api.repository.AppointmentRepository appointmentRepository;
+    private final com.petzoe.api.repository.OrderRepository orderRepository;
+    private final com.petzoe.api.repository.AiChatConversationRepository aiChatConversationRepository;
+    private final com.petzoe.api.repository.AiChatMessageRepository aiChatMessageRepository;
+
     public AdminService(UserRepository userRepository,
                         ProductRepository productRepository,
                         AnimalRepository animalRepository,
@@ -29,7 +35,12 @@ public class AdminService {
                         com.petzoe.api.repository.ShelterRepository shelterRepository,
                         com.petzoe.api.repository.AdopterProfileRepository adopterProfileRepository,
                         com.petzoe.api.repository.AdoptionApplicationRepository adoptionApplicationRepository,
-                        com.petzoe.api.repository.AdoptionListingRepository adoptionListingRepository) {
+                        com.petzoe.api.repository.AdoptionListingRepository adoptionListingRepository,
+                        com.petzoe.api.repository.PetRepository petRepository,
+                        com.petzoe.api.repository.AppointmentRepository appointmentRepository,
+                        com.petzoe.api.repository.OrderRepository orderRepository,
+                        com.petzoe.api.repository.AiChatConversationRepository aiChatConversationRepository,
+                        com.petzoe.api.repository.AiChatMessageRepository aiChatMessageRepository) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.animalRepository = animalRepository;
@@ -38,6 +49,11 @@ public class AdminService {
         this.adopterProfileRepository = adopterProfileRepository;
         this.adoptionApplicationRepository = adoptionApplicationRepository;
         this.adoptionListingRepository = adoptionListingRepository;
+        this.petRepository = petRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.orderRepository = orderRepository;
+        this.aiChatConversationRepository = aiChatConversationRepository;
+        this.aiChatMessageRepository = aiChatMessageRepository;
     }
 
     public AdminStatsDTO getDashboardStats() {
@@ -66,6 +82,20 @@ public class AdminService {
         stats.setTotalAdopters(adopterProfileRepository.count());
         stats.setTotalAdoptionApplications(adoptionApplicationRepository.count());
         stats.setPendingAdoptionListings(adoptionListingRepository.countByStatus(VerificationStatus.PENDING));
+
+        // Genuine operational metrics from respective repositories
+        stats.setTotalPets(petRepository.count());
+        stats.setTotalAppointments(appointmentRepository.count());
+        stats.setCompletedAppointments(appointmentRepository.countByStatusIgnoreCase("COMPLETED"));
+        stats.setPendingAppointments(appointmentRepository.countByStatusIgnoreCase("UPCOMING") + appointmentRepository.countByStatusIgnoreCase("PENDING"));
+        stats.setCancelledAppointments(appointmentRepository.countByStatusIgnoreCase("CANCELLED"));
+
+        stats.setTotalOrders(orderRepository.count());
+        Double grossRevenue = orderRepository.calculateGrossDeliveredRevenue();
+        stats.setGrossOrderRevenue(grossRevenue != null ? grossRevenue : 0.0);
+
+        stats.setTotalAiConversations(aiChatConversationRepository.count());
+        stats.setTotalAiMessages(aiChatMessageRepository.count());
 
         return stats;
     }

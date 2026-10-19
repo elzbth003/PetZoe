@@ -26,4 +26,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByStatus(PaymentStatus status);
 
     Page<Payment> findAllByOrderByCreatedAtDesc(Pageable pageable);
+ 
+    @org.springframework.data.jpa.repository.Query("SELECT p.status, COUNT(p) FROM Payment p GROUP BY p.status")
+    List<Object[]> countPaymentsByStatusGrouped();
 }

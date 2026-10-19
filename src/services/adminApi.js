@@ -26,7 +26,8 @@ export const adminApi = {
   
   // Dashboard Activity & Analytics
   getRecentActivity: () => api.get('/admin/dashboard/activity'),
-  getAnalytics: () => api.get('/admin/dashboard/analytics'),
+  getAnalytics: (days = 30) => api.get(`/admin/dashboard/analytics?days=${days}`),
+  getSystemHealth: () => api.get('/admin/dashboard/system-health'),
 
   // Settings
   changePassword: (data) => api.put('/users/me/password', data)

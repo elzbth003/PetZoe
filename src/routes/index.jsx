@@ -128,6 +128,10 @@ export const router = createBrowserRouter([
     element: <AdminLogin />
   },
   {
+    path: '/dashboard/admin-login',
+    element: <AdminLogin />
+  },
+  {
     path: '/dashboard',
     // Requiring login here is enough to redirect anonymous users to /login;
     // each role's own dashboard below is still individually role-gated so a
