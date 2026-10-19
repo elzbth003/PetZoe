@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, PawPrint, Heart, Settings, LogOut,
   CheckCircle, XCircle, Clock, FileText, Trash2, Upload, Menu, X
@@ -39,10 +39,35 @@ function fileToBase64(file) {
 
 export default function ShelterDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const resolveTab = (tabStr) => {
+    if (!tabStr) return 'Dashboard';
+    const clean = tabStr.trim().toLowerCase().replace(/[-_ ]/g, '');
+    if (clean.includes('profile')) return 'Shelter Profile';
+    if (clean.includes('animal') || clean.includes('pet')) return 'Animals';
+    if (clean.includes('adopt') || clean.includes('appl')) return 'Adoptions';
+    if (clean.includes('setting')) return 'Settings';
+    return 'Dashboard';
+  };
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab) return resolveTab(urlTab);
+    return 'Dashboard';
+  });
+
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setActiveTab(resolveTab(tabFromUrl));
+    }
+  }, [searchParams, location]);
 
   const [shelter, setShelter] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);

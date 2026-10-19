@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, DollarSign,
   Settings, LogOut, Plus, Edit, Trash2, CheckCircle, XCircle, Menu, X
@@ -12,7 +12,23 @@ import AddProductWizard from '../../components/dashboard/AddProductWizard';
 
 export default function SellerDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const resolveTab = (tabStr) => {
+    if (!tabStr) return 'Dashboard';
+    const clean = tabStr.trim().toLowerCase().replace(/[-_ ]/g, '');
+    if (clean.includes('product') || clean.includes('inventor')) return 'My Products';
+    if (clean.includes('order')) return 'Orders';
+    if (clean.includes('setting') || clean.includes('verif')) return 'Settings';
+    return 'Dashboard';
+  };
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab) return resolveTab(urlTab);
+    return 'Dashboard';
+  });
   const [showAddProductWizard, setShowAddProductWizard] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -31,6 +47,13 @@ export default function SellerDashboard() {
       navigate('/login');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setActiveTab(resolveTab(tabFromUrl));
+    }
+  }, [searchParams, location]);
 
   useEffect(() => {
     fetchMyProducts();

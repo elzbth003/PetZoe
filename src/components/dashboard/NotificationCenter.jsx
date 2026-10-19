@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell, Calendar, Shield, User, Settings, Trash2,
-  Check, CheckCheck, Loader2, Sparkles, X, CheckCircle, XCircle, MessageSquare
+  Check, CheckCheck, Loader2, Sparkles, X, CheckCircle, XCircle, MessageSquare,
+  ArrowUpRight, ShoppingBag, Heart, ExternalLink
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import ChatWidget from './ChatWidget';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getNotificationDestination } from '../../utils/notificationNavigator';
 
 const TYPE_CONFIG = {
   CHAT: {
@@ -73,6 +76,48 @@ const TYPE_CONFIG = {
     border: 'border-rose-100',
     label: 'Product',
   },
+  VERIFICATION: {
+    icon: Shield,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+    border: 'border-indigo-100',
+    label: 'Verification',
+  },
+  ADOPTION: {
+    icon: Heart,
+    color: 'text-pink-600',
+    bg: 'bg-pink-50',
+    border: 'border-pink-100',
+    label: 'Adoption',
+  },
+  ADOPTION_APPLICATION: {
+    icon: Heart,
+    color: 'text-pink-600',
+    bg: 'bg-pink-50',
+    border: 'border-pink-100',
+    label: 'Adoption',
+  },
+  ORDER: {
+    icon: ShoppingBag,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-100',
+    label: 'Order',
+  },
+  PAYMENT: {
+    icon: ShoppingBag,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-100',
+    label: 'Payment',
+  },
+  VETSCAN: {
+    icon: Sparkles,
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+    border: 'border-purple-100',
+    label: 'VetScan AI',
+  },
 };
 
 function timeAgo(dateString) {
@@ -96,6 +141,25 @@ export default function NotificationCenter() {
   const [activeChat, setActiveChat] = useState(null);
   const { showToast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleNotificationClick = async (notif) => {
+    // Mark as read if unread
+    if (!notif.isRead) {
+      handleMarkRead(notif.id);
+    }
+    const dest = getNotificationDestination(notif, user?.role);
+    if (!dest) return;
+
+    if (dest.type === 'chat') {
+      setActiveChat({
+        appointmentId: dest.appointmentId,
+        otherUserName: dest.otherUserName,
+      });
+    } else if (dest.path) {
+      navigate(dest.path);
+    }
+  };
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -224,6 +288,7 @@ export default function NotificationCenter() {
             {filteredNotifications.map((notif) => {
               const cfg = TYPE_CONFIG[notif.type] || TYPE_CONFIG.SYSTEM;
               const Icon = cfg.icon;
+              const dest = getNotificationDestination(notif, user?.role);
               return (
                 <motion.div
                   key={notif.id}
@@ -231,19 +296,20 @@ export default function NotificationCenter() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
-                  className={`bg-white border rounded-2xl p-4 flex items-start gap-3 transition-all ${
+                  onClick={() => handleNotificationClick(notif)}
+                  className={`bg-white border rounded-2xl p-4 flex items-start gap-3 transition-all cursor-pointer group hover:shadow-md hover:border-slate-300 ${
                     !notif.isRead ? 'border-sky-200 bg-sky-50/20 shadow-sm' : 'border-slate-100'
                   }`}
                 >
                   {/* Icon */}
-                  <div className={`h-9 w-9 rounded-xl ${cfg.bg} ${cfg.border} border flex items-center justify-center shrink-0 mt-0.5`}>
+                  <div className={`h-9 w-9 rounded-xl ${cfg.bg} ${cfg.border} border flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform`}>
                     <Icon size={16} className={cfg.color} />
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0 text-left space-y-0.5">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-xs font-bold leading-snug ${notif.isRead ? 'text-slate-600' : 'text-slate-900'}`}>
+                      <p className={`text-xs font-bold leading-snug group-hover:text-primary-700 transition-colors ${notif.isRead ? 'text-slate-600' : 'text-slate-900'}`}>
                         {notif.title}
                       </p>
                       {!notif.isRead && (
@@ -266,8 +332,8 @@ export default function NotificationCenter() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {notif.type === 'CHAT' && notif.referenceId && (
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {dest && dest.type === 'chat' && notif.referenceId ? (
                       <button
                         onClick={() => {
                           handleMarkRead(notif.id);
@@ -281,7 +347,15 @@ export default function NotificationCenter() {
                       >
                         <MessageSquare size={13} /> Reply
                       </button>
-                    )}
+                    ) : dest && dest.path ? (
+                      <button
+                        onClick={() => handleNotificationClick(notif)}
+                        className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-primary-50 hover:text-primary-600 text-slate-600 font-bold text-xs transition-all cursor-pointer"
+                        title={dest.label}
+                      >
+                        {dest.label} <ArrowUpRight size={13} />
+                      </button>
+                    ) : null}
                     {!notif.isRead && (
                       <button
                         onClick={() => handleMarkRead(notif.id)}
