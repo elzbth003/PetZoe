@@ -26,13 +26,15 @@ jobs:
 
       - name: Build with Maven
         working-directory: backend
-        run: mvn clean package -DskipTests
+        run: |
+          mvn clean package -DskipTests
+          cp target/api-0.0.1-SNAPSHOT.jar target/app.jar
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/backend/target/*.jar'
+          path: '${{ github.workspace }}/backend/target/app.jar'
 
   deploy:
     runs-on: ubuntu-latest
@@ -50,5 +52,5 @@ jobs:
         with:
           app-name: 'petzoe'
           slot-name: 'Production'
-          package: '*.jar'
+          package: 'app.jar'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B6A8BFB922304A989BE88D6AB6931179 }}
