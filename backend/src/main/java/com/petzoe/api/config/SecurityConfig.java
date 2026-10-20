@@ -160,7 +160,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow the React frontend (Vite falls back to 5174+ if 5173 is already in use)
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:5173", "http://localhost:5174", "https://*.azurestaticapps.net", "https://*.azurewebsites.net"));
         // Allow standard HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         // Allow specific headers required for JWT
