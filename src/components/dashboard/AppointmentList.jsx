@@ -349,11 +349,9 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                 value={watch('petId')}
                 onChange={(val) => setValue('petId', Number(val), { shouldValidate: true })}
                 placeholder="Choose registered pet..."
-                icon={PawPrint}
                 options={pets.map(p => ({
                   value: p.id,
-                  label: `${p.name} (${p.species})`,
-                  icon: p.species?.toLowerCase() === 'cat' ? '🐈' : p.species?.toLowerCase() === 'dog' ? '🐕' : '🐾'
+                  label: `${p.name} (${p.species})`
                 }))}
                 error={errors.petId?.message}
               />
@@ -366,11 +364,9 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                 value={watch('veterinarianId')}
                 onChange={(val) => setValue('veterinarianId', Number(val), { shouldValidate: true })}
                 placeholder="Choose certified vet..."
-                icon={User}
                 options={vets.map(v => ({
                   value: v.id,
                   label: v.name,
-                  icon: '👨‍⚕️',
                   badge: v.specialization || 'Certified Vet'
                 }))}
                 error={errors.veterinarianId?.message}

@@ -187,7 +187,6 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
                 options={pets.map((pet) => ({
                   value: pet.id,
                   label: `${pet.name} (${pet.breed || pet.species})`,
-                  icon: '🐕',
                   badge: `ID: ${pet.petCode || pet.id}`
                 }))}
               />

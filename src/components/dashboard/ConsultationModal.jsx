@@ -370,11 +370,11 @@ export default function ConsultationModal({ appointment, isOpen, onClose, onSucc
                   value={formData.healthStatus}
                   onChange={(val) => setFormData({ ...formData, healthStatus: val })}
                   options={[
-                    { value: 'Under Treatment', label: 'Under Treatment', icon: '🟡', badge: 'Active' },
-                    { value: 'Recovering', label: 'Recovering', icon: '🟢', badge: 'Progress' },
-                    { value: 'Healthy', label: 'Healthy (Normal)', icon: '✅', badge: 'Normal' },
-                    { value: 'Examined', label: 'Examined', icon: '🩺', badge: 'Done' },
-                    { value: 'Critical', label: 'Critical', icon: '🚨', badge: 'Urgent' }
+                    { value: 'Under Treatment', label: 'Under Treatment', badge: 'Active' },
+                    { value: 'Recovering', label: 'Recovering', badge: 'Progress' },
+                    { value: 'Healthy', label: 'Healthy (Normal)', badge: 'Normal' },
+                    { value: 'Examined', label: 'Examined', badge: 'Done' },
+                    { value: 'Critical', label: 'Critical', badge: 'Urgent' }
                   ]}
                 />
               </div>

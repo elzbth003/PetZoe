@@ -98,11 +98,7 @@ export default function AdoptionListingsPage() {
                   placeholder="All Species"
                   options={[
                     { value: '', label: 'All Species' },
-                    ...speciesList.map(s => ({
-                      value: s,
-                      label: s,
-                      icon: s.toLowerCase() === 'dog' ? '🐕' : s.toLowerCase() === 'cat' ? '🐈' : '🐾'
-                    }))
+                    ...speciesList.map(s => ({ value: s, label: s }))
                   ]}
                   size="sm"
                   buttonClassName="bg-slate-50"
@@ -117,8 +113,8 @@ export default function AdoptionListingsPage() {
                   placeholder="Any Sex"
                   options={[
                     { value: '', label: 'Any Sex' },
-                    { value: 'MALE', label: 'Male', icon: '♂' },
-                    { value: 'FEMALE', label: 'Female', icon: '♀' }
+                    { value: 'MALE', label: 'Male' },
+                    { value: 'FEMALE', label: 'Female' }
                   ]}
                   size="sm"
                   buttonClassName="bg-slate-50"

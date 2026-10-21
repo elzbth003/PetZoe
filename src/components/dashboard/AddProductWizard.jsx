@@ -308,12 +308,12 @@ const AddProductWizard = ({ onCancel, onProductAdded }) => {
                 value={formData.petType}
                 onChange={(val) => setFormData(prev => ({ ...prev, petType: val }))}
                 options={[
-                  { value: 'All Pets', label: 'All Pets', icon: '🐾' },
-                  { value: 'Dog', label: 'Dog', icon: '🐕' },
-                  { value: 'Cat', label: 'Cat', icon: '🐈' },
-                  { value: 'Bird', label: 'Bird', icon: '🦜' },
-                  { value: 'Fish', label: 'Fish', icon: '🐠' },
-                  { value: 'Small Pet', label: 'Small Pet', icon: '🐹' }
+                  { value: 'All Pets', label: 'All Pets' },
+                  { value: 'Dog', label: 'Dog' },
+                  { value: 'Cat', label: 'Cat' },
+                  { value: 'Bird', label: 'Bird' },
+                  { value: 'Fish', label: 'Fish' },
+                  { value: 'Small Pet', label: 'Small Pet' }
                 ]}
               />
             </div>

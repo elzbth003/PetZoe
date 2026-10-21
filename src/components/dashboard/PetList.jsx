@@ -356,11 +356,11 @@ export default function PetList({ onPetsUpdated }) {
               size="sm"
               options={[
                 { value: 'All', label: 'All Species' },
-                { value: 'Dog', label: 'Dog', icon: '🐕' },
-                { value: 'Cat', label: 'Cat', icon: '🐈' },
-                { value: 'Bird', label: 'Bird', icon: '🦜' },
-                { value: 'Rabbit', label: 'Rabbit', icon: '🐇' },
-                { value: 'Other', label: 'Other', icon: '🐾' }
+                { value: 'Dog', label: 'Dog' },
+                { value: 'Cat', label: 'Cat' },
+                { value: 'Bird', label: 'Bird' },
+                { value: 'Rabbit', label: 'Rabbit' },
+                { value: 'Other', label: 'Other' }
               ]}
               buttonClassName="bg-white border-slate-200 shadow-xs"
             />
@@ -700,8 +700,8 @@ export default function PetList({ onPetsUpdated }) {
                         value={watch('gender')}
                         onChange={(val) => setValue('gender', val, { shouldValidate: true })}
                         options={[
-                          { value: 'Male', label: 'Male', icon: '♂' },
-                          { value: 'Female', label: 'Female', icon: '♀' }
+                          { value: 'Male', label: 'Male' },
+                          { value: 'Female', label: 'Female' }
                         ]}
                         error={errors.gender?.message}
                       />
@@ -764,9 +764,9 @@ export default function PetList({ onPetsUpdated }) {
                         value={watch('vaccinationStatus')}
                         onChange={(val) => setValue('vaccinationStatus', val, { shouldValidate: true })}
                         options={[
-                          { value: 'Up-to-date', label: 'Up-to-date', icon: '🟢', badge: 'Active' },
-                          { value: 'Needs Vaccination', label: 'Needs Vaccination', icon: '🟡', badge: 'Due' },
-                          { value: 'Overdue', label: 'Overdue', icon: '🔴', badge: 'Alert' },
+                          { value: 'Up-to-date', label: 'Up-to-date', badge: 'Active' },
+                          { value: 'Needs Vaccination', label: 'Needs Vaccination', badge: 'Due' },
+                          { value: 'Overdue', label: 'Overdue', badge: 'Alert' },
                         ]}
                         error={errors.vaccinationStatus?.message}
                       />
