@@ -16,6 +16,8 @@ public interface PetRehomeListingRepository extends JpaRepository<PetRehomeListi
 
     List<PetRehomeListing> findByOwnerIdOrderByCreatedAtDesc(Long ownerId);
 
+    List<PetRehomeListing> findByPetId(Long petId);
+
     Optional<PetRehomeListing> findByPetIdAndStatus(Long petId, String status);
 
     boolean existsByPetIdAndStatus(Long petId, String status);

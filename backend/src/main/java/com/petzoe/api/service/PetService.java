@@ -22,6 +22,10 @@ public class PetService {
     private final PetVaccinationRecordRepository petVaccinationRecordRepository;
     private final PetMedicalDocumentRepository petMedicalDocumentRepository;
     private final PrescriptionRepository prescriptionRepository;
+    private final PaymentRepository paymentRepository;
+    private final VetScanRecordRepository vetScanRecordRepository;
+    private final PetRehomeListingRepository petRehomeListingRepository;
+    private final PetRehomeApplicationRepository petRehomeApplicationRepository;
 
     public PetService(PetRepository petRepository,
                       UserRepository userRepository,
@@ -31,7 +35,11 @@ public class PetService {
                       PetMedicalRecordRepository petMedicalRecordRepository,
                       PetVaccinationRecordRepository petVaccinationRecordRepository,
                       PetMedicalDocumentRepository petMedicalDocumentRepository,
-                      PrescriptionRepository prescriptionRepository) {
+                      PrescriptionRepository prescriptionRepository,
+                      PaymentRepository paymentRepository,
+                      VetScanRecordRepository vetScanRecordRepository,
+                      PetRehomeListingRepository petRehomeListingRepository,
+                      PetRehomeApplicationRepository petRehomeApplicationRepository) {
         this.petRepository = petRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
@@ -41,6 +49,10 @@ public class PetService {
         this.petVaccinationRecordRepository = petVaccinationRecordRepository;
         this.petMedicalDocumentRepository = petMedicalDocumentRepository;
         this.prescriptionRepository = prescriptionRepository;
+        this.paymentRepository = paymentRepository;
+        this.vetScanRecordRepository = vetScanRecordRepository;
+        this.petRehomeListingRepository = petRehomeListingRepository;
+        this.petRehomeApplicationRepository = petRehomeApplicationRepository;
     }
 
     public List<PetDTO> getPetsByOwner(String email) {
@@ -126,13 +138,23 @@ public class PetService {
         Pet pet = getPetEntityOwnedByUser(id, email);
         Long petId = pet.getId();
 
-        // 1. Fetch appointments for this pet and delete associated chat messages
+        // 1. Fetch appointments for this pet
         List<Appointment> appointments = appointmentRepository.findByPetId(petId);
         if (!appointments.isEmpty()) {
             for (Appointment appointment : appointments) {
+                // Delete associated chat messages
                 List<ChatMessage> messages = chatMessageRepository.findByAppointmentIdOrderByCreatedAtAsc(appointment.getId());
                 if (!messages.isEmpty()) {
                     chatMessageRepository.deleteAll(messages);
+                }
+
+                // Nullify reference from payments to this appointment to maintain financial audit integrity without blocking cascade
+                List<Payment> payments = paymentRepository.findAllByAppointmentId(appointment.getId());
+                if (payments != null && !payments.isEmpty()) {
+                    for (Payment p : payments) {
+                        p.setAppointment(null);
+                    }
+                    paymentRepository.saveAll(payments);
                 }
             }
         }
@@ -166,7 +188,30 @@ public class PetService {
             appointmentRepository.deleteAll(appointments);
         }
 
-        // 7. Delete the pet itself
+        // 7. Delete all VetScan AI records for this pet
+        List<VetScanRecord> vetScans = vetScanRecordRepository.findByPetIdOrderByCreatedAtDesc(petId);
+        if (!vetScans.isEmpty()) {
+            vetScanRecordRepository.deleteAll(vetScans);
+        }
+
+        // 8. Delete all Pet Rehome applications and listings for this pet
+        List<PetRehomeApplication> directApps = petRehomeApplicationRepository.findByPetId(petId);
+        if (!directApps.isEmpty()) {
+            petRehomeApplicationRepository.deleteAll(directApps);
+        }
+
+        List<PetRehomeListing> listings = petRehomeListingRepository.findByPetId(petId);
+        if (!listings.isEmpty()) {
+            for (PetRehomeListing listing : listings) {
+                List<PetRehomeApplication> listingApps = petRehomeApplicationRepository.findByListingIdOrderByCreatedAtDesc(listing.getId());
+                if (!listingApps.isEmpty()) {
+                    petRehomeApplicationRepository.deleteAll(listingApps);
+                }
+            }
+            petRehomeListingRepository.deleteAll(listings);
+        }
+
+        // 9. Delete the pet itself
         petRepository.delete(pet);
     }
 

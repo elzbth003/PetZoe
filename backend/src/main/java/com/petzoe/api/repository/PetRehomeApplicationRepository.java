@@ -12,6 +12,8 @@ public interface PetRehomeApplicationRepository extends JpaRepository<PetRehomeA
 
     List<PetRehomeApplication> findByListingIdOrderByCreatedAtDesc(Long listingId);
 
+    List<PetRehomeApplication> findByPetId(Long petId);
+
     List<PetRehomeApplication> findByApplicantIdOrderByCreatedAtDesc(Long applicantId);
 
     List<PetRehomeApplication> findByListingIdAndStatus(Long listingId, String status);
