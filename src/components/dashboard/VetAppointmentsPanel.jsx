@@ -7,6 +7,7 @@ import {
 import { appointmentService } from '../../services/appointmentService';
 import { vetClinicalService } from '../../services/vetClinicalService';
 import { useToast } from '../../hooks/useToast';
+import DatePicker from '../ui/DatePicker';
 import ChatWidget from './ChatWidget';
 import CreatePrescriptionModal from './CreatePrescriptionModal';
 import VetPatientProfileModal from './VetPatientProfileModal';
@@ -482,12 +483,11 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
             <div className="space-y-3 mb-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">New Date</label>
-                <input
-                  type="date"
-                  required
+                <DatePicker
                   value={rescheduleData.newDate}
-                  onChange={(e) => setRescheduleData({ ...rescheduleData, newDate: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:border-sky-500"
+                  onChange={(val) => setRescheduleData({ ...rescheduleData, newDate: val })}
+                  min={new Date().toISOString().split('T')[0]}
+                  placeholder="Select new appointment date..."
                 />
               </div>
 

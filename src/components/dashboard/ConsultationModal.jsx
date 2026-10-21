@@ -8,6 +8,7 @@ import { vetClinicalService } from '../../services/vetClinicalService';
 import vetScanService from '../../services/vetScanService';
 import { useToast } from '../../hooks/useToast';
 import SelectDropdown from '../ui/SelectDropdown';
+import DatePicker from '../ui/DatePicker';
 
 export default function ConsultationModal({ appointment, isOpen, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
@@ -550,11 +551,11 @@ export default function ConsultationModal({ appointment, isOpen, onClose, onSucc
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Follow-up Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={formData.followUpDate}
-                    onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:border-sky-500 focus:bg-white"
+                    onChange={(val) => setFormData({ ...formData, followUpDate: val })}
+                    min={new Date().toISOString().split('T')[0]}
+                    placeholder="Select follow-up date..."
                   />
                 </div>
                 <div>

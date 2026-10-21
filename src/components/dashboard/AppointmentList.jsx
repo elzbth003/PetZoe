@@ -12,6 +12,7 @@ import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import ChatWidget from './ChatWidget';
 import SelectDropdown from '../ui/SelectDropdown';
+import DatePicker from '../ui/DatePicker';
 
 // Time slots options
 const TIME_SLOTS = [
@@ -376,15 +377,13 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
             {/* Appointment Date */}
             <div>
               <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Appointment Date</label>
-              <input
-                type="date"
+              <DatePicker
+                value={watch('appointmentDate')}
+                onChange={(val) => setValue('appointmentDate', val, { shouldValidate: true })}
                 min={new Date().toISOString().split('T')[0]}
-                className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.appointmentDate ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                {...register('appointmentDate')}
+                placeholder="Choose appointment date..."
+                error={errors.appointmentDate?.message}
               />
-              {errors.appointmentDate && (
-                <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.appointmentDate.message}</p>
-              )}
             </div>
 
             {/* Time Slots grid selector */}
