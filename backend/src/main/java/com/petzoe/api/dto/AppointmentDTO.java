@@ -31,12 +31,25 @@ public record AppointmentDTO(
 
     String status,
 
-    String notes
+    String notes,
+
+    Double fee,
+
+    String paymentStatus,
+
+    String razorpayPaymentId
 ) {
-    // Backward-compatible constructor without petCode
+    // Backward-compatible constructor without petCode and payment fields
     public AppointmentDTO(Long id, Long petId, String petName, Long ownerId, String ownerName,
                           Long veterinarianId, String veterinarianName, LocalDate appointmentDate,
                           String appointmentTime, String status, String notes) {
-        this(id, petId, null, petName, ownerId, ownerName, veterinarianId, veterinarianName, appointmentDate, appointmentTime, status, notes);
+        this(id, petId, null, petName, ownerId, ownerName, veterinarianId, veterinarianName, appointmentDate, appointmentTime, status, notes, 10.0, "PAID", null);
+    }
+
+    // Backward-compatible constructor with petCode
+    public AppointmentDTO(Long id, Long petId, String petCode, String petName, Long ownerId, String ownerName,
+                          Long veterinarianId, String veterinarianName, LocalDate appointmentDate,
+                          String appointmentTime, String status, String notes) {
+        this(id, petId, petCode, petName, ownerId, ownerName, veterinarianId, veterinarianName, appointmentDate, appointmentTime, status, notes, 10.0, "PAID", null);
     }
 }

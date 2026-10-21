@@ -1,6 +1,17 @@
 package com.petzoe.api.service;
 
 import com.petzoe.api.dto.AppointmentDTO;
+import com.petzoe.api.dto.AppointmentPaymentInitDTO;
+import com.petzoe.api.dto.AppointmentPaymentVerifyDTO;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+import com.razorpay.Utils;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import java.math.BigDecimal;
 import com.petzoe.api.dto.ConsultationSubmissionDTO;
 import com.petzoe.api.dto.DoctorDayScheduleDTO;
 import com.petzoe.api.dto.SlotAvailabilityDTO;
@@ -27,7 +38,23 @@ public class AppointmentService {
     private final NotificationService notificationService;
     private final PetMedicalRecordRepository petMedicalRecordRepository;
     private final PrescriptionRepository prescriptionRepository;
+    private static final Logger log = LoggerFactory.getLogger(AppointmentService.class);
+
     private final VeterinarianProfileRepository veterinarianProfileRepository;
+    private final PaymentRepository paymentRepository;
+    private final RazorpayClient razorpayClient;
+
+    @Value("${petzoe.razorpay.key-id}")
+    private String razorpayKeyId;
+
+    @Value("${petzoe.razorpay.key-secret:}")
+    private String razorpayKeySecret;
+
+    @Value("${petzoe.razorpay.mode:auto}")
+    private String razorpayMode;
+
+    @Value("${petzoe.razorpay.currency:INR}")
+    private String currency;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                               PetRepository petRepository,
@@ -35,7 +62,11 @@ public class AppointmentService {
                               NotificationService notificationService,
                               PetMedicalRecordRepository petMedicalRecordRepository,
                               PrescriptionRepository prescriptionRepository,
-                              VeterinarianProfileRepository veterinarianProfileRepository) {
+                              VeterinarianProfileRepository veterinarianProfileRepository,
+                              PaymentRepository paymentRepository,
+                              RazorpayClient razorpayClient) {
+        this.paymentRepository = paymentRepository;
+        this.razorpayClient = razorpayClient;
         this.appointmentRepository = appointmentRepository;
         this.petRepository = petRepository;
         this.userRepository = userRepository;
@@ -565,7 +596,231 @@ public class AppointmentService {
                 appt.getAppointmentDate(),
                 appt.getAppointmentTime(),
                 appt.getStatus(),
-                appt.getNotes()
+                appt.getNotes(),
+                appt.getFee() != null ? appt.getFee() : 10.0,
+                appt.getPaymentStatus() != null ? appt.getPaymentStatus() : "PAID",
+                appt.getRazorpayPaymentId()
         );
     }
+
+    @Transactional
+    public AppointmentPaymentInitDTO initiateAppointmentPayment(AppointmentDTO dto, String email) {
+        User owner = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+
+        if (dto.appointmentDate() == null) {
+            throw new IllegalArgumentException("Appointment date is required.");
+        }
+        LocalDate today = LocalDate.now();
+        if (dto.appointmentDate().isBefore(today)) {
+            throw new IllegalArgumentException("Cannot book an appointment in the past.");
+        }
+        if (dto.appointmentTime() == null || dto.appointmentTime().isBlank()) {
+            throw new IllegalArgumentException("Time slot is required.");
+        }
+
+        if (dto.appointmentDate().equals(today)) {
+            LocalTime slotTime = parseSlotTime(dto.appointmentTime());
+            if (slotTime != null && slotTime.isBefore(LocalTime.now())) {
+                throw new IllegalArgumentException("The selected time slot (" + dto.appointmentTime() + ") has already passed today. Please select an upcoming slot.");
+            }
+        }
+
+        Pet pet = petRepository.findById(dto.petId())
+                .orElseThrow(() -> new IllegalArgumentException("Pet not found with ID: " + dto.petId()));
+
+        if (!pet.getOwner().getId().equals(owner.getId())) {
+            throw new AccessDeniedException("Unauthorized: You do not own this pet.");
+        }
+
+        User veterinarian = userRepository.findById(dto.veterinarianId())
+                .orElseThrow(() -> new IllegalArgumentException("Veterinarian not found with ID: " + dto.veterinarianId()));
+
+        if (!"Veterinarian".equalsIgnoreCase(veterinarian.getRole())) {
+            throw new IllegalArgumentException("Selected user is not a veterinarian.");
+        }
+
+        if (!veterinarian.isEnabled() || veterinarian.getVerificationStatus() != VerificationStatus.APPROVED) {
+            throw new IllegalStateException("Dr. " + veterinarian.getName() + " is currently unavailable or pending verification.");
+        }
+
+        VeterinarianProfile profile = veterinarianProfileRepository.findByUserId(veterinarian.getId()).orElse(null);
+        String workingDaysStr = profile != null ? profile.getWorkingDays() : "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY";
+        List<String> workingDaysList = java.util.Arrays.stream(workingDaysStr.split(","))
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .toList();
+
+        if (!workingDaysList.contains(dto.appointmentDate().getDayOfWeek().name())) {
+            throw new IllegalStateException("Dr. " + veterinarian.getName() + " does not hold clinic hours on " + dto.appointmentDate().getDayOfWeek() + "s. Please select an available consultation date.");
+        }
+
+        boolean isSlotTaken = appointmentRepository.existsByVeterinarianIdAndAppointmentDateAndAppointmentTimeAndStatusIn(
+                veterinarian.getId(),
+                dto.appointmentDate(),
+                dto.appointmentTime().trim(),
+                List.of("PENDING", "CONFIRMED", "UPCOMING", "IN_CONSULTATION")
+        );
+        if (isSlotTaken) {
+            throw new IllegalStateException("The selected time slot (" + dto.appointmentTime() + ") on " + dto.appointmentDate() + " is already booked for Dr. " + veterinarian.getName() + ". Please select another slot.");
+        }
+
+        Appointment appointment = new Appointment(
+                pet, owner, veterinarian,
+                dto.appointmentDate(), dto.appointmentTime().trim(),
+                "PENDING_PAYMENT", dto.notes(), 10.0, "PENDING"
+        );
+        Appointment savedAppt = appointmentRepository.save(appointment);
+
+        String razorpayOrderId;
+        boolean isPlaceholderKey = razorpayKeyId == null || razorpayKeyId.isBlank() || razorpayKeyId.contains("placeholder")
+                || razorpayKeySecret == null || razorpayKeySecret.contains("placeholder");
+
+        if ("mock".equalsIgnoreCase(razorpayMode) || (("auto".equalsIgnoreCase(razorpayMode) || razorpayMode == null) && isPlaceholderKey)) {
+            razorpayOrderId = "order_mock_appt_" + savedAppt.getId() + "_" + System.currentTimeMillis();
+            log.info("Using simulated Razorpay Order ID {} for consultation appointment {}", razorpayOrderId, savedAppt.getId());
+        } else {
+            try {
+                JSONObject orderRequest = new JSONObject();
+                orderRequest.put("amount", 1000L); // 1000 paise = ₹10.00
+                orderRequest.put("currency", currency != null ? currency : "INR");
+                orderRequest.put("receipt", "appt_rcpt_" + savedAppt.getId() + "_" + System.currentTimeMillis());
+                JSONObject notes = new JSONObject();
+                notes.put("appointment_id", savedAppt.getId().toString());
+                notes.put("customer_email", owner.getEmail());
+                notes.put("type", "CONSULTATION");
+                orderRequest.put("notes", notes);
+
+                Order rzpOrder = razorpayClient.orders.create(orderRequest);
+                razorpayOrderId = rzpOrder.get("id");
+                log.info("Created Razorpay Order {} for Appointment {}", razorpayOrderId, savedAppt.getId());
+            } catch (RazorpayException e) {
+                log.error("Failed to create Razorpay Order for appointment {}: {}", savedAppt.getId(), e.getMessage());
+                if ("auto".equalsIgnoreCase(razorpayMode) || "mock".equalsIgnoreCase(razorpayMode)) {
+                    razorpayOrderId = "order_mock_appt_" + savedAppt.getId() + "_" + System.currentTimeMillis();
+                } else {
+                    throw new RuntimeException("Payment gateway initialization failed: " + e.getMessage(), e);
+                }
+            }
+        }
+
+        Payment payment = new Payment();
+        payment.setUser(owner);
+        payment.setAppointment(savedAppt);
+        payment.setRazorpayOrderId(razorpayOrderId);
+        payment.setAmount(BigDecimal.valueOf(10.00));
+        payment.setAmountInPaise(1000L);
+        payment.setCurrency(currency != null ? currency : "INR");
+        payment.setStatus(PaymentStatus.CREATED);
+        payment.setPaymentType(PaymentType.CONSULTATION);
+        paymentRepository.save(payment);
+
+        savedAppt.setRazorpayOrderId(razorpayOrderId);
+        appointmentRepository.save(savedAppt);
+
+        return new AppointmentPaymentInitDTO(
+                savedAppt.getId(),
+                razorpayOrderId,
+                1000L,
+                10.0,
+                currency != null ? currency : "INR",
+                razorpayKeyId,
+                owner.getName(),
+                owner.getEmail(),
+                owner.getPhone() != null ? owner.getPhone() : "",
+                veterinarian.getName(),
+                pet.getName()
+        );
+    }
+
+    @Transactional
+    public AppointmentDTO verifyAppointmentPayment(AppointmentPaymentVerifyDTO request, String email) {
+        if (request.appointmentId() == null || request.razorpayOrderId() == null) {
+            throw new IllegalArgumentException("Missing required appointment payment verification parameters");
+        }
+
+        Appointment appt = appointmentRepository.findById(request.appointmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found: " + request.appointmentId()));
+
+        if (!appt.getOwner().getEmail().equalsIgnoreCase(email)) {
+            throw new AccessDeniedException("Not authorized for this appointment");
+        }
+
+        Payment payment = paymentRepository.findByRazorpayOrderId(request.razorpayOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Payment record not found for order: " + request.razorpayOrderId()));
+
+        boolean isValidSignature = false;
+        boolean isPlaceholderKey = razorpayKeyId == null || razorpayKeyId.isBlank() || razorpayKeyId.contains("placeholder")
+                || razorpayKeySecret == null || razorpayKeySecret.contains("placeholder");
+        boolean isMockOrder = request.razorpayOrderId().startsWith("order_mock_");
+        boolean isSimulatedSig = "simulated_valid_test_signature".equals(request.razorpaySignature());
+
+        if ((isMockOrder || "mock".equalsIgnoreCase(razorpayMode) || (("auto".equalsIgnoreCase(razorpayMode) || razorpayMode == null) && isPlaceholderKey)) && isSimulatedSig) {
+            isValidSignature = true;
+            log.info("Simulated signature verification passed for appointment order {}", request.razorpayOrderId());
+        } else {
+            try {
+                JSONObject options = new JSONObject();
+                options.put("razorpay_order_id", request.razorpayOrderId());
+                options.put("razorpay_payment_id", request.razorpayPaymentId());
+                options.put("razorpay_signature", request.razorpaySignature());
+                isValidSignature = Utils.verifyPaymentSignature(options, razorpayKeySecret);
+            } catch (Exception e) {
+                log.error("Signature verification exception for appointment: {}", e.getMessage());
+                isValidSignature = false;
+            }
+        }
+
+        if (!isValidSignature) {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setFailureReason("Cryptographic signature mismatch");
+            paymentRepository.save(payment);
+
+            appt.setStatus("CANCELLED");
+            appt.setPaymentStatus("FAILED");
+            appointmentRepository.save(appt);
+
+            throw new IllegalArgumentException("Invalid payment signature verification failed");
+        }
+
+        payment.setRazorpayPaymentId(request.razorpayPaymentId());
+        payment.setRazorpaySignature(request.razorpaySignature());
+        payment.setStatus(PaymentStatus.SUCCESS);
+        paymentRepository.save(payment);
+
+        appt.setStatus("CONFIRMED");
+        appt.setPaymentStatus("PAID");
+        appt.setRazorpayPaymentId(request.razorpayPaymentId());
+        Appointment savedAppt = appointmentRepository.save(appt);
+
+        // Notify Pet Owner
+        try {
+            notificationService.createNotification(
+                    appt.getOwner(),
+                    "Consultation Confirmed 📅",
+                    "Payment of ₹10 was successful! Your consultation with Dr. " + appt.getVeterinarian().getName() +
+                            " for " + appt.getPet().getName() + " on " + appt.getAppointmentDate() + " at " +
+                            appt.getAppointmentTime() + " is confirmed.",
+                    "APPOINTMENT"
+            );
+        } catch (Exception notifEx) {
+            log.warn("Failed to notify owner: {}", notifEx.getMessage());
+        }
+
+        // Notify Veterinarian
+        try {
+            notificationService.createNotification(
+                    appt.getVeterinarian(),
+                    "New Paid Consultation Booked 🩺",
+                    appt.getOwner().getName() + " has booked and paid ₹10 for " + appt.getPet().getName() +
+                            " on " + appt.getAppointmentDate() + " at " + appt.getAppointmentTime() + ".",
+                    "APPOINTMENT"
+            );
+        } catch (Exception notifEx) {
+            log.warn("Failed to notify veterinarian: {}", notifEx.getMessage());
+        }
+
+        return convertToDTO(savedAppt);
+    }
+
 }

@@ -30,10 +30,22 @@ public class Appointment {
     private String appointmentTime; // e.g. "09:00 AM"
 
     @Column(nullable = false)
-    private String status; // e.g. "UPCOMING", "CANCELLED", "COMPLETED"
+    private String status; // e.g. "UPCOMING", "CANCELLED", "COMPLETED", "CONFIRMED", "PENDING_PAYMENT"
 
     @Column(length = 1024)
     private String notes;
+
+    @Column(name = "fee")
+    private Double fee = 10.0;
+
+    @Column(name = "payment_status", length = 30)
+    private String paymentStatus = "PAID";
+
+    @Column(name = "razorpay_order_id")
+    private String razorpayOrderId;
+
+    @Column(name = "razorpay_payment_id")
+    private String razorpayPaymentId;
 
     public Appointment() {
     }
@@ -46,6 +58,20 @@ public class Appointment {
         this.appointmentTime = appointmentTime;
         this.status = status;
         this.notes = notes;
+        this.fee = 10.0;
+        this.paymentStatus = "PAID";
+    }
+
+    public Appointment(Pet pet, User owner, User veterinarian, LocalDate appointmentDate, String appointmentTime, String status, String notes, Double fee, String paymentStatus) {
+        this.pet = pet;
+        this.owner = owner;
+        this.veterinarian = veterinarian;
+        this.appointmentDate = appointmentDate;
+        this.appointmentTime = appointmentTime;
+        this.status = status;
+        this.notes = notes;
+        this.fee = fee;
+        this.paymentStatus = paymentStatus;
     }
 
     public Long getId() {
@@ -110,5 +136,37 @@ public class Appointment {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Double getFee() {
+        return fee;
+    }
+
+    public void setFee(Double fee) {
+        this.fee = fee;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getRazorpayOrderId() {
+        return razorpayOrderId;
+    }
+
+    public void setRazorpayOrderId(String razorpayOrderId) {
+        this.razorpayOrderId = razorpayOrderId;
+    }
+
+    public String getRazorpayPaymentId() {
+        return razorpayPaymentId;
+    }
+
+    public void setRazorpayPaymentId(String razorpayPaymentId) {
+        this.razorpayPaymentId = razorpayPaymentId;
     }
 }

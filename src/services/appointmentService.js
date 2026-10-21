@@ -11,6 +11,16 @@ export const appointmentService = {
     return response.data;
   },
 
+  initiateAppointmentPayment: async (data) => {
+    const response = await api.post('/appointments/initiate-payment', data);
+    return response.data;
+  },
+
+  verifyAppointmentPayment: async (data) => {
+    const response = await api.post('/appointments/verify-payment', data);
+    return response.data;
+  },
+
   getAvailableSlots: async (veterinarianId, date) => {
     const response = await api.get('/appointments/available-slots', {
       params: { veterinarianId, date }
@@ -43,3 +53,5 @@ export const appointmentService = {
     return response.data;
   },
 };
+
+export default appointmentService;

@@ -32,6 +32,21 @@ const parseSlotToMinutes = (timeStr) => {
   return hours * 60 + minutes;
 };
 
+// Helper to load Razorpay Checkout script dynamically
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 // Zod validation schema
 const appointmentSchema = z.object({
   petId: z.coerce.number().positive({ message: "Select a registered pet" }),
@@ -173,20 +188,115 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      await api.post('/appointments', data);
-      showToast("Appointment booked successfully!", "success");
-      reset({
-        petId: pets[0]?.id || 0,
-        veterinarianId: vets[0]?.id || 0,
-        appointmentDate: '',
-        appointmentTime: '',
-        notes: ''
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        showToast("Failed to load Razorpay SDK. Please check your connection.", "error");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Step 1: Initiate appointment and create Razorpay order for ₹10
+      const paymentData = await appointmentService.initiateAppointmentPayment(data);
+      const isMock = paymentData.razorpayOrderId?.startsWith('order_mock_') || paymentData.keyId?.includes('placeholder');
+
+      if (isMock) {
+        const confirmed = window.confirm(
+          `[PetZoe Consultation Test Mode Payment]\n\n` +
+          `Veterinarian: Dr. ${paymentData.veterinarianName}\n` +
+          `Patient Pet: ${paymentData.petName}\n` +
+          `Consultation Booking Fee: ₹${paymentData.amount}\n` +
+          `Simulated Order ID: ${paymentData.razorpayOrderId}\n\n` +
+          `Click OK to simulate successful ₹10 payment, or Cancel to abort.`
+        );
+
+        if (confirmed) {
+          try {
+            await appointmentService.verifyAppointmentPayment({
+              appointmentId: paymentData.appointmentId,
+              razorpayOrderId: paymentData.razorpayOrderId,
+              razorpayPaymentId: `pay_mock_${Date.now()}`,
+              razorpaySignature: 'simulated_valid_test_signature'
+            });
+            showToast("Test payment of ₹10 verified! Consultation confirmed.", "success");
+            reset({
+              petId: pets[0]?.id || 0,
+              veterinarianId: vets[0]?.id || 0,
+              appointmentDate: '',
+              appointmentTime: '',
+              notes: ''
+            });
+            setScheduleData(null);
+            loadData();
+          } catch (err) {
+            showToast(err.response?.data?.message || "Failed to verify consultation payment.", "error");
+          } finally {
+            setIsSubmitting(false);
+          }
+        } else {
+          setIsSubmitting(false);
+          showToast("Payment cancelled. Appointment was not booked.", "warning");
+        }
+        return;
+      }
+
+      // Live / Sandbox Razorpay Checkout Modal
+      const options = {
+        key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: paymentData.amountInPaise, // 1000 paise = ₹10
+        currency: paymentData.currency || 'INR',
+        name: 'PetZoe Veterinary Consultation',
+        description: `Consultation Fee (Dr. ${paymentData.veterinarianName})`,
+        order_id: paymentData.razorpayOrderId,
+        prefill: {
+          name: paymentData.customerName || user?.name || '',
+          email: paymentData.customerEmail || user?.email || '',
+          contact: paymentData.customerPhone || ''
+        },
+        theme: {
+          color: '#0d9488'
+        },
+        handler: async function (response) {
+          try {
+            setIsSubmitting(true);
+            await appointmentService.verifyAppointmentPayment({
+              appointmentId: paymentData.appointmentId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature
+            });
+            showToast(`Payment of ₹10 successful! Consultation confirmed with Dr. ${paymentData.veterinarianName}.`, "success");
+            reset({
+              petId: pets[0]?.id || 0,
+              veterinarianId: vets[0]?.id || 0,
+              appointmentDate: '',
+              appointmentTime: '',
+              notes: ''
+            });
+            setScheduleData(null);
+            loadData();
+          } catch (verifyErr) {
+            showToast(verifyErr.response?.data?.message || "Payment verification failed", "error");
+          } finally {
+            setIsSubmitting(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setIsSubmitting(false);
+            showToast("Payment dismissed. Appointment was not booked.", "warning");
+          }
+        }
+      };
+
+      const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.on('payment.failed', function (response) {
+        showToast(response.error?.description || "Payment failed", "error");
+        setIsSubmitting(false);
       });
-      setScheduleData(null);
-      loadData();
+      razorpayInstance.open();
+
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to book appointment.", "error");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -374,6 +484,23 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
               )}
             </div>
 
+            {/* Consultation Fee Badge */}
+            <div className="bg-sky-50/70 border border-sky-100 rounded-2xl p-3 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center font-bold text-sm">
+                  ₹
+                </span>
+                <div>
+                  <span className="font-bold text-slate-700 block text-[11px]">Consultation Fee</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Standard verified veterinary appointment</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="font-extrabold text-sm text-[#1E3A5F]">₹10</span>
+                <span className="block text-[9px] font-bold text-emerald-600 uppercase">Test Mode</span>
+              </div>
+            </div>
+
             {/* Submit */}
             <button
               type="submit"
@@ -383,11 +510,11 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
               {isSubmitting ? (
                 <>
                   <Loader2 className="animate-spin" size={14} />
-                  Scheduling Consultation...
+                  Opening Razorpay Checkout...
                 </>
               ) : (
                 <>
-                  Confirm Appointment <ArrowRight size={14} />
+                  Pay ₹10 & Confirm Consultation <ArrowRight size={14} />
                 </>
               )}
             </button>
@@ -464,6 +591,9 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                           {isPending ? 'Awaiting Doctor Confirmation' :
                            isInConsultation ? 'Consultation In Progress' :
                            appt.status}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                          ₹{appt.fee || 10} Paid
                         </span>
                         <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
                           <PawPrint size={12} className="text-primary-500" /> {appt.petName}
