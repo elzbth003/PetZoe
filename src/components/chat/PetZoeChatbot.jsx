@@ -38,6 +38,15 @@ export default function PetZoeChatbot() {
   const [webSearchStatusText, setWebSearchStatusText] = useState('Searching trusted veterinary sources...');
   const [errorMessage, setErrorMessage] = useState(null);
   const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [isDoctorChatOpen, setIsDoctorChatOpen] = useState(false);
+
+  useEffect(() => {
+    const handleDoctorChat = (e) => {
+      setIsDoctorChatOpen(!!e?.detail?.open);
+    };
+    window.addEventListener('petzoe:doctor-chat', handleDoctorChat);
+    return () => window.removeEventListener('petzoe:doctor-chat', handleDoctorChat);
+  }, []);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -325,7 +334,7 @@ export default function PetZoeChatbot() {
   return (
     <>
       {/* Floating Toggle Button */}
-      {!isOpen && (
+      {!isOpen && !isDoctorChatOpen && (
         <button
           data-testid="chatbot-toggle"
           onClick={() => setIsOpen(true)}
