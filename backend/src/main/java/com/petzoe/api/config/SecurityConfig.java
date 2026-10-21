@@ -129,6 +129,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/chat/public/**").permitAll()
                         // Admin: restricted to ADMIN role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Allow all non-API requests (React frontend static assets and SPA routes)
+                        .requestMatchers(request -> !request.getServletPath().startsWith("/api/")).permitAll()
                         .anyRequest().authenticated()                // Secure everything else
                 )
                 // Set session management to stateless (no server-side sessions)
