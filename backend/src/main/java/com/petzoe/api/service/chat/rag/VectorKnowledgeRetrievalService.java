@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)
 public class VectorKnowledgeRetrievalService {
 
     private static final Logger log = LoggerFactory.getLogger(VectorKnowledgeRetrievalService.class);

@@ -151,7 +151,9 @@ public class ChatSafetyService {
             return ChatIntent.SHELTER;
         }
 
-        if (lower.contains("help") || lower.contains("how to use") || lower.contains("navigate") || lower.contains("petzoe")) {
+        if (lower.contains("help") || lower.contains("how to use") || lower.contains("navigate") || lower.contains("petzoe")
+                || lower.contains("register") || lower.contains("add pet") || lower.contains("add a pet") || lower.contains("how to add")
+                || lower.contains("register a pet")) {
             return ChatIntent.PLATFORM_HELP;
         }
 

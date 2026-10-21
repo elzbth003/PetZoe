@@ -30,6 +30,8 @@ public class DataMigrationRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        ensureDatabaseFunctions();
+
         try {
             Integer userCount = jdbcTemplate.queryForObject("SELECT count(*) FROM users", Integer.class);
             if (userCount != null && userCount >= 20) {
@@ -124,4 +126,42 @@ public class DataMigrationRunner implements CommandLineRunner {
             log.error("Error during data migration: ", e);
         }
     }
+
+    private void ensureDatabaseFunctions() {
+        try {
+            jdbcTemplate.execute("""
+                CREATE OR REPLACE FUNCTION cosine_similarity_arr(a real[], b real[])
+                RETURNS double precision AS $$
+                DECLARE
+                    dot_prod double precision := 0.0;
+                    norm_a double precision := 0.0;
+                    norm_b double precision := 0.0;
+                    dim int;
+                    i int;
+                BEGIN
+                    IF a IS NULL OR b IS NULL THEN
+                        RETURN 0.0;
+                    END IF;
+                    dim := array_length(a, 1);
+                    IF dim IS NULL OR dim <> array_length(b, 1) THEN
+                        RETURN 0.0;
+                    END IF;
+                    FOR i IN 1..dim LOOP
+                        dot_prod := dot_prod + (a[i] * b[i]);
+                        norm_a := norm_a + (a[i] * a[i]);
+                        norm_b := norm_b + (b[i] * b[i]);
+                    END LOOP;
+                    IF norm_a = 0.0 OR norm_b = 0.0 THEN
+                        RETURN 0.0;
+                    END IF;
+                    RETURN dot_prod / (sqrt(norm_a) * sqrt(norm_b));
+                END;
+                $$ LANGUAGE plpgsql IMMUTABLE;
+            """);
+            log.info("Ensured PostgreSQL function 'cosine_similarity_arr' exists.");
+        } catch (Exception e) {
+            log.warn("Could not create 'cosine_similarity_arr' function: {}", e.getMessage());
+        }
+    }
+
 }
