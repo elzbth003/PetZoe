@@ -4,6 +4,7 @@ import { ShoppingCart, Heart, ChevronRight, Check, AlertCircle, ShieldCheck, Tru
 import marketplaceService from '../../services/marketplaceService';
 import { vendorProductService } from '../../services/vendorProductService';
 import StarRating from '../../components/marketplace/StarRating';
+import SelectDropdown from '../../components/ui/SelectDropdown';
 import ProductCard from '../../components/marketplace/ProductCard';
 import SellerProductEditPanel from '../../components/marketplace/SellerProductEditPanel';
 import { useAuth } from '../../hooks/useAuth';
@@ -492,17 +493,20 @@ export default function ProductDetailPage() {
                       <form onSubmit={submitReview} className="space-y-3">
                         <div className="flex items-center gap-3">
                           <label className="text-xs font-bold text-slate-700">Rating:</label>
-                          <select 
-                            value={newReview.rating} 
-                            onChange={(e) => setNewReview({...newReview, rating: parseInt(e.target.value)})}
-                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 outline-none font-bold text-slate-800 text-xs"
-                          >
-                            {[5, 4, 3, 2, 1].map(num => (
-                              <option key={num} value={num}>
-                                {num} {num === 1 ? 'Star' : 'Stars'}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="w-36">
+                            <SelectDropdown
+                              value={newReview.rating}
+                              onChange={(val) => setNewReview({ ...newReview, rating: parseInt(val, 10) })}
+                              size="sm"
+                              options={[
+                                { value: 5, label: '5 Stars', icon: '⭐⭐⭐⭐⭐' },
+                                { value: 4, label: '4 Stars', icon: '⭐⭐⭐⭐' },
+                                { value: 3, label: '3 Stars', icon: '⭐⭐⭐' },
+                                { value: 2, label: '2 Stars', icon: '⭐⭐' },
+                                { value: 1, label: '1 Star', icon: '⭐' }
+                              ]}
+                            />
+                          </div>
                         </div>
                         <textarea 
                           placeholder="How did this product perform for your pet? Share genuine feedback..."

@@ -3,6 +3,7 @@ import { vendorProductService } from '../../services/vendorProductService';
 import marketplaceService from '../../services/marketplaceService';
 import { AlertCircle, ArrowLeft, ArrowRight, Save, Send, Loader2 } from 'lucide-react';
 import ImageUpload from '../ui/ImageUpload';
+import SelectDropdown from '../ui/SelectDropdown';
 
 const AddProductWizard = ({ onCancel, onProductAdded }) => {
   const [step, setStep] = useState(1);
@@ -272,18 +273,22 @@ const AddProductWizard = ({ onCancel, onProductAdded }) => {
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Category *</label>
-              <select
-                name="categoryId"
+              <SelectDropdown
                 value={formData.categoryId}
-                onChange={handleCategoryChange}
-                className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white"
-                required
-              >
-                <option value="">Select Category</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+                onChange={(val) => {
+                  const selCat = categories.find(c => String(c.id) === String(val));
+                  setFormData(prev => ({
+                    ...prev,
+                    categoryId: val,
+                    categoryName: selCat ? selCat.name : ''
+                  }));
+                }}
+                placeholder="Select Category"
+                options={categories.map(cat => ({
+                  value: cat.id,
+                  label: cat.name
+                }))}
+              />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">SKU (Stock Keeping Unit) *</label>
@@ -299,19 +304,18 @@ const AddProductWizard = ({ onCancel, onProductAdded }) => {
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Target Pet Type</label>
-              <select
-                name="petType"
+              <SelectDropdown
                 value={formData.petType}
-                onChange={handleChange}
-                className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white"
-              >
-                <option value="All Pets">All Pets</option>
-                <option value="Dog">Dog</option>
-                <option value="Cat">Cat</option>
-                <option value="Bird">Bird</option>
-                <option value="Fish">Fish</option>
-                <option value="Small Pet">Small Pet</option>
-              </select>
+                onChange={(val) => setFormData(prev => ({ ...prev, petType: val }))}
+                options={[
+                  { value: 'All Pets', label: 'All Pets', icon: '🐾' },
+                  { value: 'Dog', label: 'Dog', icon: '🐕' },
+                  { value: 'Cat', label: 'Cat', icon: '🐈' },
+                  { value: 'Bird', label: 'Bird', icon: '🦜' },
+                  { value: 'Fish', label: 'Fish', icon: '🐠' },
+                  { value: 'Small Pet', label: 'Small Pet', icon: '🐹' }
+                ]}
+              />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Product Image (Optional)</label>
