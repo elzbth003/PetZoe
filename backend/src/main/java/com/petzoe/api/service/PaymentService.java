@@ -163,7 +163,12 @@ public class PaymentService {
                 log.info("Created Razorpay Order {} for PetZoe Order {}", razorpayOrderId, order.getId());
             } catch (RazorpayException e) {
                 log.error("Failed to create Razorpay Order for PetZoe Order {}: {}", order.getId(), e.getMessage());
-                throw new RuntimeException("Payment gateway initialization failed: " + e.getMessage(), e);
+                if ("auto".equalsIgnoreCase(mode) || "mock".equalsIgnoreCase(mode)) {
+                    log.warn("Falling back to simulated test mode due to gateway exception: {}", e.getMessage());
+                    razorpayOrderId = "order_mock_" + order.getId() + "_" + System.currentTimeMillis();
+                } else {
+                    throw new RuntimeException("Payment gateway initialization failed: " + e.getMessage(), e);
+                }
             }
         }
 
