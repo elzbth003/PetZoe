@@ -7,6 +7,7 @@ import {
 import { vetClinicalService } from '../../services/vetClinicalService';
 import vetScanService from '../../services/vetScanService';
 import { useToast } from '../../hooks/useToast';
+import SelectDropdown from '../ui/SelectDropdown';
 
 export default function ConsultationModal({ appointment, isOpen, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
@@ -365,17 +366,17 @@ export default function ConsultationModal({ appointment, isOpen, onClose, onSucc
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Health Status</label>
-                <select
+                <SelectDropdown
                   value={formData.healthStatus}
-                  onChange={(e) => setFormData({ ...formData, healthStatus: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:border-sky-500 focus:bg-white transition-colors"
-                >
-                  <option value="Under Treatment">Under Treatment</option>
-                  <option value="Recovering">Recovering</option>
-                  <option value="Healthy">Healthy (Normal)</option>
-                  <option value="Examined">Examined</option>
-                  <option value="Critical">Critical</option>
-                </select>
+                  onChange={(val) => setFormData({ ...formData, healthStatus: val })}
+                  options={[
+                    { value: 'Under Treatment', label: 'Under Treatment', icon: '🟡', badge: 'Active' },
+                    { value: 'Recovering', label: 'Recovering', icon: '🟢', badge: 'Progress' },
+                    { value: 'Healthy', label: 'Healthy (Normal)', icon: '✅', badge: 'Normal' },
+                    { value: 'Examined', label: 'Examined', icon: '🩺', badge: 'Done' },
+                    { value: 'Critical', label: 'Critical', icon: '🚨', badge: 'Urgent' }
+                  ]}
+                />
               </div>
             </div>
 

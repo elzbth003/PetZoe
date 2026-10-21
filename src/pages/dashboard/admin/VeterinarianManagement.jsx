@@ -75,20 +75,22 @@ export default function VeterinarianManagement() {
               className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition-shadow"
             />
           </div>
-          <div className="flex items-center gap-2 relative">
-            <Filter size={18} className="text-slate-400" />
-            <select 
+          <div className="w-52 shrink-0">
+            <SelectDropdown
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="pl-3 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 appearance-none"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="PENDING">Pending Review</option>
-              <option value="UNDER_REVIEW">Under Review</option>
-              <option value="RESUBMISSION_REQUIRED">Resubmission Req</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
+              onChange={(val) => setStatusFilter(val)}
+              icon={Filter}
+              size="sm"
+              buttonClassName="bg-white border-slate-200 text-xs font-semibold"
+              options={[
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'PENDING', label: 'Pending Review', badge: 'Pending' },
+                { value: 'UNDER_REVIEW', label: 'Under Review', badge: 'Review' },
+                { value: 'RESUBMISSION_REQUIRED', label: 'Resubmission Req', badge: 'Action' },
+                { value: 'APPROVED', label: 'Approved', badge: 'Active' },
+                { value: 'REJECTED', label: 'Rejected', badge: 'Alert' }
+              ]}
+            />
           </div>
         </div>
 

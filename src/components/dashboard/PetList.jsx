@@ -11,6 +11,7 @@ import api from '../../services/api';
 import rehomeService from '../../services/rehomeService';
 import { useToast } from '../../hooks/useToast';
 import ImageUpload from '../ui/ImageUpload';
+import SelectDropdown from '../ui/SelectDropdown';
 import RehomePetModal from '../rehoming/RehomePetModal';
 import RehomeApplicationsReviewModal from '../rehoming/RehomeApplicationsReviewModal';
 
@@ -347,22 +348,22 @@ export default function PetList({ onPetsUpdated }) {
             />
           </div>
 
-          <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 pointer-events-none">
-              <Filter size={14} />
-            </span>
-            <select
+          <div className="w-36 shrink-0">
+            <SelectDropdown
               value={filterSpecies}
-              onChange={(e) => setFilterSpecies(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 focus:outline-none text-xs font-semibold cursor-pointer shadow-sm appearance-none"
-            >
-              <option value="All">All Species</option>
-              <option value="Dog">Dog</option>
-              <option value="Cat">Cat</option>
-              <option value="Bird">Bird</option>
-              <option value="Rabbit">Rabbit</option>
-              <option value="Other">Other</option>
-            </select>
+              onChange={(val) => setFilterSpecies(val)}
+              icon={Filter}
+              size="sm"
+              options={[
+                { value: 'All', label: 'All Species' },
+                { value: 'Dog', label: 'Dog', icon: '🐕' },
+                { value: 'Cat', label: 'Cat', icon: '🐈' },
+                { value: 'Bird', label: 'Bird', icon: '🦜' },
+                { value: 'Rabbit', label: 'Rabbit', icon: '🐇' },
+                { value: 'Other', label: 'Other', icon: '🐾' }
+              ]}
+              buttonClassName="bg-white border-slate-200 shadow-xs"
+            />
           </div>
         </div>
 
@@ -695,14 +696,15 @@ export default function PetList({ onPetsUpdated }) {
                     {/* Gender */}
                     <div>
                       <label htmlFor="pet-gender" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Gender</label>
-                      <select
-                        id="pet-gender"
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-100"
-                        {...register('gender')}
-                      >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
+                      <SelectDropdown
+                        value={watch('gender')}
+                        onChange={(val) => setValue('gender', val, { shouldValidate: true })}
+                        options={[
+                          { value: 'Male', label: 'Male', icon: '♂' },
+                          { value: 'Female', label: 'Female', icon: '♀' }
+                        ]}
+                        error={errors.gender?.message}
+                      />
                     </div>
 
                     {/* Age */}
@@ -758,15 +760,16 @@ export default function PetList({ onPetsUpdated }) {
                     {/* Vaccination Status */}
                     <div className="col-span-2 sm:col-span-1">
                       <label htmlFor="pet-vaccinationStatus" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Vaccination Status</label>
-                      <select
-                        id="pet-vaccinationStatus"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-100"
-                        {...register('vaccinationStatus')}
-                      >
-                        <option value="Up-to-date">Up-to-date</option>
-                        <option value="Needs Vaccination">Needs Vaccination</option>
-                        <option value="Overdue">Overdue</option>
-                      </select>
+                      <SelectDropdown
+                        value={watch('vaccinationStatus')}
+                        onChange={(val) => setValue('vaccinationStatus', val, { shouldValidate: true })}
+                        options={[
+                          { value: 'Up-to-date', label: 'Up-to-date', icon: '🟢', badge: 'Active' },
+                          { value: 'Needs Vaccination', label: 'Needs Vaccination', icon: '🟡', badge: 'Due' },
+                          { value: 'Overdue', label: 'Overdue', icon: '🔴', badge: 'Alert' },
+                        ]}
+                        error={errors.vaccinationStatus?.message}
+                      />
                     </div>
 
                     {/* Date of Birth */}

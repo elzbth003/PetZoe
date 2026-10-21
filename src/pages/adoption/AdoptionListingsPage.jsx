@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Filter, ChevronLeft, ChevronRight, PawPrint } from 'lucide-react';
 import adoptionPublicService from '../../services/adoptionPublicService';
 import AdoptionAnimalCard from '../../components/adoption/AdoptionAnimalCard';
+import SelectDropdown from '../../components/ui/SelectDropdown';
 
 const SEX_OPTIONS = ['MALE', 'FEMALE'];
 const SIZE_OPTIONS = ['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
@@ -91,29 +92,52 @@ export default function AdoptionListingsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Species</label>
-                <select value={species} onChange={e => { setSpecies(e.target.value); setCurrentPage(0); }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
-                  <option value="">All</option>
-                  {speciesList.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <SelectDropdown
+                  value={species}
+                  onChange={(val) => { setSpecies(val); setCurrentPage(0); }}
+                  placeholder="All Species"
+                  options={[
+                    { value: '', label: 'All Species' },
+                    ...speciesList.map(s => ({
+                      value: s,
+                      label: s,
+                      icon: s.toLowerCase() === 'dog' ? '🐕' : s.toLowerCase() === 'cat' ? '🐈' : '🐾'
+                    }))
+                  ]}
+                  size="sm"
+                  buttonClassName="bg-slate-50"
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sex</label>
-                <select value={sex} onChange={e => { setSex(e.target.value); setCurrentPage(0); }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
-                  <option value="">Any</option>
-                  {SEX_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
-                </select>
+                <SelectDropdown
+                  value={sex}
+                  onChange={(val) => { setSex(val); setCurrentPage(0); }}
+                  placeholder="Any Sex"
+                  options={[
+                    { value: '', label: 'Any Sex' },
+                    { value: 'MALE', label: 'Male', icon: '♂' },
+                    { value: 'FEMALE', label: 'Female', icon: '♀' }
+                  ]}
+                  size="sm"
+                  buttonClassName="bg-slate-50"
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Size</label>
-                <select value={size} onChange={e => { setSize(e.target.value); setCurrentPage(0); }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500">
-                  <option value="">Any</option>
-                  {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-                </select>
+                <SelectDropdown
+                  value={size}
+                  onChange={(val) => { setSize(val); setCurrentPage(0); }}
+                  placeholder="Any Size"
+                  options={[
+                    { value: '', label: 'Any Size' },
+                    ...SIZE_OPTIONS.map(s => ({ value: s, label: s.replace(/_/g, ' ') }))
+                  ]}
+                  size="sm"
+                  buttonClassName="bg-slate-50"
+                />
               </div>
 
               <div>

@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../../services/api';
 import vetScanService from '../../../services/vetScanService';
 import { useToast } from '../../../hooks/useToast';
+import SelectDropdown from '../../ui/SelectDropdown';
 
 export default function VetScanView({ onNavigateToAppointments, onNavigateToRecords }) {
   const [pets, setPets] = useState([]);
@@ -69,8 +70,9 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
     } catch (_) {}
   };
 
-  const handlePetChange = (e) => {
-    const petId = parseInt(e.target.value, 10);
+  const handlePetChange = (val) => {
+    const rawId = val?.target ? val.target.value : val;
+    const petId = parseInt(rawId, 10);
     const pet = pets.find((p) => p.id === petId);
     if (pet) {
       setSelectedPet(pet);
@@ -178,18 +180,17 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
             {/* Pet Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 block">Select Patient Canine</label>
-              <select
-                data-testid="pet-selector"
+              <SelectDropdown
                 value={selectedPet?.id || ''}
                 onChange={handlePetChange}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all outline-none"
-              >
-                {pets.map((pet) => (
-                  <option key={pet.id} value={pet.id}>
-                    {pet.name} ({pet.breed || pet.species}) — ID: {pet.petCode || pet.id}
-                  </option>
-                ))}
-              </select>
+                placeholder="Choose registered canine..."
+                options={pets.map((pet) => ({
+                  value: pet.id,
+                  label: `${pet.name} (${pet.breed || pet.species})`,
+                  icon: '🐕',
+                  badge: `ID: ${pet.petCode || pet.id}`
+                }))}
+              />
             </div>
 
             {/* Image Upload Zone */}
