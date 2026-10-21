@@ -57,6 +57,8 @@ export default function OrderHistoryPage() {
       const initRes = await marketplaceService.createPayment(orderId);
       const paymentData = initRes.data;
 
+      const isMock = paymentData.razorpayOrderId?.startsWith('order_mock_') || paymentData.keyId?.includes('placeholder');
+
       // If order was generated with a simulated mock order ID from a local dev mock
       if (isMock) {
         // If window.Razorpay is available and key is configured, still try to open standard modal
