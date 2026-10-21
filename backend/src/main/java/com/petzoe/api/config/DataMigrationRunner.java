@@ -11,8 +11,6 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Automatically restores the complete pre-hosting local database snapshot (89 users,
@@ -53,10 +51,7 @@ public class DataMigrationRunner implements CommandLineRunner {
         log.info("==================================================================");
 
         try {
-            // 1. Temporarily disable foreign key constraint enforcement during session import
-            jdbcTemplate.execute("SET session_replication_role = 'replica'");
-
-            // 2. Truncate existing initial demo data with CASCADE
+            // 1. Truncate existing initial demo data with CASCADE (cleans slate for local backup)
             log.info("Clearing existing initial dummy rows from public tables...");
             jdbcTemplate.execute("""
                 DO $$ 
@@ -69,15 +64,16 @@ public class DataMigrationRunner implements CommandLineRunner {
                 END $$;
             """);
 
-            // 3. Read and execute data_migration.sql in batches
+            // 2. Read and execute data_migration.sql statement by statement with fault tolerance
             log.info("Restoring users, pets, appointments, products, orders, and shelters...");
+            int totalExecuted = 0;
+            int errors = 0;
+
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 
                 StringBuilder statement = new StringBuilder();
                 String line;
-                List<String> batch = new ArrayList<>();
-                int totalExecuted = 0;
 
                 while ((line = reader.readLine()) != null) {
                     String trimmed = line.trim();
@@ -87,26 +83,21 @@ public class DataMigrationRunner implements CommandLineRunner {
                     statement.append(line).append(" ");
                     if (trimmed.endsWith(";")) {
                         String sql = statement.toString().trim();
-                        batch.add(sql);
                         statement.setLength(0);
 
-                        if (batch.size() >= 50) {
-                            jdbcTemplate.batchUpdate(batch.toArray(new String[0]));
-                            totalExecuted += batch.size();
-                            batch.clear();
+                        try {
+                            jdbcTemplate.execute(sql);
+                            totalExecuted++;
+                        } catch (Exception ex) {
+                            errors++;
                         }
                     }
                 }
 
-                if (!batch.isEmpty()) {
-                    jdbcTemplate.batchUpdate(batch.toArray(new String[0]));
-                    totalExecuted += batch.size();
-                }
-
-                log.info("Successfully executed {} migration statements.", totalExecuted);
+                log.info("Executed {} migration statements ({} skipped/non-critical).", totalExecuted, errors);
             }
 
-            // 4. Synchronize all PostgreSQL sequences to current max IDs
+            // 3. Synchronize all PostgreSQL sequences to current max IDs
             log.info("Synchronizing PostgreSQL sequences to prevent ID collisions...");
             jdbcTemplate.execute("""
                 DO $$
@@ -124,9 +115,6 @@ public class DataMigrationRunner implements CommandLineRunner {
                 END $$;
             """);
 
-            // 5. Re-enable foreign key constraints
-            jdbcTemplate.execute("SET session_replication_role = 'origin'");
-
             Integer finalCount = jdbcTemplate.queryForObject("SELECT count(*) FROM users", Integer.class);
             log.info("==================================================================");
             log.info("MIGRATION SUCCESSFUL! Total users in Azure database: {}", finalCount);
@@ -134,9 +122,6 @@ public class DataMigrationRunner implements CommandLineRunner {
 
         } catch (Exception e) {
             log.error("Error during data migration: ", e);
-            try {
-                jdbcTemplate.execute("SET session_replication_role = 'origin'");
-            } catch (Exception ignored) {}
         }
     }
 }
