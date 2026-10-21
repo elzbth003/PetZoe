@@ -653,7 +653,7 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
         <ChatWidget 
           appointmentId={activeChat.id} 
           currentUserId={user?.id}
-          otherUserName={`Dr. ${activeChat.veterinarianName}`}
+          otherUserName={activeChat.veterinarianName?.startsWith("Dr.") ? activeChat.veterinarianName : `Dr. ${activeChat.veterinarianName}`}
           onClose={() => setActiveChat(null)} 
         />
       )}

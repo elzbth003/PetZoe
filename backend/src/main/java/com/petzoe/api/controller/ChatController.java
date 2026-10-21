@@ -3,6 +3,8 @@ package com.petzoe.api.controller;
 import com.petzoe.api.dto.AiChatRequestDTO;
 import com.petzoe.api.dto.AiChatResponseDTO;
 import com.petzoe.api.dto.AiConversationDTO;
+import com.petzoe.api.dto.ChatMessageDTO;
+import com.petzoe.api.service.ChatService;
 import com.petzoe.api.service.chat.AiChatService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +19,49 @@ import java.util.Map;
 public class ChatController {
 
     private final AiChatService chatService;
+    private final ChatService consultationChatService;
 
-    public ChatController(AiChatService chatService) {
+    public ChatController(AiChatService chatService, ChatService consultationChatService) {
         this.chatService = chatService;
+        this.consultationChatService = consultationChatService;
+    }
+
+    /**
+     * Send message in appointment consultation chat (Doctor <-> Pet Owner).
+     */
+    @PostMapping("/appointment/{appointmentId}")
+    public ResponseEntity<ChatMessageDTO> sendAppointmentMessage(
+            @PathVariable Long appointmentId,
+            @RequestBody Map<String, String> payload,
+            Authentication authentication) {
+        String content = payload.get("content");
+        String email = authentication.getName();
+        ChatMessageDTO dto = consultationChatService.sendMessage(appointmentId, content, email);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Get all messages for an appointment consultation chat.
+     */
+    @GetMapping("/appointment/{appointmentId}")
+    public ResponseEntity<List<ChatMessageDTO>> getAppointmentMessages(
+            @PathVariable Long appointmentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<ChatMessageDTO> messages = consultationChatService.getMessagesByAppointment(appointmentId, email);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * Mark all unread messages for this appointment as read.
+     */
+    @PutMapping("/appointment/{appointmentId}/read")
+    public ResponseEntity<Map<String, String>> markAppointmentMessagesAsRead(
+            @PathVariable Long appointmentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        consultationChatService.markMessagesAsRead(appointmentId, email);
+        return ResponseEntity.ok(Map.of("message", "Messages marked as read."));
     }
 
     /**
