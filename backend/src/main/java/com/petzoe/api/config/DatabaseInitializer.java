@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
+@org.springframework.core.annotation.Order(2)
 public class DatabaseInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -104,6 +105,9 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        if (userRepository.count() >= 20) {
+            return;
+        }
         seedAdmin();
         seedVeterinarians();
         seedPetOwnersAndPets();
