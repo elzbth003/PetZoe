@@ -16,11 +16,14 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final com.petzoe.api.repository.AppointmentRepository appointmentRepository;
 
     public NotificationService(NotificationRepository notificationRepository,
-                                UserRepository userRepository) {
+                                UserRepository userRepository,
+                                com.petzoe.api.repository.AppointmentRepository appointmentRepository) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.appointmentRepository = appointmentRepository;
     }
 
     /**
@@ -40,11 +43,43 @@ public class NotificationService {
     }
 
     /**
+     * Delete notifications associated with an appointment.
+     */
+    public void deleteNotificationsForAppointment(Long appointmentId) {
+        if (appointmentId == null) return;
+        List<Notification> notifs = notificationRepository.findByTypeInAndReferenceId(
+                List.of("APPOINTMENT", "CHAT"), appointmentId);
+        if (!notifs.isEmpty()) {
+            notificationRepository.deleteAll(notifs);
+        }
+    }
+
+    /**
      * Get all notifications for a user, ordered newest first.
+     * Automatically filters and purges orphaned CHAT notifications for non-existent appointments.
      */
     public List<NotificationDTO> getNotifications(String email) {
         User user = getUser(email);
-        return notificationRepository.findByUserOrderByCreatedAtDesc(user)
+        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+
+        List<Notification> validNotifications = new java.util.ArrayList<>();
+        List<Notification> orphanedNotifications = new java.util.ArrayList<>();
+
+        for (Notification n : notifications) {
+            if ("CHAT".equalsIgnoreCase(n.getType()) && n.getReferenceId() != null) {
+                if (!appointmentRepository.existsById(n.getReferenceId())) {
+                    orphanedNotifications.add(n);
+                    continue;
+                }
+            }
+            validNotifications.add(n);
+        }
+
+        if (!orphanedNotifications.isEmpty()) {
+            notificationRepository.deleteAll(orphanedNotifications);
+        }
+
+        return validNotifications
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());

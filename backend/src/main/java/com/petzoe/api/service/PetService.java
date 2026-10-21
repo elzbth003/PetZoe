@@ -148,6 +148,9 @@ public class PetService {
                     chatMessageRepository.deleteAll(messages);
                 }
 
+                // Delete associated appointment & chat notifications
+                notificationService.deleteNotificationsForAppointment(appointment.getId());
+
                 // Nullify reference from payments to this appointment to maintain financial audit integrity without blocking cascade
                 List<Payment> payments = paymentRepository.findAllByAppointmentId(appointment.getId());
                 if (payments != null && !payments.isEmpty()) {
