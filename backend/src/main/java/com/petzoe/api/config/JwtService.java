@@ -79,6 +79,7 @@ public class JwtService {
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         return Jwts
                 .builder()
+                .serializeToJsonWith(new io.jsonwebtoken.jackson.io.JacksonSerializer<>())
                 .setClaims(extraClaims) // Set custom data (like role, name)
                 .setSubject(userDetails.getUsername()) // Set the main identifier (email)
                 .setIssuedAt(new Date(System.currentTimeMillis())) // Set token creation time
@@ -126,6 +127,7 @@ public class JwtService {
     private Claims extractAllClaims(String token) {
         return Jwts
                 .parserBuilder()
+                .deserializeJsonWith(new io.jsonwebtoken.jackson.io.JacksonDeserializer<>())
                 .setSigningKey(getSignInKey())
                 .build()
                 .parseClaimsJws(token)
