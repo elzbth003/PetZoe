@@ -24,6 +24,17 @@ jobs:
           java-version: '21'
           distribution: 'microsoft'
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Frontend with Vite
+        run: |
+          npm ci || npm install
+          npm run build
+          cp -r dist/* backend/src/main/resources/static/
+
       - name: Build with Maven
         working-directory: backend
         run: |
