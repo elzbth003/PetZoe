@@ -39,13 +39,21 @@ export default function PetZoeChatbot() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [isDoctorChatOpen, setIsDoctorChatOpen] = useState(false);
+  const [isModalActive, setIsModalActive] = useState(false);
 
   useEffect(() => {
     const handleDoctorChat = (e) => {
       setIsDoctorChatOpen(!!e?.detail?.open);
     };
+    const handleModalState = (e) => {
+      setIsModalActive(!!e?.detail?.open);
+    };
     window.addEventListener('petzoe:doctor-chat', handleDoctorChat);
-    return () => window.removeEventListener('petzoe:doctor-chat', handleDoctorChat);
+    window.addEventListener('petzoe:modal-state', handleModalState);
+    return () => {
+      window.removeEventListener('petzoe:doctor-chat', handleDoctorChat);
+      window.removeEventListener('petzoe:modal-state', handleModalState);
+    };
   }, []);
 
   const messagesEndRef = useRef(null);
@@ -334,7 +342,7 @@ export default function PetZoeChatbot() {
   return (
     <>
       {/* Floating Toggle Button */}
-      {!isOpen && !isDoctorChatOpen && (
+      {!isOpen && !isDoctorChatOpen && !isModalActive && (
         <button
           data-testid="chatbot-toggle"
           onClick={() => setIsOpen(true)}

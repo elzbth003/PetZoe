@@ -86,6 +86,7 @@ export default function PetList({ onPetsUpdated }) {
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState('basic'); // 'basic' | 'health'
   const [editingPet, setEditingPet] = useState(null);
   const [deleteConfirmPet, setDeleteConfirmPet] = useState(null);
   const [isActionSubmitting, setIsActionSubmitting] = useState(false);
@@ -103,11 +104,20 @@ export default function PetList({ onPetsUpdated }) {
 
   const { showToast } = useToast();
 
+  // Hide global AI button while modal is open to prevent overlapping action buttons
+  useEffect(() => {
+    const isAnyModalOpen = isModalOpen || !!deleteConfirmPet || !!transferPet || !!rehomePet || !!reviewListing;
+    window.dispatchEvent(new CustomEvent('petzoe:modal-state', { detail: { open: isAnyModalOpen } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('petzoe:modal-state', { detail: { open: false } }));
+    };
+  }, [isModalOpen, deleteConfirmPet, transferPet, rehomePet, reviewListing]);
+
   useEffect(() => {
     if (isModalOpen && modalFormRef.current) {
       modalFormRef.current.scrollTop = 0;
     }
-  }, [isModalOpen]);
+  }, [isModalOpen, modalTab]);
 
   const {
     register,
@@ -171,6 +181,7 @@ export default function PetList({ onPetsUpdated }) {
 
   const openAddModal = () => {
     setEditingPet(null);
+    setModalTab('basic');
     reset({
       name: '',
       species: 'Dog',
@@ -190,6 +201,7 @@ export default function PetList({ onPetsUpdated }) {
 
   const openEditModal = (pet) => {
     setEditingPet(pet);
+    setModalTab('basic');
     reset({
       name: pet.name,
       species: pet.species,
@@ -533,251 +545,346 @@ export default function PetList({ onPetsUpdated }) {
 
       {/* Add / Edit Pet Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl border border-slate-100 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-[80] transition-opacity duration-200">
+          <div className="bg-white w-full sm:max-w-xl max-h-[92vh] sm:max-h-[88vh] flex flex-col rounded-t-3xl sm:rounded-3xl border border-slate-100 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
             
             {/* Modal Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
-              <h3 className="font-display font-bold text-base text-slate-800 flex items-center gap-2">
-                <Sparkles size={16} className="text-[#F97360]" />
-                {editingPet ? 'Update Pet Details' : 'Register New Pet'}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <form ref={modalFormRef} onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 overflow-y-auto">
-              
-              {/* Pet ID System Note */}
-              <div className="bg-sky-50/70 border border-sky-100 rounded-2xl p-3 flex items-start gap-2.5">
-                <span className="text-sm shrink-0 mt-0.5">🆔</span>
-                <p className="text-[11px] text-sky-900 leading-snug">
-                  {editingPet ? (
-                    <>
-                      Permanent Pet ID: <strong className="font-mono text-sky-700">{editingPet.petCode || `PZ-PET-${String(editingPet.id).padStart(6, '0')}`}</strong> (Immutable)
-                    </>
-                  ) : (
-                    <>
-                      A unique, permanent <strong>Pet ID</strong> (e.g. <span className="font-mono font-bold">PZ-PET-000025</span>) will be automatically generated upon saving.
-                    </>
-                  )}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Pet Name */}
-                <div className="col-span-2 sm:col-span-1">
-                  <label htmlFor="pet-name" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Pet Name</label>
-                  <input
-                    id="pet-name"
-                    type="text"
-                    placeholder="Milo"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.name ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('name')}
-                  />
-                  {errors.name && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.name.message}</p>
-                  )}
+            <div className="px-6 pt-5 pb-3 border-b border-slate-100 shrink-0 bg-white">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#F97360]">
+                    <Sparkles size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-base text-slate-900">
+                      {editingPet ? 'Update Pet Profile' : 'Register New Pet'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      {editingPet ? `Editing ${editingPet.name} (${editingPet.petCode || 'Pet'})` : 'Add your companion to PetZoe digital health record'}
+                    </p>
+                  </div>
                 </div>
-
-                {/* Species */}
-                <div className="col-span-2 sm:col-span-1">
-                  <label htmlFor="pet-species" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Species</label>
-                  <select
-                    id="pet-species"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none"
-                    {...register('species')}
-                  >
-                    <option value="Dog">Dog</option>
-                    <option value="Cat">Cat</option>
-                    <option value="Bird">Bird</option>
-                    <option value="Rabbit">Rabbit</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Breed */}
-                <div>
-                  <label htmlFor="pet-breed" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Breed</label>
-                  <input
-                    id="pet-breed"
-                    type="text"
-                    placeholder="Golden Retriever"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.breed ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('breed')}
-                  />
-                  {errors.breed && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.breed.message}</p>
-                  )}
-                </div>
-
-                {/* Age */}
-                <div>
-                  <label htmlFor="pet-age" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Age (Years)</label>
-                  <input
-                    id="pet-age"
-                    type="number"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.age ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('age')}
-                  />
-                  {errors.age && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.age.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Gender */}
-                <div>
-                  <label htmlFor="pet-gender" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Gender</label>
-                  <select
-                    id="pet-gender"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none"
-                    {...register('gender')}
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-
-                {/* Weight */}
-                <div>
-                  <label htmlFor="pet-weight" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Weight (kg)</label>
-                  <input
-                    id="pet-weight"
-                    type="number"
-                    step="0.1"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.weight ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('weight')}
-                  />
-                  {errors.weight && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.weight.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                {/* Vaccination Status */}
-                <div>
-                  <label htmlFor="pet-vaccinationStatus" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Vaccination Status</label>
-                  <select
-                    id="pet-vaccinationStatus"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none"
-                    {...register('vaccinationStatus')}
-                  >
-                    <option value="Up-to-date">Up-to-date</option>
-                    <option value="Needs Vaccination">Needs Vaccination</option>
-                    <option value="Overdue">Overdue</option>
-                  </select>
-                </div>
-
-                {/* Photo URL */}
-                <div>
-                  <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
-                    Photo <span className="text-[10px] text-slate-400 font-normal">(Optional - default preset is used if blank)</span>
-                  </label>
-                  <ImageUpload
-                    value={watch('photoUrl')}
-                    onChange={(url) => setValue('photoUrl', url, { shouldValidate: true })}
-                    error={errors.photoUrl?.message}
-                  />
-                </div>
-
-                {/* Color */}
-                <div>
-                  <label htmlFor="pet-color" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Color / Markings <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
-                  <input
-                    id="pet-color"
-                    type="text"
-                    placeholder="e.g. Golden, Black & White"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.color ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('color')}
-                  />
-                  {errors.color && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.color.message}</p>
-                  )}
-                </div>
-
-                {/* Date of Birth */}
-                <div>
-                  <label htmlFor="pet-dateOfBirth" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Date of Birth <span className="text-[10px] text-slate-400 font-normal">(Optional, cannot be in future)</span></label>
-                  <input
-                    id="pet-dateOfBirth"
-                    type="date"
-                    max={todayIso}
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.dateOfBirth ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('dateOfBirth')}
-                  />
-                  {errors.dateOfBirth && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.dateOfBirth.message}</p>
-                  )}
-                </div>
-
-                {/* Allergies */}
-                <div>
-                  <label htmlFor="pet-allergies" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Known Allergies <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
-                  <input
-                    id="pet-allergies"
-                    type="text"
-                    placeholder="e.g. Pollen, Certain foods, Medications"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.allergies ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none`}
-                    {...register('allergies')}
-                  />
-                  {errors.allergies && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.allergies.message}</p>
-                  )}
-                </div>
-
-                {/* Medical Notes */}
-                <div>
-                  <label htmlFor="pet-medicalNotes" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Medical Notes <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
-                  <textarea
-                    id="pet-medicalNotes"
-                    rows={3}
-                    placeholder="Previous conditions, ongoing treatments, special care instructions..."
-                    className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.medicalNotes ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none resize-none`}
-                    {...register('medicalNotes')}
-                  />
-                  {errors.medicalNotes && (
-                    <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.medicalNotes.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs transition-all cursor-pointer"
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                  title="Close modal"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isActionSubmitting}
-                  className="px-4 py-2.5 rounded-xl bg-[#1E3A5F] hover:bg-[#1A3354] text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {isActionSubmitting && <Loader2 size={12} className="animate-spin" />}
-                  {editingPet ? 'Update Pet' : 'Register Pet'}
+                  <X size={18} />
                 </button>
               </div>
 
+              {/* Segmented Tabs */}
+              <div className="flex gap-2 p-1 bg-slate-100/80 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setModalTab('basic')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    modalTab === 'basic'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>🐾 Basic Identity</span>
+                  {(errors.name || errors.breed || errors.age || errors.weight) && (
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTab('health')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    modalTab === 'health'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>🩺 Health & Profile</span>
+                  {(errors.dateOfBirth || errors.color || errors.allergies || errors.medicalNotes) && (
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body & Form */}
+            <form
+              id="pet-register-form"
+              ref={modalFormRef}
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4"
+            >
+              {modalTab === 'basic' ? (
+                <>
+                  {/* Pet ID System Note */}
+                  <div className="bg-sky-50/80 border border-sky-100/90 rounded-2xl p-3 flex items-start gap-2.5">
+                    <span className="text-base shrink-0 mt-0.5">🆔</span>
+                    <div className="text-[11px] text-sky-950 leading-relaxed">
+                      {editingPet ? (
+                        <>Permanent Pet ID: <strong className="font-mono text-sky-700 bg-white/70 px-1.5 py-0.5 rounded border border-sky-200">{editingPet.petCode || `PZ-PET-${String(editingPet.id).padStart(6, '0')}`}</strong> (Immutable)</>
+                      ) : (
+                        <>A unique, permanent <strong>Pet ID</strong> (e.g. <span className="font-mono font-bold text-sky-800">PZ-PET-000025</span>) will be automatically assigned upon creation.</>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Species Selector as Visual Pills */}
+                  <div>
+                    <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Species</label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {[
+                        { label: 'Dog', icon: '🐕' },
+                        { label: 'Cat', icon: '🐈' },
+                        { label: 'Bird', icon: '🦜' },
+                        { label: 'Rabbit', icon: '🐇' },
+                        { label: 'Other', icon: '🐾' }
+                      ].map((item) => {
+                        const isSelected = watch('species') === item.label;
+                        return (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() => setValue('species', item.label, { shouldValidate: true })}
+                            className={`py-2 px-1 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                              isSelected
+                                ? 'bg-[#1E3A5F] text-white border-[#1E3A5F] shadow-sm scale-102 font-bold'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 font-semibold'
+                            }`}
+                          >
+                            <span className="text-base leading-none">{item.icon}</span>
+                            <span className="text-[11px]">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3.5">
+                    {/* Pet Name */}
+                    <div className="col-span-2 sm:col-span-1">
+                      <label htmlFor="pet-name" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Pet Name *</label>
+                      <input
+                        id="pet-name"
+                        type="text"
+                        placeholder="e.g. Milo, Bella"
+                        className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border ${errors.name ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 transition-all`}
+                        {...register('name')}
+                      />
+                      {errors.name && (
+                        <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.name.message}</p>
+                      )}
+                    </div>
+
+                    {/* Breed */}
+                    <div className="col-span-2 sm:col-span-1">
+                      <label htmlFor="pet-breed" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Breed *</label>
+                      <input
+                        id="pet-breed"
+                        type="text"
+                        placeholder="e.g. Golden Retriever, Persian"
+                        className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border ${errors.breed ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 transition-all`}
+                        {...register('breed')}
+                      />
+                      {errors.breed && (
+                        <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.breed.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    {/* Gender */}
+                    <div>
+                      <label htmlFor="pet-gender" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Gender</label>
+                      <select
+                        id="pet-gender"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        {...register('gender')}
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                    </div>
+
+                    {/* Age */}
+                    <div>
+                      <label htmlFor="pet-age" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Age (Years)</label>
+                      <input
+                        id="pet-age"
+                        type="number"
+                        min="0"
+                        max="50"
+                        className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.age ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                        {...register('age')}
+                      />
+                      {errors.age && (
+                        <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.age.message}</p>
+                      )}
+                    </div>
+
+                    {/* Weight */}
+                    <div>
+                      <label htmlFor="pet-weight" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Weight (kg)</label>
+                      <input
+                        id="pet-weight"
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="200"
+                        className={`w-full px-3 py-2.5 rounded-xl bg-slate-50 border ${errors.weight ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                        {...register('weight')}
+                      />
+                      {errors.weight && (
+                        <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.weight.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Photo Upload */}
+                  <div className="pt-1">
+                    <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
+                      Photo <span className="text-[10px] text-slate-400 font-normal">(Optional — default species image used if blank)</span>
+                    </label>
+                    <ImageUpload
+                      value={watch('photoUrl')}
+                      onChange={(url) => setValue('photoUrl', url, { shouldValidate: true })}
+                      error={errors.photoUrl?.message}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Tab 2: Health & Details */}
+                  <div className="grid grid-cols-2 gap-3.5">
+                    {/* Vaccination Status */}
+                    <div className="col-span-2 sm:col-span-1">
+                      <label htmlFor="pet-vaccinationStatus" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Vaccination Status</label>
+                      <select
+                        id="pet-vaccinationStatus"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        {...register('vaccinationStatus')}
+                      >
+                        <option value="Up-to-date">Up-to-date</option>
+                        <option value="Needs Vaccination">Needs Vaccination</option>
+                        <option value="Overdue">Overdue</option>
+                      </select>
+                    </div>
+
+                    {/* Date of Birth */}
+                    <div className="col-span-2 sm:col-span-1">
+                      <label htmlFor="pet-dateOfBirth" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Date of Birth <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                      <input
+                        id="pet-dateOfBirth"
+                        type="date"
+                        max={todayIso}
+                        className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border ${errors.dateOfBirth ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                        {...register('dateOfBirth')}
+                      />
+                      {errors.dateOfBirth && (
+                        <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.dateOfBirth.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Color / Markings */}
+                  <div>
+                    <label htmlFor="pet-color" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Color / Markings <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                    <input
+                      id="pet-color"
+                      type="text"
+                      placeholder="e.g. Golden, Black & White, Tricolor"
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border ${errors.color ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                      {...register('color')}
+                    />
+                    {errors.color && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.color.message}</p>
+                    )}
+                  </div>
+
+                  {/* Allergies */}
+                  <div>
+                    <label htmlFor="pet-allergies" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Known Allergies <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                    <input
+                      id="pet-allergies"
+                      type="text"
+                      placeholder="e.g. Pollen, Chicken, Penicillin"
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border ${errors.allergies ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                      {...register('allergies')}
+                    />
+                    {errors.allergies && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.allergies.message}</p>
+                    )}
+                  </div>
+
+                  {/* Medical Notes */}
+                  <div>
+                    <label htmlFor="pet-medicalNotes" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Medical Notes & Dietary Needs <span className="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                    <textarea
+                      id="pet-medicalNotes"
+                      rows={3}
+                      placeholder="Previous conditions, current medications, temperament, or dietary notes..."
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border ${errors.medicalNotes ? 'border-rose-400' : 'border-slate-200'} text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none`}
+                      {...register('medicalNotes')}
+                    />
+                    {errors.medicalNotes && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-1 ml-1">{errors.medicalNotes.message}</p>
+                    )}
+                  </div>
+                </>
+              )}
             </form>
+
+            {/* Fixed Sticky Footer Actions */}
+            <div className="px-5 sm:px-6 py-3.5 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between shrink-0 z-10 select-none">
+              <div>
+                {modalTab === 'health' ? (
+                  <button
+                    type="button"
+                    onClick={() => setModalTab('basic')}
+                    className="px-3.5 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-bold text-xs transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    ← Back
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {modalTab === 'basic' && (
+                  <button
+                    type="button"
+                    onClick={() => setModalTab('health')}
+                    className="hidden sm:inline-flex px-3.5 py-2 rounded-xl bg-slate-200/80 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer items-center gap-1"
+                  >
+                    Next: Health Details →
+                  </button>
+                )}
+
+                <button
+                  form="pet-register-form"
+                  type="submit"
+                  disabled={isActionSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#112A46] via-[#1E3A5F] to-[#2563EB] hover:opacity-95 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-900/10 active:scale-95 disabled:opacity-50"
+                >
+                  {isActionSubmitting && <Loader2 size={13} className="animate-spin" />}
+                  {editingPet ? 'Update Pet' : 'Register Pet'}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirmPet && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
           <div className="bg-white w-full max-w-sm rounded-3xl border border-slate-100 shadow-xl overflow-hidden p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4">
             <div className="flex gap-3 text-left">
               <div className="h-10 w-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
@@ -813,7 +920,7 @@ export default function PetList({ onPetsUpdated }) {
 
       {/* Transfer Ownership Dialog */}
       {transferPet && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
           <div className="bg-white w-full max-w-md rounded-3xl border border-slate-100 shadow-xl overflow-hidden p-6 animate-in fade-in zoom-in-95 duration-200 space-y-4">
             <div className="flex justify-between items-start">
               <div className="flex gap-3 text-left">
