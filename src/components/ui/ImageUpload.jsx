@@ -89,10 +89,11 @@ const ImageUpload = ({ value, onChange, className = '', error = null }) => {
             </div>
           ) : (
             <>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span className="text-xs text-slate-500 font-medium px-2 text-center">Click to upload</span>
+              <span className="text-xs text-slate-600 font-semibold px-2 text-center leading-tight">Click to upload</span>
+              <span className="text-[10px] text-slate-400 font-medium mt-1">Max 5MB</span>
             </>
           )}
         </div>

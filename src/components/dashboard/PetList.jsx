@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Plus, Search, Filter, Edit2, Trash2, X, AlertTriangle,
+  Plus, Search, Filter, Edit2, Trash2, X, AlertTriangle, PawPrint, Stethoscope, Info,
   ShieldCheck, ShieldAlert, Shield, Loader2, Sparkles, Palette,
   Copy, Check, ArrowRightLeft, HeartHandshake
 } from 'lucide-react';
@@ -587,7 +587,7 @@ export default function PetList({ onPetsUpdated }) {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <span>🐾 Basic Identity</span>
+                  <span className="flex items-center gap-1.5"><PawPrint size={13} className="text-slate-500" /><span>Basic Identity</span></span>
                   {(errors.name || errors.breed || errors.age || errors.weight) && (
                     <span className="w-2 h-2 rounded-full bg-rose-500" />
                   )}
@@ -601,7 +601,7 @@ export default function PetList({ onPetsUpdated }) {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <span>🩺 Health & Profile</span>
+                  <span className="flex items-center gap-1.5"><Stethoscope size={13} className="text-slate-500" /><span>Health & Profile</span></span>
                   {(errors.dateOfBirth || errors.color || errors.allergies || errors.medicalNotes) && (
                     <span className="w-2 h-2 rounded-full bg-rose-500" />
                   )}
@@ -620,7 +620,7 @@ export default function PetList({ onPetsUpdated }) {
                 <>
                   {/* Pet ID System Note */}
                   <div className="bg-sky-50/80 border border-sky-100/90 rounded-2xl p-3 flex items-start gap-2.5">
-                    <span className="text-base shrink-0 mt-0.5">🆔</span>
+                    <ShieldCheck className="text-sky-600 shrink-0 mt-0.5" size={18} />
                     <div className="text-[11px] text-sky-950 leading-relaxed">
                       {editingPet ? (
                         <>Permanent Pet ID: <strong className="font-mono text-sky-700 bg-white/70 px-1.5 py-0.5 rounded border border-sky-200">{editingPet.petCode || `PZ-PET-${String(editingPet.id).padStart(6, '0')}`}</strong> (Immutable)</>
@@ -634,27 +634,20 @@ export default function PetList({ onPetsUpdated }) {
                   <div>
                     <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Species</label>
                     <div className="grid grid-cols-5 gap-2">
-                      {[
-                        { label: 'Dog', icon: '🐕' },
-                        { label: 'Cat', icon: '🐈' },
-                        { label: 'Bird', icon: '🦜' },
-                        { label: 'Rabbit', icon: '🐇' },
-                        { label: 'Other', icon: '🐾' }
-                      ].map((item) => {
-                        const isSelected = watch('species') === item.label;
+                      {['Dog', 'Cat', 'Bird', 'Rabbit', 'Other'].map((speciesName) => {
+                        const isSelected = watch('species') === speciesName;
                         return (
                           <button
-                            key={item.label}
+                            key={speciesName}
                             type="button"
-                            onClick={() => setValue('species', item.label, { shouldValidate: true })}
-                            className={`py-2 px-1 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                            onClick={() => setValue('species', speciesName, { shouldValidate: true })}
+                            className={`py-2.5 px-2 rounded-xl border text-center transition-all cursor-pointer text-xs font-bold ${
                               isSelected
-                                ? 'bg-[#1E3A5F] text-white border-[#1E3A5F] shadow-sm scale-102 font-bold'
-                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 font-semibold'
+                                ? 'bg-[#1E3A5F] text-white border-[#1E3A5F] shadow-sm'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 font-semibold'
                             }`}
                           >
-                            <span className="text-base leading-none">{item.icon}</span>
-                            <span className="text-[11px]">{item.label}</span>
+                            {speciesName}
                           </button>
                         );
                       })}
@@ -745,7 +738,7 @@ export default function PetList({ onPetsUpdated }) {
                   {/* Photo Upload */}
                   <div className="pt-1">
                     <label className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
-                      Photo <span className="text-[10px] text-slate-400 font-normal">(Optional — default species image used if blank)</span>
+                      Photo <span className="text-[10px] text-slate-400 font-normal">(Optional — Max 5MB, JPG/PNG • default species image used if blank)</span>
                     </label>
                     <ImageUpload
                       value={watch('photoUrl')}
@@ -945,7 +938,7 @@ export default function PetList({ onPetsUpdated }) {
             </div>
 
             <div className="bg-sky-50/70 border border-sky-100 rounded-2xl p-3 text-[11px] text-sky-800 leading-relaxed">
-              💡 <strong>Permanent Medical History:</strong> The permanent Pet ID (<strong>{transferPet.petCode}</strong>) and all historical medical consultations, vaccinations, documents, and clinical history will remain fully intact and transfer to the new owner seamlessly.
+              <span className="inline-flex items-center gap-1 text-amber-600 font-bold mr-1"><Info size={14} /> Permanent Medical History:</span> The permanent Pet ID (<strong>{transferPet.petCode}</strong>) and all historical medical consultations, vaccinations, documents, and clinical history will remain fully intact and transfer to the new owner seamlessly.
             </div>
 
             <form onSubmit={handleTransferSubmit} className="space-y-4">
