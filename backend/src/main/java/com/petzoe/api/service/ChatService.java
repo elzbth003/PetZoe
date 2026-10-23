@@ -21,15 +21,18 @@ public class ChatService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final UserPresenceService userPresenceService;
 
     public ChatService(ChatMessageRepository chatMessageRepository,
                        AppointmentRepository appointmentRepository,
                        UserRepository userRepository,
-                       NotificationService notificationService) {
+                       NotificationService notificationService,
+                       UserPresenceService userPresenceService) {
         this.chatMessageRepository = chatMessageRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.userPresenceService = userPresenceService;
     }
 
     @Transactional
@@ -104,6 +107,36 @@ public class ChatService {
                 chatMessageRepository.save(message);
             }
         }
+    }
+
+
+    public java.util.Map<String, Object> getAppointmentPartnerStatus(Long appointmentId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
+
+        boolean isOwner = appointment.getOwner().getId().equals(user.getId());
+        boolean isVet = appointment.getVeterinarian().getId().equals(user.getId());
+
+        if (!isOwner && !isVet && !user.getRole().equalsIgnoreCase("ADMIN")) {
+            throw new AccessDeniedException("You are not authorized to view this appointment status");
+        }
+
+        User partner = isOwner ? appointment.getVeterinarian() : appointment.getOwner();
+        boolean online = userPresenceService.isUserOnline(partner.getId(), partner.getEmail());
+        java.time.Instant lastSeen = userPresenceService.getLastSeen(partner.getId(), partner.getEmail());
+
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("appointmentId", appointmentId);
+        response.put("partnerId", partner.getId());
+        response.put("partnerName", partner.getName());
+        response.put("partnerRole", partner.getRole());
+        response.put("isOnline", online);
+        response.put("isDoctor", partner.getRole() != null && partner.getRole().toLowerCase().contains("vet"));
+        response.put("lastSeen", lastSeen != null ? lastSeen.toString() : null);
+        return response;
     }
 
     private ChatMessageDTO mapToDTO(ChatMessage message) {

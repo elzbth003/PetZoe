@@ -195,7 +195,7 @@ public class AiChatService {
         if (plan.hasSource(RetrievalPlan.EvidenceSource.PATIENT_CONTEXT) && isAuthenticated && plan.getCandidatePetName() != null && patientContextService != null) {
             invokedSources.add("PATIENT_CONTEXT");
             patientContext = patientContextService.resolvePatientContext(userEmail, plan.getCandidatePetName(), rawMessage);
-            if (patientContext != null && patientContext.isAccessAuthorized()) {
+            if (patientContext != null && patientContext.isAccessAuthorized() && !patientContext.isNotFound()) {
                 includedSources.add("PATIENT_CONTEXT");
             }
         }
@@ -222,7 +222,7 @@ public class AiChatService {
             toolUsed = "vectorRetrieval+veterinarianAvailability";
 
             StringBuilder combined = new StringBuilder();
-            if (patientContext != null && patientContext.isAccessAuthorized()) {
+            if (patientContext != null && patientContext.isAccessAuthorized() && !patientContext.isNotFound()) {
                 combined.append(patientContext.toContextString()).append("\n\n");
             }
 
@@ -273,7 +273,7 @@ public class AiChatService {
             toolUsed = "patientContext+vectorRetrieval";
 
             StringBuilder combined = new StringBuilder();
-            if (patientContext != null && patientContext.isAccessAuthorized()) {
+            if (patientContext != null && patientContext.isAccessAuthorized() && !patientContext.isNotFound()) {
                 combined.append(patientContext.toContextString()).append("\n\n");
             }
 

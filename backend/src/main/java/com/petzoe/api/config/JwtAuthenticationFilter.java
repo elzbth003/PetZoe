@@ -20,10 +20,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final com.petzoe.api.service.UserPresenceService userPresenceService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtService jwtService, 
+                                   UserDetailsService userDetailsService,
+                                   com.petzoe.api.service.UserPresenceService userPresenceService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.userPresenceService = userPresenceService;
     }
 
     @Override
@@ -57,7 +61,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    userPresenceService.recordActivityByEmail(userEmail);
                 }
+            } else if (userEmail != null) {
+                userPresenceService.recordActivityByEmail(userEmail);
             }
         } catch (org.springframework.security.authentication.DisabledException e) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);

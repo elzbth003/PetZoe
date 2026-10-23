@@ -91,8 +91,8 @@ public class RetrievalRouterService {
             }
         }
 
-        // 5. Phrasing like: "for Sylo", "of Sylo", "named Sylo"
-        Matcher ofMatcher = Pattern.compile("(?i)\\b(?:for|of|named|called)\\s+([A-Za-z0-9_]{2,25})\\b").matcher(message);
+        // 5. Explicit naming like: "named Sylo", "called Sylo", "pet named Sylo"
+        Matcher ofMatcher = Pattern.compile("(?i)\\b(?:named|called|pet\\s+named)\\s+([A-Za-z0-9_]{2,25})\\b").matcher(message);
         if (ofMatcher.find()) {
             String candidate = ofMatcher.group(1);
             if (!isStopWord(candidate)) {
@@ -115,7 +115,7 @@ public class RetrievalRouterService {
                w.equals("vaccination") || w.equals("medicine") || w.equals("medication") || w.equals("food") ||
                w.equals("diet") || w.equals("care") || w.equals("help") || w.equals("today") ||
                w.equals("him") || w.equals("her") || w.equals("it") || w.equals("them") || w.equals("here") ||
-               w.equals("dr") || w.equals("doctor");
+               w.equals("dr") || w.equals("doctor") || w.equals("outdoor") || w.equals("indoor") || w.equals("multi") || w.equals("environment") || w.equals("environments") || w.equals("why") || w.equals("felv") || w.equals("virus");
     }
 
     /**

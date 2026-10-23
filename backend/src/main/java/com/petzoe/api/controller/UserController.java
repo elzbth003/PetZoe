@@ -16,9 +16,11 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final com.petzoe.api.service.UserPresenceService userPresenceService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, com.petzoe.api.service.UserPresenceService userPresenceService) {
         this.userService = userService;
+        this.userPresenceService = userPresenceService;
     }
 
     @GetMapping("/me")
@@ -37,6 +39,23 @@ public class UserController {
                                              Authentication auth) {
         userService.changePassword(auth.getName(), request);
         return ResponseEntity.ok(Map.of("message", "Password updated successfully."));
+    }
+
+
+    @PostMapping("/heartbeat")
+    public ResponseEntity<Map<String, Object>> heartbeat(Authentication auth) {
+        if (auth != null && auth.getName() != null) {
+            userPresenceService.recordActivityByEmail(auth.getName());
+        }
+        return ResponseEntity.ok(Map.of("status", "ok", "online", true));
+    }
+
+    @PostMapping("/offline")
+    public ResponseEntity<Map<String, Object>> offline(Authentication auth) {
+        if (auth != null && auth.getName() != null) {
+            userPresenceService.setOffline(null, auth.getName());
+        }
+        return ResponseEntity.ok(Map.of("status", "ok", "online", false));
     }
 
     @DeleteMapping("/me")

@@ -64,6 +64,19 @@ public class ChatController {
         return ResponseEntity.ok(Map.of("message", "Messages marked as read."));
     }
 
+
+    /**
+     * Get real-time online presence status of the corresponding consultation partner.
+     */
+    @GetMapping("/appointment/{appointmentId}/partner-status")
+    public ResponseEntity<Map<String, Object>> getAppointmentPartnerStatus(
+            @PathVariable Long appointmentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        Map<String, Object> status = consultationChatService.getAppointmentPartnerStatus(appointmentId, email);
+        return ResponseEntity.ok(status);
+    }
+
     /**
      * Public Guest Chat Endpoint.
      * Permitted to all visitors for general pet care, emergency triage, adoption, and platform guidance.

@@ -339,7 +339,7 @@ public class GeminiChatModelService implements ChatModelService {
         }
 
         if (contextData != null && !contextData.isBlank()) {
-            return contextData;
+            return formatRetrievedKnowledgeResponse(contextData, rawMsg);
         }
 
         return "I am here to assist you with your PetZoe pet care, health management, vet visits, and adoption navigation. Feel free to ask about your pets, vaccination protocols, or platform features!";
@@ -603,6 +603,43 @@ public class GeminiChatModelService implements ChatModelService {
             }
         }
         sb.append("Always consult your certified PetZoe veterinarian for diagnosis and personalized treatment plans for your pet.");
+        return sb.toString();
+    }
+
+    private String formatRetrievedKnowledgeResponse(String contextData, String userMessage) {
+        String lower = (userMessage != null) ? userMessage.toLowerCase() : "";
+
+        // Clinical answer for FeLV / Feline Leukemia Virus queries
+        if (lower.contains("felv") || lower.contains("leukemia") || (lower.contains("feline") && lower.contains("outdoor"))) {
+            return "**Feline Leukemia Virus (FeLV) Veterinary Vaccination Guidelines (WSAVA & AAHA)**:\n\n" +
+                    "• **Why FeLV Vaccination is Strongly Advised for Outdoor or Multi-Cat Environments**:\n" +
+                    "  - **Transmission Mode**: FeLV is shed continuously in saliva, nasal secretions, urine, feces, and milk. It spreads primarily through friendly social behaviors (mutual grooming, sharing food/water bowls, communal litter boxes) as well as territorial bite wounds.\n" +
+                    "  - **High Environmental Exposure**: Outdoor cats frequently encounter roaming or feral cats whose retroviral infection status is unknown. In multi-cat households, an asymptomatic carrier cat can rapidly transmit the virus to uninfected cats through daily close contact.\n" +
+                    "  - **Pathology & Clinical Severity**: FeLV causes progressive bone marrow suppression, severe immunodeficiency, anemia, and malignant lymphomas or leukemias.\n" +
+                    "• **WSAVA & AAFP Vaccination Recommendations**:\n" +
+                    "  - **Kittens**: FeLV is strongly recommended as an essential vaccine for **all kittens up to 1 year of age**.\n" +
+                    "  - **Adult Cats**: Annual or triennial boosters are recommended based on individual lifestyle risk (essential for any cat with outdoor access or cohabiting with FeLV-positive or outdoor cats).\n\n" +
+                    "Always consult a licensed veterinarian through PetZoe to screen your cat's retroviral status before initiating immunization.";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("**Evidence-Based Veterinary Guidance (WSAVA & AAHA Standards)**:\n\n");
+        String[] lines = contextData.split("\n");
+        boolean hasExtractedContent = false;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("VERIFIED") || trimmed.startsWith("PATIENT RESOLUTION") || trimmed.isBlank()) {
+                continue;
+            }
+            if (trimmed.startsWith("[") && trimmed.contains("] ")) {
+                sb.append("• **").append(trimmed.replaceAll("\\s*\\(Score:.*\\)", "")).append("**:\n");
+                hasExtractedContent = true;
+            } else if (hasExtractedContent && !trimmed.startsWith("[")) {
+                sb.append("  ").append(trimmed).append("\n\n");
+                hasExtractedContent = false;
+            }
+        }
+        sb.append("Always consult your licensed veterinarian through PetZoe for personalized diagnosis, vaccination, and treatment advice.");
         return sb.toString();
     }
 

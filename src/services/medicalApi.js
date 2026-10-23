@@ -3,7 +3,8 @@ import api from './api';
 export const chatApi = {
   sendMessage: (appointmentId, content) => api.post(`/chat/appointment/${appointmentId}`, { content }),
   getMessages: (appointmentId) => api.get(`/chat/appointment/${appointmentId}`),
-  markAsRead: (appointmentId) => api.put(`/chat/appointment/${appointmentId}/read`)
+  markAsRead: (appointmentId) => api.put(`/chat/appointment/${appointmentId}/read`),
+  getPartnerStatus: (appointmentId) => api.get(`/chat/appointment/${appointmentId}/partner-status`)
 };
 
 export const prescriptionApi = {

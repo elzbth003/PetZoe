@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -38,7 +39,19 @@ export function AuthProvider({ children }) {
     return await authService.register(userData);
   };
 
+  // Heartbeat loop to keep active online status in real-time
+  useEffect(() => {
+    if (!user) return;
+    const sendHeartbeat = () => {
+      api.post('/users/heartbeat').catch(() => {});
+    };
+    sendHeartbeat();
+    const heartbeatInterval = setInterval(sendHeartbeat, 25000);
+    return () => clearInterval(heartbeatInterval);
+  }, [user]);
+
   const logout = () => {
+    api.post('/users/offline').catch(() => {});
     authService.logout();
     setUser(null);
   };
