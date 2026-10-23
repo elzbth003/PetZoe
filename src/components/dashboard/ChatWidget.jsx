@@ -19,6 +19,7 @@ const ChatWidget = ({ appointmentId, onClose, currentUserId, otherUserName }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState(null);
+  const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
   const inputRef = useRef(null);
@@ -32,30 +33,42 @@ const ChatWidget = ({ appointmentId, onClose, currentUserId, otherUserName }) =>
     };
   }, []);
 
-  const fetchMessages = async () => {
+  const fetchMessagesAndStatus = async () => {
     try {
-      const response = await chatApi.getMessages(appointmentId);
-      setMessages(response.data);
-      setChatError(null);
-      // Mark as read when opened or polling
-      await chatApi.markAsRead(appointmentId);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      if (error.response?.status === 400 || error.response?.status === 404) {
-        setChatError(error.response?.data?.message || 'This consultation session is no longer active.');
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+      const [messagesRes, statusRes] = await Promise.allSettled([
+        chatApi.getMessages(appointmentId),
+        chatApi.getPartnerStatus(appointmentId)
+      ]);
+
+      if (messagesRes.status === 'fulfilled') {
+        setMessages(messagesRes.value.data);
+        setChatError(null);
+        chatApi.markAsRead(appointmentId).catch(() => {});
+      } else {
+        const error = messagesRes.reason;
+        console.error('Error fetching messages:', error);
+        if (error.response?.status === 400 || error.response?.status === 404) {
+          setChatError(error.response?.data?.message || 'This consultation session is no longer active.');
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
         }
       }
+
+      if (statusRes.status === 'fulfilled' && statusRes.value.data) {
+        setIsPartnerOnline(Boolean(statusRes.value.data.isOnline));
+      }
+    } catch (error) {
+      console.error('Error fetching chat data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMessages();
-    intervalRef.current = setInterval(fetchMessages, 5000); // Poll every 5s
+    fetchMessagesAndStatus();
+    intervalRef.current = setInterval(fetchMessagesAndStatus, 4000); // Poll every 4s for messages and live status
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -113,7 +126,17 @@ const ChatWidget = ({ appointmentId, onClose, currentUserId, otherUserName }) =>
               <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-[#38BDF8] shadow-inner">
                 {isDoctor ? <Stethoscope size={20} /> : <MessageSquare size={20} />}
               </div>
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#112A46] animate-pulse" />
+              {isPartnerOnline ? (
+                <span 
+                  className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#112A46] animate-pulse shadow-sm" 
+                  title="Online"
+                />
+              ) : (
+                <span 
+                  className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-slate-400 border-2 border-[#112A46]" 
+                  title="Offline"
+                />
+              )}
             </div>
 
             {/* Info */}
@@ -123,9 +146,20 @@ const ChatWidget = ({ appointmentId, onClose, currentUserId, otherUserName }) =>
                   {displayName}
                 </h3>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-sky-200/90 font-medium">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <span>Live Consultation • Active</span>
+              <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                {isPartnerOnline ? (
+                  <>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-emerald-300 font-semibold">Online</span>
+                    <span className="text-sky-200/70 text-[10px]">• Live Consultation</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    <span className="text-slate-300 font-medium">Offline</span>
+                    <span className="text-sky-200/60 text-[10px]">• Consultation Room</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
