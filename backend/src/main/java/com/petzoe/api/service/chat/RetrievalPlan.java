@@ -20,7 +20,8 @@ public class RetrievalPlan {
         WEB_KNOWLEDGE,
         EMERGENCY_SAFETY,
         PLATFORM_HELP,
-        DATABASE_RECORDS
+        DATABASE_RECORDS,
+        LIVE_VET_AVAILABILITY
     }
 
     private final Set<EvidenceSource> sources = EnumSet.noneOf(EvidenceSource.class);

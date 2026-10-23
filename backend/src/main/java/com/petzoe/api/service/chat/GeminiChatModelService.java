@@ -26,19 +26,89 @@ public class GeminiChatModelService implements ChatModelService {
     @Value("${petzoe.ai.model:gemini-1.5-flash}")
     private String modelName;
 
+    @Value("${petzoe.ai.fallback-model:gemini-1.5-flash}")
+    private String fallbackModel;
+
+    @Value("${petzoe.ai.provider:GEMINI}")
+    private String provider;
+
+    @Value("${petzoe.ai.base-url:}")
+    private String customBaseUrl;
+
     @Value("${petzoe.ai.temperature:0.4}")
     private double temperature;
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
+    // Circuit Breaker State
+    private final java.util.concurrent.atomic.AtomicInteger failureCount = new java.util.concurrent.atomic.AtomicInteger(0);
+    private final java.util.concurrent.atomic.AtomicLong lastFailureTimestamp = new java.util.concurrent.atomic.AtomicLong(0);
+    public static final int CIRCUIT_FAILURE_THRESHOLD = 3;
+    public static final long CIRCUIT_RESET_TIMEOUT_MS = 60_000L; // 1-minute cooldown
+    private static final Pattern MODEL_IDENTIFIER_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\-\\./:]+$");
+
     public GeminiChatModelService(ObjectMapper objectMapper) {
-        this.restClient = RestClient.builder().build();
+        org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(5000);
+        requestFactory.setReadTimeout(15000);
+        this.restClient = RestClient.builder().requestFactory(requestFactory).build();
         this.objectMapper = objectMapper;
+    }
+
+    public boolean isCircuitOpen() {
+        if (failureCount.get() >= CIRCUIT_FAILURE_THRESHOLD) {
+            long elapsed = System.currentTimeMillis() - lastFailureTimestamp.get();
+            if (elapsed < CIRCUIT_RESET_TIMEOUT_MS) {
+                return true;
+            }
+            log.info("Circuit breaker entering HALF-OPEN state for primary model '{}'", modelName);
+            return false;
+        }
+        return false;
+    }
+
+    public int getFailureCount() {
+        return failureCount.get();
+    }
+
+    public void resetCircuit() {
+        failureCount.set(0);
+        lastFailureTimestamp.set(0);
+    }
+
+    private void recordFailure() {
+        int count = failureCount.incrementAndGet();
+        lastFailureTimestamp.set(System.currentTimeMillis());
+        if (count >= CIRCUIT_FAILURE_THRESHOLD) {
+            log.warn("Circuit breaker TRIPPED to OPEN state for model '{}'. Consecutive failures: {}",
+                    modelName, count);
+        }
+    }
+
+    private void recordSuccess() {
+        if (failureCount.get() > 0) {
+            log.info("Model '{}' responded successfully. Resetting circuit breaker to CLOSED.", modelName);
+            failureCount.set(0);
+        }
+    }
+
+    public boolean isValidModelIdentifier(String model) {
+        if (model == null || model.isBlank() || model.length() > 200) {
+            return false;
+        }
+        if (model.contains("..") || model.contains("//") || model.contains("\\") || model.contains(";")) {
+            return false;
+        }
+        return MODEL_IDENTIFIER_PATTERN.matcher(model.trim()).matches();
     }
 
     @Override
     public String getProviderName() {
+        if ("LOCAL_LLM".equalsIgnoreCase(provider) || "OPENAI_COMPATIBLE".equalsIgnoreCase(provider)) {
+            return "LOCAL_OPENAI (" + modelName + ")";
+        }
         return (apiKey != null && !apiKey.isBlank() && !apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY"))
                 ? "GEMINI (" + modelName + ")"
                 : "PETZOE_GROUNDED_LOCAL";
@@ -46,22 +116,64 @@ public class GeminiChatModelService implements ChatModelService {
 
     @Override
     public String generateResponse(String systemInstruction, String contextData, String userMessage, List<String> recentHistory) {
-        // If Gemini API Key is configured and non-empty, call Google Gemini REST API
-        if (apiKey != null && !apiKey.isBlank() && !apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY")) {
-            try {
-                return callGeminiApi(systemInstruction, contextData, userMessage, recentHistory);
-            } catch (Exception e) {
-                log.warn("Gemini API call failed, falling back to grounded rule engine: {}", e.getMessage());
+        // 1. Local / OpenAI-Compatible Endpoint Support (vLLM, Ollama, self-hosted QLoRA)
+        if ("LOCAL_LLM".equalsIgnoreCase(provider) || "OPENAI_COMPATIBLE".equalsIgnoreCase(provider)) {
+            if (customBaseUrl != null && !customBaseUrl.isBlank()) {
+                try {
+                    return callOpenAiCompatibleApi(systemInstruction, contextData, userMessage, recentHistory);
+                } catch (Exception e) {
+                    log.warn("Local OpenAI-compatible inference call failed: {}. Falling back to Gemini or grounded engine.", e.getMessage());
+                }
+            } else {
+                log.error("Provider is configured as '{}' but 'petzoe.ai.base-url' is missing. Cannot route to local LLM.", provider);
             }
         }
 
-        // Graceful Grounded Local Fallback (for offline testing, development, and when no key is supplied)
+        // 2. Google Gemini REST API (Supports Base & Tuned Models with Circuit Breaker)
+        if (apiKey != null && !apiKey.isBlank() && !apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY")) {
+            boolean primaryEligible = isValidModelIdentifier(modelName) && !isCircuitOpen();
+
+            if (primaryEligible) {
+                try {
+                    String result = callGeminiApi(modelName, systemInstruction, contextData, userMessage, recentHistory);
+                    recordSuccess();
+                    return result;
+                } catch (Exception e) {
+                    recordFailure();
+                    log.warn("Primary Gemini model '{}' invocation failed: {}", modelName, e.getMessage());
+                }
+            } else if (isCircuitOpen()) {
+                log.warn("Circuit breaker is OPEN for primary model '{}'. Bypassing directly to fallback.", modelName);
+            } else {
+                log.warn("Invalid model identifier '{}'. Bypassing directly to fallback.", modelName);
+            }
+
+            // Automated Rollback: If primary model failed, is invalid, or circuit is open, try fallbackModel
+            if (fallbackModel != null && !fallbackModel.isBlank() && !fallbackModel.equalsIgnoreCase(modelName) && isValidModelIdentifier(fallbackModel)) {
+                try {
+                    log.info("Executing automated circuit breaker fallback to approved base model: '{}'", fallbackModel);
+                    return callGeminiApi(fallbackModel, systemInstruction, contextData, userMessage, recentHistory);
+                } catch (Exception fallbackEx) {
+                    log.warn("Fallback model '{}' invocation also failed: {}. Triggering grounded local engine.",
+                            fallbackModel, fallbackEx.getMessage());
+                }
+            }
+        }
+
+        // 3. Graceful Grounded Local Fallback (for offline testing, development, and when no key is supplied)
         return generateGroundedFallbackResponse(contextData, userMessage);
     }
 
-    private String callGeminiApi(String systemInstruction, String contextData, String userMessage, List<String> recentHistory) throws Exception {
-        String url = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
-                modelName, apiKey);
+    private String callGeminiApi(String targetModel, String systemInstruction, String contextData, String userMessage, List<String> recentHistory) throws Exception {
+        String cleanModel = targetModel != null ? targetModel.trim() : "gemini-1.5-flash";
+        String url;
+        if (cleanModel.startsWith("tunedModels/") || cleanModel.startsWith("models/")) {
+            url = String.format("https://generativelanguage.googleapis.com/v1beta/%s:generateContent?key=%s",
+                    cleanModel, apiKey);
+        } else {
+            url = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
+                    cleanModel, apiKey);
+        }
 
         StringBuilder fullPrompt = new StringBuilder();
         if (systemInstruction != null && !systemInstruction.isBlank()) {
@@ -110,9 +222,58 @@ public class GeminiChatModelService implements ChatModelService {
         return generateGroundedFallbackResponse(contextData, userMessage);
     }
 
+    private String callOpenAiCompatibleApi(String systemInstruction, String contextData, String userMessage, List<String> recentHistory) throws Exception {
+        String endpoint = customBaseUrl.endsWith("/") ? customBaseUrl + "chat/completions" : customBaseUrl + "/chat/completions";
+
+        List<Map<String, String>> messages = new java.util.ArrayList<>();
+        if (systemInstruction != null && !systemInstruction.isBlank()) {
+            messages.add(Map.of("role", "system", "content", systemInstruction));
+        }
+        if (contextData != null && !contextData.isBlank()) {
+            messages.add(Map.of("role", "system", "content", "VERIFIED EVIDENCE (GROUND TRUTH):\n" + contextData));
+        }
+        if (recentHistory != null) {
+            for (String h : recentHistory) {
+                String role = h.startsWith("USER:") ? "user" : "assistant";
+                String content = h.replaceFirst("^(USER|ASSISTANT):\\s*", "");
+                messages.add(Map.of("role", role, "content", content));
+            }
+        }
+        messages.add(Map.of("role", "user", "content", userMessage));
+
+        Map<String, Object> req = Map.of(
+                "model", modelName,
+                "messages", messages,
+                "temperature", temperature,
+                "max_tokens", 1024
+        );
+
+        String responseBody = restClient.post()
+                .uri(endpoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.writeValueAsString(req))
+                .retrieve()
+                .body(String.class);
+
+        if (responseBody != null) {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode choices = root.path("choices");
+            if (choices.isArray() && !choices.isEmpty()) {
+                return choices.get(0).path("message").path("content").asText();
+            }
+        }
+        throw new IllegalStateException("Empty completion from local model API");
+    }
+
     public String generateGroundedFallbackResponse(String contextData, String userMessage) {
         String rawMsg = (userMessage != null) ? userMessage : "";
         String lower = rawMsg.toLowerCase();
+
+        // 0. Check if user asks for live vet availability
+        boolean isAvailabilityQuery = lower.contains("available") || lower.contains("free slot") ||
+                lower.contains("open slot") || lower.contains("slots tomorrow") || lower.contains("slots today") ||
+                lower.contains("vet tomorrow") || lower.contains("doctor tomorrow") || lower.contains("appointment slot") ||
+                lower.matches(".*\\b(is dr\\.?|can i book|when is dr\\.?|available on|available tomorrow|available today|clinic hours)\\b.*");
 
         // 1. Check if user asks for deworming / preventive parasite care
         boolean isDewormingQuery = lower.contains("deworm") || lower.contains("deworming") ||
@@ -120,6 +281,10 @@ public class GeminiChatModelService implements ChatModelService {
 
         if (isDewormingQuery) {
             return generateDewormingClinicalResponse(contextData, rawMsg);
+        }
+
+        if (isAvailabilityQuery) {
+            return generateVetAvailabilityFallbackResponse(contextData, rawMsg);
         }
 
         // 2. Check if user asks for vaccination
@@ -245,7 +410,45 @@ public class GeminiChatModelService implements ChatModelService {
             sb.append("3. Schedule a consultation with a certified veterinarian on PetZoe to perform a microscopic fecal floatation exam and receive the correct, weight-appropriate prescription dewormer.");
         }
 
+        if (contextData != null && contextData.contains("LIVE VETERINARIAN APPOINTMENT AVAILABILITY")) {
+            sb.append("\n\n### Verified Veterinarians Available for Consultation:\n");
+            String[] lines = contextData.split("\n");
+            boolean inVet = false;
+            for (String line : lines) {
+                if (line.contains("LIVE VETERINARIAN APPOINTMENT AVAILABILITY")) {
+                    inVet = true;
+                    continue;
+                }
+                if (inVet) {
+                    if (line.startsWith("• ") || line.startsWith("  Clinic:") || line.startsWith("  Available Open Slots") || line.startsWith("  Status:")) {
+                        sb.append(line).append("\n");
+                    }
+                }
+            }
+        }
+
         return sb.toString();
+    }
+
+    private String generateVetAvailabilityFallbackResponse(String contextData, String userMessage) {
+        if (contextData != null && contextData.contains("LIVE VETERINARIAN APPOINTMENT AVAILABILITY")) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Here is the real-time veterinarian consultation availability from the PetZoe database:\n\n");
+            String[] lines = contextData.split("\n");
+            boolean inVet = false;
+            for (String line : lines) {
+                if (line.contains("LIVE VETERINARIAN APPOINTMENT AVAILABILITY")) {
+                    inVet = true;
+                    continue;
+                }
+                if (inVet) {
+                    sb.append(line).append("\n");
+                }
+            }
+            sb.append("\nYou can book any open appointment slot directly through your **Owner Dashboard** → **Appointments**.");
+            return sb.toString().trim();
+        }
+        return "I can check live appointment availability for verified veterinarians on PetZoe. Which date or doctor would you like to check (for example: *'Which veterinarians are available tomorrow?'* or *'Is Dr. Sarah available?'*)?";
     }
 
     private String generateVaccinationClinicalResponse(String contextData, String userMessage) {

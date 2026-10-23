@@ -1,0 +1,74 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 9
+skinparam roundCorner 4
+skinparam ArrowColor black
+skinparam NodeBorderColor black
+
+title Deployment Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+
+node "Client Devices" as Clients {
+    node "Web Application\n(React Frontend)" as Client_Web
+    node "Mobile Application\n(Android / iOS)" as Client_Mobile
+    node "Veterinarian Portal\n(Web)" as Client_Vet
+    node "Shelter Manager Portal\n(Web)" as Client_Shelter
+    node "Administrator Dashboard\n(Web)" as Client_Admin
+}
+
+node "Web Server\n(Nginx)" as WebServer {
+    artifact "Static Files /\nFrontend\n(React Build)" as StaticFiles
+}
+
+node "Application Server\n(Node.js / Express)" as AppServer {
+    artifact "REST API Services" as RestAPI
+    node "Business Logic Services" as BizServices {
+        artifact "Auth & User\nManagement" as Svc_Auth
+        artifact "Appointment & Booking\nManagement" as Svc_Appt
+        artifact "Medical Record\nManagement" as Svc_MedRec
+        artifact "Notification Service" as Svc_Notif
+        artifact "File / Document\nService" as Svc_Doc
+        artifact "Adoption & Shelter\nManagement" as Svc_Adopt
+    }
+}
+
+node "Database Server\n(MySQL)" as DBServer {
+    database "PetVerse Database\n(Users, Pets, Appointments,\nMedical Records, Prescriptions,\nPayments, Adoptions, etc.)" as MySQLDB
+}
+
+node "Cloud Storage\n(AWS S3 / Cloud Storage)" as CloudStorage {
+    artifact "Images, Documents,\nPrescriptions,\nReports, Attachments" as CloudFiles
+}
+
+node "Notification Service\n(Firebase Cloud Messaging)" as NotifService {
+    artifact "Push Notifications\n(Mobile / Web)" as PushNotifs
+}
+
+node "External Services" as ExtServices {
+    artifact "Email Service\n(SendGrid / SMTP)" as ExtEmail
+    artifact "SMS Service\n(Twilio)" as ExtSMS
+    artifact "Payment Gateway\n(Razorpay / Stripe)" as ExtPay
+    artifact "Video Consultation\n(WebRTC / Jitsi / Twilio)" as ExtVideo
+}
+
+node "Third Party Integrations" as ThirdParty {
+    artifact "Maps & Location Service\n(Google Maps API)" as ExtMaps
+    artifact "AI Service\n(Gemini / OpenAI API)" as ExtAI
+    artifact "Analytics Service\n(Google Analytics)" as ExtAnalytics
+}
+
+' Connections with protocol labels
+Clients -- WebServer : HTTPS\n(SSL/TLS)
+Clients -- AppServer : HTTPS\n(SSL/TLS)
+WebServer -- AppServer : HTTPS\n(SSL/TLS)
+
+AppServer -- DBServer : TCP\n(3306)
+
+AppServer -- CloudStorage : HTTPS
+AppServer -- NotifService : HTTPS
+AppServer -- ExtServices : HTTPS
+AppServer -- ThirdParty : HTTPS
+
+@enduml

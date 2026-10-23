@@ -1,0 +1,171 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam packageStyle rectangle
+skinparam roundCorner 4
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 11
+skinparam ArrowColor black
+skinparam ActorBorderColor black
+skinparam UsecaseBorderColor black
+
+left to right direction
+
+actor "Pet Owner" as Owner
+actor "Shelter Manager" as Shelter
+actor "Veterinarian" as Vet
+actor "Marketplace Seller" as Seller
+actor "Administrator" as Admin
+
+rectangle "Digital Pet Healthcare & Veterinary Management System" {
+
+    ' Authentication
+    (Register) as UC_Reg
+    (Verify Email / Phone) as UC_VerifyEP
+    (Login) as UC_Log
+    (Authenticate User) as UC_AuthUser
+
+    ' Pet Owner Usecases
+    (Manage Pets) as UC_ManagePets
+    (Add Pet) as UC_AddPet
+    (Update Pet) as UC_UpPet
+    (Delete Pet) as UC_DelPet
+
+    (Book Appointment) as UC_BookAppt
+    (Select Veterinarian) as UC_SelVet
+    (Select Date & Time) as UC_SelDateTime
+    (Make Payment) as UC_Pay
+
+    (View Appointment\nHistory) as UC_ApptHist
+    (Chat with AI\nAssistant) as UC_AiChat
+
+    ' Adoption
+    (Pet Adoption\nManagement) as UC_AdoptMgmt
+    (List Pets for Adoption) as UC_ListPets
+    (Review Adoption\nRequests) as UC_RevAdopt
+    (Approve / Reject\nAdoption) as UC_AppAdopt
+    (Notify Adoption\nStatus) as UC_NotifAdopt
+
+    (Manage Shelter\nPets) as UC_ShelterPets
+    (Add Shelter Pet) as UC_AddShPet
+    (Update Shelter Pet) as UC_UpShPet
+    (Remove Shelter Pet) as UC_RemShPet
+
+    ' Veterinarian Usecases
+    (Consultation) as UC_Consult
+    (View Appointment\nDetails) as UC_ViewAppt
+    (Update Diagnosis) as UC_UpDiag
+    (Upload Prescription) as UC_UpRx
+
+    (Manage Medical\nRecords) as UC_MedRec
+    (View Pet History) as UC_ViewHist
+    (Add / Update\nMedical Record) as UC_AddMedRec
+
+    (Schedule\nManagement) as UC_Sched
+    (Manage Availability) as UC_Avail
+    (Block / Unblock\nSlots) as UC_Slots
+
+    ' Marketplace Seller
+    (Manage Products) as UC_Products
+    (Add Product) as UC_AddProd
+    (Update Product) as UC_UpProd
+    (Remove Product) as UC_RemProd
+
+    (Manage Orders) as UC_Orders
+    (View Orders) as UC_ViewOrders
+    (Update Order\nStatus) as UC_UpOrdStatus
+    (Process Return /\nRefund) as UC_Refund
+
+    ' Administrator
+    (Manage Users) as UC_Users
+    (Manage Roles &\nPermissions) as UC_Roles
+    (System Settings) as UC_Settings
+    (System\nAdministration) as UC_AdminCore
+    (View Reports) as UC_Reports
+    (Manage\nNotifications) as UC_Notifs
+    (Audit Logs) as UC_Audit
+}
+
+' Actor connections: Pet Owner
+Owner --> UC_Reg
+Owner --> UC_Log
+Owner --> UC_ManagePets
+Owner --> UC_BookAppt
+Owner --> UC_ApptHist
+Owner --> UC_AiChat
+Owner --> UC_AdoptMgmt
+
+' Actor connections: Shelter Manager
+Shelter --> UC_AdoptMgmt
+Shelter --> UC_ShelterPets
+
+' Actor connections: Veterinarian
+Vet --> UC_Consult
+Vet --> UC_MedRec
+Vet --> UC_Sched
+
+' Actor connections: Marketplace Seller
+Seller --> UC_Products
+Seller --> UC_Orders
+
+' Actor connections: Administrator
+Admin --> UC_AdminCore
+
+' Includes & Extends: Auth
+UC_Reg .> UC_VerifyEP : <<include>>
+UC_Log .> UC_AuthUser : <<include>>
+
+' Includes: Manage Pets
+UC_ManagePets .> UC_AddPet : <<include>>
+UC_ManagePets .> UC_UpPet : <<include>>
+UC_ManagePets .> UC_DelPet : <<include>>
+
+' Includes: Book Appointment
+UC_BookAppt .> UC_SelVet : <<include>>
+UC_BookAppt .> UC_SelDateTime : <<include>>
+UC_BookAppt .> UC_Pay : <<include>>
+
+' Includes: Adoption Management
+UC_AdoptMgmt .> UC_ListPets : <<include>>
+UC_AdoptMgmt .> UC_RevAdopt : <<include>>
+UC_AdoptMgmt .> UC_AppAdopt : <<include>>
+UC_AppAdopt .> UC_NotifAdopt : <<extend>>
+
+' Includes: Shelter Pets
+UC_ShelterPets .> UC_AddShPet : <<include>>
+UC_ShelterPets .> UC_UpShPet : <<include>>
+UC_ShelterPets .> UC_RemShPet : <<include>>
+
+' Includes: Consultation
+UC_Consult .> UC_ViewAppt : <<include>>
+UC_Consult .> UC_UpDiag : <<include>>
+UC_Consult .> UC_UpRx : <<include>>
+
+' Includes: Medical Records
+UC_MedRec .> UC_ViewHist : <<include>>
+UC_MedRec .> UC_AddMedRec : <<include>>
+
+' Includes: Schedule
+UC_Sched .> UC_Avail : <<include>>
+UC_Sched .> UC_Slots : <<include>>
+
+' Includes: Products
+UC_Products .> UC_AddProd : <<include>>
+UC_Products .> UC_UpProd : <<include>>
+UC_Products .> UC_RemProd : <<include>>
+
+' Includes: Orders
+UC_Orders .> UC_ViewOrders : <<include>>
+UC_Orders .> UC_UpOrdStatus : <<include>>
+UC_UpOrdStatus .> UC_Refund : <<extend>>
+
+' Includes: System Administration
+UC_Users .> UC_AdminCore : <<include>>
+UC_Roles .> UC_AdminCore : <<include>>
+UC_Settings .> UC_AdminCore : <<include>>
+UC_AdminCore .> UC_Reports : <<include>>
+UC_AdminCore .> UC_Notifs : <<include>>
+UC_AdminCore .> UC_Audit : <<include>>
+
+@enduml

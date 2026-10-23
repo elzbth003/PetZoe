@@ -65,6 +65,23 @@ public class RetrievalRouterServiceTest {
     }
 
     @Test
+    @DisplayName("Vet availability query routes to VET_AVAILABILITY_ONLY")
+    void testVetAvailabilityRoute() {
+        RetrievalMode mode = router.determineRoute("Is any doctor available tomorrow?", ChatIntent.VET_AVAILABILITY, true);
+        assertEquals(RetrievalMode.VET_AVAILABILITY_ONLY, mode);
+
+        RetrievalMode docMode = router.determineRoute("Is Dr. Sarah available on Friday?", ChatIntent.VET_AVAILABILITY, false);
+        assertEquals(RetrievalMode.VET_AVAILABILITY_ONLY, docMode);
+    }
+
+    @Test
+    @DisplayName("Mixed clinical and vet availability query routes to CLINICAL_PLUS_VET_AVAILABILITY")
+    void testClinicalPlusVetAvailabilityRoute() {
+        RetrievalMode mode = router.determineRoute("My puppy is vomiting, is there any vet available today?", ChatIntent.MEDICAL_QUESTION, false);
+        assertEquals(RetrievalMode.CLINICAL_PLUS_VET_AVAILABILITY, mode);
+    }
+
+    @Test
     @DisplayName("Personal PetZoe detection flags personal queries accurately")
     void testIsPersonalPetZoeQuery() {
         assertTrue(router.isPersonalPetZoeQuery("What is my dog's vaccination date?", ChatIntent.VACCINATION));

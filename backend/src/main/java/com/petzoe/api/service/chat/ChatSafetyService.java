@@ -80,6 +80,14 @@ public class ChatSafetyService {
             return ChatIntent.GREETING;
         }
 
+        boolean isAvailabilityQuery = lower.contains("available") || lower.contains("free slot") ||
+                lower.contains("open slot") || lower.contains("slots tomorrow") || lower.contains("slots today") ||
+                lower.contains("vet tomorrow") || lower.contains("doctor tomorrow") || lower.contains("appointment slot") ||
+                lower.matches(".*\\b(is dr\\.?|can i book|when is dr\\.?|available on|available tomorrow|available today|clinic hours)\\b.*");
+        if (isAvailabilityQuery) {
+            return ChatIntent.VET_AVAILABILITY;
+        }
+
         if (lower.contains("appointment") || lower.contains("consult") || lower.contains("book a vet") || lower.contains("schedule vet")) {
             return ChatIntent.APPOINTMENT;
         }
@@ -141,7 +149,6 @@ public class ChatSafetyService {
         if (isExplicitPetProfileRequest) {
             return ChatIntent.PET_INFORMATION;
         }
-
 
         if (lower.contains("adopt") || lower.contains("rehome") || lower.contains("rehoming") || lower.contains("hoe to adopt") || lower.contains("how to adopt")) {
             return ChatIntent.ADOPTION;

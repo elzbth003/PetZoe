@@ -159,6 +159,24 @@ public class DataMigrationRunner implements CommandLineRunner {
                 $$ LANGUAGE plpgsql IMMUTABLE;
             """);
             log.info("Ensured PostgreSQL function 'cosine_similarity_arr' exists.");
+
+            // Defensive migration: ensure newly added columns exist in knowledge tables
+            jdbcTemplate.execute("""
+                ALTER TABLE knowledge_documents ADD COLUMN IF NOT EXISTS doi VARCHAR(200);
+                ALTER TABLE knowledge_documents ADD COLUMN IF NOT EXISTS species VARCHAR(100);
+                ALTER TABLE knowledge_documents ADD COLUMN IF NOT EXISTS clinical_topic VARCHAR(150);
+                ALTER TABLE knowledge_documents ADD COLUMN IF NOT EXISTS evidence_type VARCHAR(80);
+                ALTER TABLE knowledge_documents ADD COLUMN IF NOT EXISTS license VARCHAR(150);
+                ALTER TABLE knowledge_documents ADD COLUMN IF NOT EXISTS source_verification_status VARCHAR(50);
+                ALTER TABLE knowledge_documents ADD COLUMN IF NOT EXISTS access_date TIMESTAMP;
+
+                ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS embedding_dimension INTEGER;
+                ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS embedding_status VARCHAR(50);
+                ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS species VARCHAR(100);
+                ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS clinical_topic VARCHAR(150);
+                ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS chunk_hash VARCHAR(64);
+            """);
+            log.info("Ensured knowledge tables have extended metadata columns.");
         } catch (Exception e) {
             log.warn("Could not create 'cosine_similarity_arr' function: {}", e.getMessage());
         }

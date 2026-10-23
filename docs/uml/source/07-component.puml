@@ -1,0 +1,163 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 9
+skinparam roundCorner 4
+skinparam ArrowColor black
+skinparam ComponentBorderColor black
+skinparam InterfaceBorderColor black
+
+title Component Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+
+package "Client Applications" {
+    [Web Application\n(React)] as ReactApp
+    [Mobile Application\n(Android)] as MobileApp
+    [Veterinarian Portal\n(Web)] as VetPortal
+    [Shelter Manager Portal\n(Web)] as ShelterPortal
+    [Administrator Dashboard\n(Web)] as AdminDash
+}
+
+package "PetVerse Application (Backend Services)" {
+
+    package "User Management Component" {
+        () "Authentication Service" as I_Auth
+        () "Profile Management Service" as I_Profile
+        () "Role & Permission Management Service" as I_Role
+        [User Management\nComponent] as Comp_User
+        Comp_User -up- I_Auth
+        Comp_User -up- I_Profile
+        Comp_User -up- I_Role
+    }
+
+    package "Pet Management Component" {
+        () "Pet Profile Management Service" as I_PetProfile
+        () "Pet Health & Breed Management Service" as I_PetHealth
+        () "Vaccination & Reminder Service" as I_PetVacc
+        [Pet Management\nComponent] as Comp_Pet
+        Comp_Pet -up- I_PetProfile
+        Comp_Pet -up- I_PetHealth
+        Comp_Pet -up- I_PetVacc
+    }
+
+    package "Appointment & Booking Component" {
+        () "Appointment Scheduling Service" as I_ApptSched
+        () "Booking Management Service" as I_BookingMgmt
+        () "Availability & Slot Management Service" as I_SlotMgmt
+        () "Booking Status & Tracking Service" as I_TrackMgmt
+        [Appointment & Booking\nComponent] as Comp_Appt
+        Comp_Appt -up- I_ApptSched
+        Comp_Appt -up- I_BookingMgmt
+        Comp_Appt -up- I_SlotMgmt
+        Comp_Appt -up- I_TrackMgmt
+    }
+
+    package "Consultation Management Component" {
+        () "Teleconsultation Service" as I_Tele
+        () "In-App Chat Service" as I_Chat
+        () "Consultation & Session Management Service" as I_Session
+        [Consultation Management\nComponent] as Comp_Consult
+        Comp_Consult -up- I_Tele
+        Comp_Consult -up- I_Chat
+        Comp_Consult -up- I_Session
+    }
+
+    package "Medical Record Management Component" {
+        () "Medical Record Service" as I_MedRec
+        () "Prescription Management Service" as I_RxMgmt
+        () "Document & File Management Service" as I_DocMgmt
+        [Medical Record Management\nComponent] as Comp_MedRec
+        Comp_MedRec -up- I_MedRec
+        Comp_MedRec -up- I_RxMgmt
+        Comp_MedRec -up- I_DocMgmt
+    }
+
+    package "Adoption & Shelter Management Component" {
+        () "Shelter Management Service" as I_ShelterMgmt
+        () "Pet Adoption Service" as I_AdoptSvc
+        () "Adoption Request & Tracking Service" as I_AdoptTrack
+        [Adoption & Shelter\nManagement Component] as Comp_Adopt
+        Comp_Adopt -up- I_ShelterMgmt
+        Comp_Adopt -up- I_AdoptSvc
+        Comp_Adopt -up- I_AdoptTrack
+    }
+
+    package "Payment Management Component" {
+        () "Payment Processing Service" as I_PayProc
+        () "Transaction & Invoice Service" as I_Invoice
+        () "Refund & Payout Service" as I_Refund
+        [Payment Management\nComponent] as Comp_Pay
+        Comp_Pay -up- I_PayProc
+        Comp_Pay -up- I_Invoice
+        Comp_Pay -up- I_Refund
+    }
+
+    package "Notification Management Component" {
+        () "Notification Orchestration Service" as I_NotifOrch
+        () "Push Notification Service" as I_PushNotif
+        () "Alert & Reminder Service" as I_AlertRem
+        [Notification Management\nComponent] as Comp_Notif
+        Comp_Notif -up- I_NotifOrch
+        Comp_Notif -up- I_PushNotif
+        Comp_Notif -up- I_AlertRem
+    }
+
+    package "Reporting & Analytics Component" {
+        () "Reporting Service" as I_ReportSvc
+        () "Analytics Service" as I_AnalyticSvc
+        () "Dashboard & Insights Service" as I_InsightSvc
+        [Reporting & Analytics\nComponent] as Comp_Report
+        Comp_Report -up- I_ReportSvc
+        Comp_Report -up- I_AnalyticSvc
+        Comp_Report -up- I_InsightSvc
+    }
+}
+
+package "External Services & Integrations" {
+    [Firebase Authentication\n(Identity & Access Management)] as Ext_Auth
+    [Cloud Storage\n(Firebase Storage / S3)\n(Images, Documents)] as Ext_Storage
+    [Email Service\n(SendGrid / SMTP)\n(Email Notifications)] as Ext_Email
+    [Video Conferencing Service\n(WebRTC / Jitsi / Twilio)] as Ext_Video
+    [Maps Service\n(Google Maps API)\n(Location & Directions)] as Ext_Maps
+    [Payment Gateway\n(Razorpay / UPI / Card)\n(Payment Processing)] as Ext_Razorpay
+    [Push Notification Service\n(Firebase Cloud Messaging)\n(Mobile & Web Push)] as Ext_FCM
+    [Analytics Service\n(Google Analytics)\n(Usage Analytics)] as Ext_Analytics
+}
+
+package "Data Storage & Persistence Layer" {
+    database "Primary Database\n(MySQL)" as DB_MySQL
+    database "Cache\n(Redis)" as DB_Redis
+    database "File Storage\n(AWS S3 /\nCloud Storage)" as DB_Files
+    database "Backup Storage\n(Cloud Backup)" as DB_Backup
+}
+
+' Connections from Client Applications to Services via HTTPS
+ReactApp --> I_Auth : HTTPS (UI Interface)
+MobileApp --> I_Auth
+VetPortal --> I_ApptSched
+ShelterPortal --> I_ShelterMgmt
+AdminDash --> I_ReportSvc
+
+' Backend to External Services
+Comp_User ..> Ext_Auth
+Comp_Consult ..> Ext_Video
+Comp_MedRec ..> Ext_Storage
+Comp_Pay ..> Ext_Razorpay
+Comp_Notif ..> Ext_Email
+Comp_Notif ..> Ext_FCM
+Comp_Report ..> Ext_Analytics
+Comp_Pet ..> Ext_Maps
+
+' Backend to Data Persistence Layer
+Comp_User --> DB_MySQL
+Comp_Pet --> DB_MySQL
+Comp_Appt --> DB_MySQL
+Comp_Consult --> DB_MySQL
+Comp_MedRec --> DB_Files
+Comp_Adopt --> DB_MySQL
+Comp_Pay --> DB_MySQL
+Comp_Notif --> DB_Redis
+Comp_Report --> DB_Backup
+
+@enduml

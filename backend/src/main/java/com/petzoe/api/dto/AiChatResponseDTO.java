@@ -16,19 +16,28 @@ public class AiChatResponseDTO {
     private List<AiQuickActionDTO> quickActions;
     private List<AiCitationDTO> citations;
     private String searchStatus;
+    private AiChatTraceDTO trace;
 
     public AiChatResponseDTO() {}
 
     public AiChatResponseDTO(Long id, Long conversationId, String sender, String message, 
                              String intent, String sourceType, String toolUsed, 
                              LocalDateTime createdAt, List<AiQuickActionDTO> quickActions) {
-        this(id, conversationId, sender, message, intent, sourceType, toolUsed, createdAt, quickActions, null, null);
+        this(id, conversationId, sender, message, intent, sourceType, toolUsed, createdAt, quickActions, null, null, null);
     }
 
     public AiChatResponseDTO(Long id, Long conversationId, String sender, String message, 
                              String intent, String sourceType, String toolUsed, 
                              LocalDateTime createdAt, List<AiQuickActionDTO> quickActions,
                              List<AiCitationDTO> citations, String searchStatus) {
+        this(id, conversationId, sender, message, intent, sourceType, toolUsed, createdAt, quickActions, citations, searchStatus, null);
+    }
+
+    public AiChatResponseDTO(Long id, Long conversationId, String sender, String message, 
+                             String intent, String sourceType, String toolUsed, 
+                             LocalDateTime createdAt, List<AiQuickActionDTO> quickActions,
+                             List<AiCitationDTO> citations, String searchStatus,
+                             AiChatTraceDTO trace) {
         this.id = id;
         this.conversationId = conversationId;
         this.sender = sender;
@@ -40,6 +49,7 @@ public class AiChatResponseDTO {
         this.quickActions = quickActions;
         this.citations = citations;
         this.searchStatus = searchStatus;
+        this.trace = trace;
     }
 
     public Long getId() { return id; }
@@ -74,4 +84,7 @@ public class AiChatResponseDTO {
 
     public String getSearchStatus() { return searchStatus; }
     public void setSearchStatus(String searchStatus) { this.searchStatus = searchStatus; }
+
+    public AiChatTraceDTO getTrace() { return trace; }
+    public void setTrace(AiChatTraceDTO trace) { this.trace = trace; }
 }

@@ -39,6 +39,27 @@ public class KnowledgeDocument {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
+    @Column(name = "doi", length = 200)
+    private String doi;
+
+    @Column(name = "species", length = 100)
+    private String species;
+
+    @Column(name = "clinical_topic", length = 150)
+    private String clinicalTopic;
+
+    @Column(name = "evidence_type", length = 80)
+    private String evidenceType = "OFFICIAL_CLINICAL_GUIDELINE"; // OFFICIAL_CLINICAL_GUIDELINE, PEER_REVIEWED_STUDY, SYSTEMATIC_REVIEW
+
+    @Column(name = "license", length = 150)
+    private String license = "Open Access / Educational Attribution";
+
+    @Column(name = "source_verification_status", length = 50)
+    private String sourceVerificationStatus = "VERIFIED"; // VERIFIED, UNVERIFIED, SUPERSEDED, FAILED
+
+    @Column(name = "access_date")
+    private LocalDateTime accessDate = LocalDateTime.now();
+
     @Column(nullable = false, length = 30)
     private String status = "ACTIVE"; // ACTIVE, INACTIVE, DRAFT
 
@@ -84,6 +105,20 @@ public class KnowledgeDocument {
     public void setPublishedAt(LocalDateTime publishedAt) { this.publishedAt = publishedAt; }
     public LocalDateTime getReviewedAt() { return reviewedAt; }
     public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+    public String getDoi() { return doi; }
+    public void setDoi(String doi) { this.doi = doi; }
+    public String getSpecies() { return species; }
+    public void setSpecies(String species) { this.species = species; }
+    public String getClinicalTopic() { return clinicalTopic; }
+    public void setClinicalTopic(String clinicalTopic) { this.clinicalTopic = clinicalTopic; }
+    public String getEvidenceType() { return evidenceType; }
+    public void setEvidenceType(String evidenceType) { this.evidenceType = evidenceType; }
+    public String getLicense() { return license; }
+    public void setLicense(String license) { this.license = license; }
+    public String getSourceVerificationStatus() { return sourceVerificationStatus; }
+    public void setSourceVerificationStatus(String sourceVerificationStatus) { this.sourceVerificationStatus = sourceVerificationStatus; }
+    public LocalDateTime getAccessDate() { return accessDate; }
+    public void setAccessDate(LocalDateTime accessDate) { this.accessDate = accessDate; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }

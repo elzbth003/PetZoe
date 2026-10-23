@@ -467,39 +467,84 @@ export default function PetZoeChatbot() {
                         <Globe size={11} className="text-sky-600" /> Trusted Sources ({msg.citations.length})
                       </div>
                       <div className="space-y-1.5">
-                        {msg.citations.map((cite, idx) => (
-                          <div
-                            key={cite.index || idx}
-                            data-testid="chat-source"
-                            className="text-[11px] bg-slate-50/90 hover:bg-slate-100 border border-slate-200/80 rounded-xl p-2.5 transition-all text-left"
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <span className="font-bold text-slate-900 line-clamp-1">
-                                [{cite.index}] {cite.title}
-                              </span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-800 font-semibold shrink-0">
-                                {cite.domain}
-                              </span>
+                        {msg.citations.map((cite, idx) => {
+                          const isCited = cite.isReferencedInResponse || cite.citationStatus === 'CITED_IN_RESPONSE';
+                          const formatEvidenceType = (type) => {
+                            if (!type) return null;
+                            if (type.includes('OFFICIAL') || type.includes('GUIDELINE')) return 'Official Guideline';
+                            if (type.includes('RESEARCH') || type.includes('STUDY')) return 'Peer-Reviewed Study';
+                            if (type.includes('CURATED') || type.includes('MANUAL')) return 'Curated Manual';
+                            return type.replace(/_/g, ' ');
+                          };
+                          const evidenceLabel = formatEvidenceType(cite.evidenceType);
+
+                          return (
+                            <div
+                              key={cite.index || idx}
+                              data-testid="chat-source"
+                              className="text-[11px] bg-slate-50/90 hover:bg-slate-100 border border-slate-200/80 rounded-xl p-2.5 transition-all text-left"
+                            >
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span className="font-bold text-slate-900 line-clamp-1">
+                                  [{cite.index}] {cite.title}
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {isCited ? (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold shrink-0">
+                                      Cited in answer
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-200/70 text-slate-600 font-medium shrink-0">
+                                      Retrieved background
+                                    </span>
+                                  )}
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-800 font-semibold shrink-0">
+                                    {cite.domain}
+                                  </span>
+                                </div>
+                              </div>
+                              {cite.snippet && (
+                                <p className="text-[10px] text-slate-600 line-clamp-2 mt-1">
+                                  {cite.snippet}
+                                </p>
+                              )}
+                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px]">
+                                {evidenceLabel && (
+                                  <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200/60 font-medium">
+                                    {evidenceLabel}
+                                  </span>
+                                )}
+                                {cite.species && (
+                                  <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200/60 font-medium">
+                                    {cite.species}
+                                  </span>
+                                )}
+                                {cite.publisher && (
+                                  <span className="text-slate-500 font-medium">
+                                    {cite.publisher}
+                                  </span>
+                                )}
+                                {cite.doi && (
+                                  <span className="text-slate-400 font-mono">
+                                    DOI: {cite.doi}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
+                                <span>Published: {cite.publicationDate || 'Verified Reference'}</span>
+                                <a
+                                  data-testid="chat-source-link"
+                                  href={cite.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sky-600 hover:text-sky-800 font-semibold flex items-center gap-0.5 hover:underline"
+                                >
+                                  View source <ExternalLink size={10} />
+                                </a>
+                              </div>
                             </div>
-                            {cite.snippet && (
-                              <p className="text-[10px] text-slate-600 line-clamp-2 mt-1">
-                                {cite.snippet}
-                              </p>
-                            )}
-                            <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
-                              <span>Published: {cite.publicationDate || 'Unverified'}</span>
-                              <a
-                                data-testid="chat-source-link"
-                                href={cite.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sky-600 hover:text-sky-800 font-semibold flex items-center gap-0.5 hover:underline"
-                              >
-                                View source <ExternalLink size={10} />
-                              </a>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

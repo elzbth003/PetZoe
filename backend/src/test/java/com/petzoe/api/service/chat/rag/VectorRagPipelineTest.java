@@ -101,7 +101,7 @@ public class VectorRagPipelineTest {
                 "1.0", "Intro", "Intro text", 0.05
         );
 
-        when(chunkRepository.searchSimilarChunks(any(Float[].class), eq(3)))
+        when(chunkRepository.searchSimilarChunksByModel(any(Float[].class), anyString(), anyInt()))
                 .thenReturn(List.of(topMatch, lowMatch));
 
         List<KnowledgeChunkSearchResultDTO> results = retrievalService.search("vaccine schedule for dog");
@@ -119,7 +119,7 @@ public class VectorRagPipelineTest {
                 0.78
         );
 
-        when(chunkRepository.searchSimilarChunks(any(Float[].class), eq(3)))
+        when(chunkRepository.searchSimilarChunksByModel(any(Float[].class), anyString(), anyInt()))
                 .thenReturn(List.of(dewormingMatch));
 
         List<KnowledgeChunkSearchResultDTO> results = retrievalService.search("My pet Sylo is 2 months old should i give deworming medicine");
@@ -131,13 +131,30 @@ public class VectorRagPipelineTest {
     }
 
     @Test
+    void testModelCompatibilityValidation() {
+        String activeModel = embeddingService.getActiveModelIdentifier();
+        assertTrue(embeddingService.isModelCompatible(activeModel, 768));
+        assertFalse(embeddingService.isModelCompatible("unknown-foreign-embedding-model-1536", 768));
+        assertFalse(embeddingService.isModelCompatible(activeModel, 1536));
+        assertFalse(embeddingService.isModelCompatible(null, 768));
+        assertFalse(embeddingService.isModelCompatible(activeModel, null));
+
+        // Dimension mismatch rejection
+        Float[] invalidDimensionVector = new Float[512];
+        assertThrows(IllegalArgumentException.class, () -> embeddingService.validateVector(invalidDimensionVector));
+
+        Float[] validVector = embeddingService.generateEmbedding("Test medical query");
+        assertDoesNotThrow(() -> embeddingService.validateVector(validVector));
+    }
+
+    @Test
     void testEmptyAndExceptionHandlingInRetrieval() {
         // Null / blank query returns empty list without error
         assertTrue(retrievalService.search("").isEmpty());
         assertTrue(retrievalService.search(null).isEmpty());
 
         // Repository exception handled gracefully
-        when(chunkRepository.searchSimilarChunks(any(Float[].class), anyInt()))
+        when(chunkRepository.searchSimilarChunksByModel(any(Float[].class), anyString(), anyInt()))
                 .thenThrow(new RuntimeException("Database timeout"));
         List<KnowledgeChunkSearchResultDTO> errorFallback = retrievalService.search("error query");
         assertNotNull(errorFallback);

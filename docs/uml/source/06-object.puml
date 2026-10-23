@@ -1,0 +1,211 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 9
+skinparam roundCorner 4
+skinparam ArrowColor black
+skinparam ObjectBorderColor black
+
+title Object Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+
+object "u1 : PetOwner" as u1 {
+    userId = "U001"
+    name = "Riya Sharma"
+    email = "riya@gmail.com"
+    phone = "9876543210"
+    address = "Kochi"
+    createdAt = "2025-05-15 09:15"
+}
+
+object "vet1 : Veterinarian" as vet1 {
+    userId = "V001"
+    name = "Dr. Ankit Mehta"
+    specialization = "Cardiology"
+    licenseNo = "VET12345"
+    phone = "9988776655"
+    experience = 8
+    isAvailable = true
+}
+
+object "sh1 : ShelterManager" as sh1 {
+    shelterId = "SH001"
+    name = "Neha Iyer"
+    phone = "9000112223"
+    shelterName = "Happy Paws Shelter"
+}
+
+object "admin1 : Administrator" as admin1 {
+    adminId = "A001"
+    name = "Admin User"
+    email = "admin@petverse.com"
+    roleLevel = "SUPER_ADMIN"
+}
+
+object "cat1 : PetCategory" as cat1 {
+    categoryId = "CAT01"
+    name = "Dog"
+    description = "Dogs and Puppies"
+    isActive = true
+}
+
+object "pet1 : Pet" as pet1 {
+    petId = "PET001"
+    ownerId = "U001"
+    name = "Bruno"
+    species = "Dog"
+    breed = "Golden Retriever"
+    gender = "Male"
+    dateOfBirth = "2022-04-10"
+    microchipNo = "MIC1001"
+    weight = 28.5
+}
+
+object "appt1 : Appointment" as appt1 {
+    appointmentId = "APP001"
+    petId = "PET001"
+    vetId = "V001"
+    ownerId = "U001"
+    dateTime = "2025-05-20 11:00"
+    reason = "Regular Checkup"
+    status = "CONFIRMED"
+    createdAt = "2025-05-18 10:20"
+}
+
+object "cons1 : Consultation" as cons1 {
+    consultationId = "CONS001"
+    appointmentId = "APP001"
+    vetId = "V001"
+    diagnosis = "Healthy"
+    notes = "No issues found"
+    dateTime = "2025-05-20 11:15"
+}
+
+object "pres1 : Prescription" as pres1 {
+    prescriptionId = "PRES001"
+    consultationId = "CONS001"
+    medication = "Multivitamin"
+    dosage = "1 tablet daily"
+    duration = "30 days"
+    issueDate = "2025-05-20"
+}
+
+object "srv1 : Service" as srv1 {
+    serviceId = "SRV001"
+    providerId = "V001"
+    name = "General Checkup"
+    basePrice = 500.00
+    duration = 30
+    isActive = true
+}
+
+object "ps1 : ProviderService" as ps1 {
+    providerServiceId = "PS001"
+    providerId = "V001"
+    serviceId = "SRV001"
+    price = 500.00
+    duration = 30
+    isAvailable = true
+}
+
+object "pay1 : Payment" as pay1 {
+    paymentId = "PAY001"
+    appointmentId = "APP001"
+    userId = "U001"
+    amount = 500.00
+    method = "UPI"
+    status = "PAID"
+    paymentDate = "2025-05-20 11:45"
+}
+
+object "notif1 : Notification" as notif1 {
+    notificationId = "NOT001"
+    userId = "U001"
+    title = "Appointment Confirmed"
+    message = "Your appointment on 2025-05-20 is confirmed"
+    isRead = false
+    createdAt = "2025-05-18 10:25"
+}
+
+object "rev1 : Review" as rev1 {
+    reviewId = "REV001"
+    petId = "PET001"
+    vetId = "V001"
+    rating = 5
+    comment = "Excellent service!"
+    createdAt = "2025-05-21 15:30"
+}
+
+object "chat1 : ChatSession" as chat1 {
+    chatId = "CHAT001"
+    ownerId = "U001"
+    vetId = "V001"
+    startedAt = "2025-05-20 10:00"
+}
+
+object "msg1 : Message" as msg1 {
+    messageId = "MSG001"
+    chatId = "CHAT001"
+    senderId = "U001"
+    message = "Please share Bruno's diet details"
+    sentAt = "2025-05-20 10:05"
+    isRead = false
+}
+
+object "adoptReq1 : AdoptionRequest" as adoptReq1 {
+    requestId = "ADREQ001"
+    petId = "PET002"
+    adopterId = "U001"
+    message = "We have a loving home"
+    status = "PENDING"
+    requestDate = "2025-05-19 16:00"
+}
+
+object "adopt1 : Adoption" as adopt1 {
+    adoptionId = "ADP001"
+    petId = "PET002"
+    adopterId = "U001"
+    shelterId = "SH001"
+    adoptionDate = "2025-05-24"
+    status = "APPROVED"
+}
+
+object "shelter1 : Shelter" as shelter1 {
+    shelterId = "SH001"
+    name = "Happy Paws Shelter"
+    address = "Bangalore"
+    phone = "9000112223"
+    isVerified = true
+}
+
+' Links
+u1 -- pet1 : owns >
+u1 -- appt1 : books >
+vet1 -- appt1 : assigned_to >
+pet1 -- appt1 : scheduled_for >
+
+appt1 -- cons1 : results_in >
+cons1 -- pres1 : prescribes >
+
+vet1 -- ps1 : offers >
+srv1 -- ps1 : implements >
+cat1 -- srv1 : categorizes >
+
+appt1 -- pay1 : settled_by >
+u1 -- pay1 : paid_by >
+
+u1 -- notif1 : receives >
+pet1 -- rev1 : subject_of >
+vet1 -- rev1 : targets >
+
+u1 -- chat1 : participates >
+vet1 -- chat1 : participates >
+chat1 -- msg1 : contains >
+
+u1 -- adoptReq1 : submits >
+sh1 -- adoptReq1 : reviews >
+adoptReq1 -- adopt1 : concludes_with >
+shelter1 -- adopt1 : facilitates >
+
+@enduml

@@ -1,0 +1,90 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 10
+skinparam roundCorner 4
+skinparam ArrowColor black
+skinparam ActivityBorderColor black
+
+title Activity Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+
+|Pet Owner|
+start
+:Open App / Website;
+:Register / Login;
+
+|System|
+:Authenticate User;
+:Load Dashboard\n(Role Based);
+
+|Pet Owner|
+:Add / Manage Pets\n(Create Pet Profile);
+:Search Veterinarian /\nServices;
+
+|System|
+:Show Veterinarians,\nServices & Availability;
+
+|Pet Owner|
+:Select Veterinarian,\nDate & Time;
+:Confirm Appointment;
+
+|System|
+:Create Appointment\n(Status: Pending);
+
+|Veterinarian|
+:Receive Appointment\nRequest;
+if (Accept\nAppointment?) then (Yes)
+    :Accept Appointment;
+    |System|
+    :Update Appointment\n(Status: Accepted);
+    |Pet Owner|
+    :Make Payment;
+    |System|
+    :Update Payment Status\n& Confirm Appointment;
+    |Pet Owner|
+    :Receive Appointment\nConfirmation;
+    :View Appointment\nDetails & Track Status;
+    |Veterinarian|
+    :Provide Consultation\n(Online / Offline);
+    :Update Medical Record\n& Treatment Details;
+    :Upload Prescription /\nDocuments;
+    :Update Consultation\nStatus;
+    |System|
+    :Update Appointment Status\n(On-Time / Completed);
+    |Pet Owner|
+    :Provide Rating &\nReview;
+    |System|
+    :Save Review & Rating;
+else (No)
+    |Veterinarian|
+    :Reject\nAppointment;
+    |System|
+    :Update Appointment\n(Status: Rejected);
+endif
+
+|Shelter Manager|
+:Register Shelter /\nLogin;
+:Add / Update Shelter\nInformation;
+:Add Pets for Adoption\nwith Details;
+:Review Adoption\nRequests;
+if (Approve\nAdoption?) then (Yes)
+    :Approve Adoption;
+    :Update Adoption Status\n(Adopted);
+    :Update Pet Record\n& Notify Adopter;
+else (No)
+    :Reject Request;
+endif
+
+|Administrator|
+:Login (Admin);
+:Verify Veterinarians\n(Approve / Reject);
+:Verify Shelters\n(Approve / Reject);
+:Manage Users\n& Roles;
+:Monitor System\nActivity;
+:Manage Reports\n& Analytics;
+:System Settings\n& Configurations;
+stop
+
+@enduml

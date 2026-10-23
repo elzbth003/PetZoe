@@ -1,0 +1,270 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 9
+skinparam roundCorner 4
+skinparam classAttributeIconSize 0
+skinparam ArrowColor black
+skinparam ClassBorderColor black
+
+title Class Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+
+abstract class "User (Abstract)" as User {
+    -userId: UUID
+    -name: String
+    -email: String
+    -phone: String
+    -role: String
+    -passwordHash: String
+    -createdAt: DateTime
+    -updatedAt: DateTime
+    +login(): boolean
+    +logout(): void
+    +updateProfile(): void
+}
+
+class "Owner (Pet Owner)" as Owner {
+    -address: String
+    -city: String
+    -state: String
+    -pincode: String
+    +registerPet(): Pet
+    +viewAppointments(): List
+    +bookAppointment(): Appointment
+    +makePayment(): Payment
+}
+
+class Veterinarian {
+    -licenseNo: String
+    -specialization: String
+    -experience: int
+    -clinicName: String
+    -clinicAddress: String
+    +addPrescription(): Prescription
+    +updateMedicalRecord(): void
+    +conductConsultation(): void
+}
+
+class "Shelter Manager" as ShelterManager {
+    -shelterId: UUID
+    -shelterName: String
+    -address: String
+    -phone: String
+    +addPetForAdoption(): Pet
+    +viewAdoptionRequests(): List
+    +approveAdoption(): void
+}
+
+class Administrator {
+    -adminLevel: String
+    +manageUsers(): void
+    +verifyVeterinarian(): void
+    +verifyShelter(): void
+    +viewReports(): void
+}
+
+class Role {
+    -roleId: int
+    -roleName: String
+    -description: String
+    +getPermissions(): List
+}
+
+class Pet {
+    -petId: UUID
+    -ownerId: UUID
+    -name: String
+    -species: String
+    -breed: String
+    -gender: String
+    -dateOfBirth: Date
+    -microchipNo: String
+    -color: String
+    -weight: Double
+    -imageURL: String
+    +updatePet(): void
+    +getPetProfile(): Pet
+}
+
+class Appointment {
+    -appointmentId: UUID
+    -petId: UUID
+    -vetId: UUID
+    -ownerId: UUID
+    -dateTime: DateTime
+    -type: String
+    -reason: String
+    -status: String
+    -location: String
+    +schedule(): Appointment
+    +cancel(): void
+    +reschedule(): Appointment
+}
+
+class Consultation {
+    -consultationId: UUID
+    -appointmentId: UUID
+    -vetId: UUID
+    -petId: UUID
+    -dateTime: DateTime
+    -type: String
+    -diagnosis: Text
+    -consultationNotes: Text
+    +startConsultation(): void
+    +completeConsultation(): void
+}
+
+class Prescription {
+    -prescriptionId: UUID
+    -consultationId: UUID
+    -petId: UUID
+    -vetId: UUID
+    -medication: Text
+    -dosage: String
+    -instructions: Text
+    -issueDate: Date
+    -expiryDate: Date
+    +create(): Prescription
+    +update(): void
+}
+
+class MedicalRecord {
+    -recordId: UUID
+    -petId: UUID
+    -vetId: UUID
+    -recordType: String
+    -date: Date
+    -description: Text
+    -report: String
+    +addRecord(): void
+    +updateRecord(): void
+    +deleteRecord(): void
+}
+
+class Vaccination {
+    -vaccinationId: UUID
+    -petId: UUID
+    -vaccineName: String
+    -batchNo: String
+    -administeredDate: Date
+    -nextDueDate: Date
+    -administeredBy: UUID
+    +addVaccination(): void
+    +updateVaccination(): void
+}
+
+class LabTest {
+    -testId: UUID
+    -petId: UUID
+    -testName: String
+    -testDate: Date
+    -result: Text
+    -normalRange: String
+    -labName: String
+    +addTestResult(): void
+}
+
+class Payment {
+    -paymentId: UUID
+    -appointmentId: UUID
+    -userId: UUID
+    -amount: Decimal
+    -method: String
+    -status: String
+    -transactionId: String
+    -date: DateTime
+    +processPayment(): void
+    +refund(): void
+}
+
+class Adoption {
+    -adoptionId: UUID
+    -petId: UUID
+    -shelterId: UUID
+    -adopterId: UUID
+    -adoptionDate: Date
+    -status: String
+    -notes: Text
+    +processAdoption(): void
+    +cancelAdoption(): void
+}
+
+class Shelter {
+    -shelterId: UUID
+    -shelterName: String
+    -address: String
+    -phone: String
+    -email: String
+    -verified: boolean
+    +updateShelter(): void
+}
+
+class AdoptionRequest {
+    -requestId: UUID
+    -petId: UUID
+    -adopterId: UUID
+    -message: Text
+    -status: String
+    -requestDate: Date
+    +submitRequest(): void
+    +approve(): void
+    +reject(): void
+}
+
+class Notification {
+    -notificationId: UUID
+    -userId: UUID
+    -title: String
+    -message: Text
+    -isRead: boolean
+    -createdAt: DateTime
+    +markAsRead(): void
+}
+
+class Review {
+    -reviewId: UUID
+    -userId: UUID
+    -appointmentId: UUID
+    -rating: int
+    -comment: String
+    -createdAt: DateTime
+    +createReview(): void
+    +updateReview(): void
+}
+
+' Inheritance
+User <|-- Owner
+User <|-- Veterinarian
+User <|-- ShelterManager
+User <|-- Administrator
+User "1" *-- "1" Role
+
+' Associations
+Owner "1" -- "0..*" Pet : owns >
+Pet "1" -- "0..*" Appointment : has >
+Veterinarian "1" -- "0..*" Appointment : conducts >
+Appointment "1" -- "0..1" Consultation : results_in >
+Consultation "1" -- "0..*" Prescription : contains >
+Pet "1" -- "0..*" MedicalRecord : maintains >
+Veterinarian "1" -- "0..*" MedicalRecord : updates >
+
+Pet "1" -- "0..*" Vaccination : receives >
+Pet "1" -- "0..*" LabTest : undergoes >
+
+Appointment "1" -- "0..1" Payment : triggers >
+Owner "1" -- "0..*" Payment : pays >
+
+Shelter "1" -- "0..*" Adoption : handles >
+Pet "1" -- "0..1" Adoption : adopted_in >
+Owner "1" -- "0..*" Adoption : adopts >
+
+Owner "1" -- "0..*" AdoptionRequest : submits >
+Pet "1" -- "0..*" AdoptionRequest : requested_for >
+
+User "1" -- "0..*" Notification : receives >
+User "1" -- "0..*" Review : writes >
+Appointment "1" -- "0..1" Review : reviewed_in >
+
+@enduml

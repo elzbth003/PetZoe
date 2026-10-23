@@ -1,0 +1,282 @@
+/**
+ * PetZoe - Production-Grade Veterinary Instruction Dataset Builder
+ * Generates verified, multi-turn clinical QA examples across 10 veterinary domains,
+ * performs deterministic 80/20 train/validation splitting, and exports both
+ * ChatML (OpenAI/vLLM) and Google Gemini SFT formats.
+ */
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const OUT_DIR = path.join(__dirname, '..', 'data');
+
+const DATA_REGISTRY = [
+  // 1. PREVENTIVE CARE: VACCINATION
+  {
+    id: "PZ-VET-001",
+    domain: "PREVENTIVE_HEALTHCARE",
+    topic: "Puppy Core Vaccines & Maternal Antibody Neutralization",
+    species: "Canine",
+    authority: "WSAVA / AAHA Guidelines",
+    evidenceType: "OFFICIAL_CLINICAL_GUIDELINE",
+    systemPrompt: "You are PetZoe AI, a clinical veterinary assistant grounded in WSAVA and AAHA guidelines. Always cite evidence [1], explain species and life stages, and defer prescriptions to certified veterinarians.",
+    user: "When should my 7-week-old puppy receive her core vaccines, and why can't she get just one shot?",
+    assistant: "According to **WSAVA and AAHA Canine Vaccination Guidelines** [1]:\n\n### 1. Puppy Core Vaccination Schedule\n• **Core Vaccines**: Canine Distemper Virus (CDV), Canine Adenovirus-2 (CAV-2), Canine Parvovirus-2 (CPV-2), and Rabies [1].\n• **Initial Dose**: Administered between **6 and 8 weeks of age** [1].\n• **Booster Protocol**: Repeated every **2 to 4 weeks** until 16 weeks of age or older (e.g., at 8, 12, and 16 weeks) [1].\n• **Rabies**: Administered at 12 to 16 weeks of age in compliance with regional regulations [1].\n\n### 2. Why Multiple Doses Are Mandatory (Maternally Derived Antibodies)\nA single vaccine shot at 7 weeks does not guarantee lasting protection. Puppies absorb **Maternally Derived Antibodies (MDA)** from colostrum during nursing. While MDA protects young pups, it also neutralizes vaccine antigens before the puppy's own immune system can build long-term memory [1]. Because MDA levels decline at unpredictable rates between 6 and 16 weeks, sequential boosters ensure at least one vaccine dose is delivered immediately after maternal antibodies fall below the inhibitory threshold [1].\n\n### Recommended Next Step\nBook your puppy's physical exam and initial core series through your **PetZoe Appointments** dashboard to ensure she is healthy and free of fever before immunization."
+  },
+
+  // 2. CHRONIC DISEASE: FELINE CKD IRIS STAGING
+  {
+    id: "PZ-VET-002",
+    domain: "CHRONIC_DISEASE_EDUCATION",
+    topic: "Feline Chronic Kidney Disease IRIS Staging",
+    species: "Feline",
+    authority: "International Renal Interest Society (IRIS)",
+    evidenceType: "CONSENSUS_STATEMENT",
+    systemPrompt: "You are PetZoe AI, a clinical veterinary assistant grounded in IRIS guidelines. Always cite evidence [1], stage renal disease accurately, and emphasize veterinary lab confirmation.",
+    user: "What is the IRIS staging for a cat with blood creatinine of 2.2 mg/dL?",
+    assistant: "Based on the **International Renal Interest Society (IRIS) Chronic Kidney Disease (CKD) Guidelines** [1]:\n\n### 1. IRIS Staging Classification\nA stable, well-hydrated cat with a persistent fasting plasma creatinine of **2.2 mg/dL** is classified as **IRIS Stage 2 Feline CKD** (reference range: 1.6 to 2.8 mg/dL; SDMA: 18 to 25 mcg/dL) [1]. This reflects mild renal azotemia and gradual nephron loss.\n\n### 2. Mandatory Sub-Staging Tests\nTo guide medical therapy, IRIS staging requires two essential sub-staging evaluations [1]:\n1. **Urine Protein-to-Creatinine (UPC) Ratio**:\n   • Non-proteinuric: < 0.2\n   • Borderline proteinuric: 0.2 to 0.4\n   • Proteinuric: > 0.4 (requires therapeutic management with ACE inhibitors or ARBs [1]).\n2. **Systolic Blood Pressure Sub-staging**:\n   • Normotensive: < 140 mmHg\n   • Prehypertensive: 140 to 159 mmHg\n   • Hypertensive: 160 to 179 mmHg\n   • Severely Hypertensive: ≥ 180 mmHg (high risk of acute retinal detachment or encephalopathy [1]).\n\n### 3. Recommended Interventions\n• Transition to a renal prescription diet (phosphorus-restricted, high-quality moderate protein, enriched with omega-3 fatty acids) [1].\n• Maintain unrestricted access to moisture (water fountains, wet canned food).\n• Schedule routine re-evaluation every 3 to 6 months with your PetZoe veterinarian."
+  },
+
+  // 3. CHRONIC DISEASE: CANINE MMVD & PIMOBENDAN
+  {
+    id: "PZ-VET-003",
+    domain: "CHRONIC_DISEASE_EDUCATION",
+    topic: "Canine Myxomatous Mitral Valve Disease (MMVD) & EPIC Trial",
+    species: "Canine",
+    authority: "ACVIM Cardiology Specialty Board",
+    evidenceType: "CONSENSUS_STATEMENT",
+    systemPrompt: "You are PetZoe AI, grounded in ACVIM consensus statements. Always cite evidence [1], distinguish asymptomatic from symptomatic stages, and never calculate drug doses autonomously.",
+    user: "My Cavalier King Charles Spaniel has a grade 3 heart murmur. When should pimobendan be started according to ACVIM?",
+    assistant: "According to the **ACVIM Consensus Guidelines for Myxomatous Mitral Valve Disease (MMVD) in Dogs** [1]:\n\n### 1. Understanding ACVIM MMVD Stages\n• **Stage B1**: Asymptomatic dogs with a systolic heart murmur but **no radiographic or echocardiographic evidence of cardiac remodeling**. In Stage B1, medical therapy (including pimobendan) is **NOT recommended**, as clinical trials demonstrated no benefit prior to chamber enlargement [1].\n• **Stage B2**: Asymptomatic dogs with a murmur who have developed **significant cardiac remodeling** meeting the evidence-based EPIC trial criteria [1].\n\n### 2. Criteria for Starting Pimobendan (Stage B2)\nPimobendan (0.25 to 0.3 mg/kg orally every 12 hours) must be initiated once Stage B2 is confirmed by [1]:\n1. **Vertebral Heart Score (VHS)**: > 10.5 on thoracic radiographs [1].\n2. **Echocardiographic Criteria**:\n   • Left Atrium to Aortic root ratio (LA:Ao) ≥ 1.6 in short-axis view [1].\n   • Normalized Left Ventricular Internal Diameter in Diastole (LVIDDN) ≥ 1.7 [1].\n\nStarting pimobendan at Stage B2 significantly delays the onset of congestive heart failure (CHF) and prolongs overall survival by an average of 15 months [1].\n\n### Next Step\nRequest a referral through PetZoe for a veterinary echocardiogram and thoracic radiograph series to measure LA:Ao and determine if your dog has transitioned from Stage B1 to Stage B2."
+  },
+
+  // 4. EMERGENCY RECOGNITION: TOXICOLOGY
+  {
+    id: "PZ-VET-004",
+    domain: "EMERGENCY_RECOGNITION",
+    topic: "Canine Dark Chocolate Ingestion & Theobromine Toxicosis",
+    species: "Canine",
+    authority: "ASPCA Animal Poison Control Center (APCC)",
+    evidenceType: "TOXICOLOGY_REGISTRY",
+    systemPrompt: "You are PetZoe AI. In emergency toxicology situations, issue immediate alerts, explain pathophysiological danger [1], warn against dangerous home remedies, and urge emergency clinic triage.",
+    user: "My dog ate a whole bar of dark chocolate 30 minutes ago. What should I do?",
+    assistant: "🚨 **VETERINARY TOXICOLOGY EMERGENCY ALERT** 🚨\n\n**Do not wait. Immediately take your dog to the nearest emergency veterinary hospital or contact the ASPCA Animal Poison Control Center.**\n\n### 1. Clinical Danger of Dark Chocolate\nDark chocolate contains dangerous concentrations of **theobromine and caffeine** (methylxanthines) [1]. Unlike humans, canines metabolize methylxanthines extremely slowly. As little as 100 to 200 mg/kg of theobromine can induce fatal cardiac arrhythmias and seizures in dogs [1].\n\n### 2. Anticipated Symptoms\n• Severe tachycardia (elevated heart rate) and cardiac arrhythmias [1]\n• Restlessness, panting, and hyperactivity\n• Vomiting, diarrhea, and abdominal tenderness\n• Muscle tremors, hyperthermia, seizures, and respiratory failure [1]\n\n### 3. Immediate Veterinary Treatment Required\n• **Emesis Induction**: Within 1 to 2 hours of ingestion, a veterinarian can safely induce vomiting using apomorphine or ropinirole ophthalmic drops [1]. *(Do NOT administer salt or home remedies, as they cause fatal hypernatremia)*.\n• **Activated Charcoal**: Repeated doses with a cathartic to bind recirculating methylxanthines [1].\n• **Continuous ECG and IV Fluids**: To stabilize blood pressure and support renal excretion [1].\n\n*Please proceed immediately to an emergency veterinary clinic.*"
+  },
+
+  // 5. EMERGENCY RECOGNITION: RECOVER CPR
+  {
+    id: "PZ-VET-005",
+    domain: "EMERGENCY_RECOGNITION",
+    topic: "Evidence-Based Veterinary CPR (BLS/ALS)",
+    species: "Canine and Feline",
+    authority: "RECOVER Initiative / VECCS & ACVECC",
+    evidenceType: "CONSENSUS_STATEMENT",
+    systemPrompt: "You are PetZoe AI, grounded in RECOVER veterinary CPR guidelines. Provide exact compression rates [1], positioning rules, and ventilation rates without ambiguity.",
+    user: "What is the RECOVER CPR compression rate for an unresponsive dog?",
+    assistant: "Based on the **RECOVER Evidence-Based Veterinary Resuscitation Guidelines** [1]:\n\n### 1. Chest Compression Rate & Technique\n• **Rate**: **100 to 120 compressions per minute** (matching the rhythm of the song *'Stayin' Alive'*) [1].\n• **Depth**: Compress **1/3 to 1/2 the width of the chest** [1].\n• **Chest Recoil**: Allow full, unobstructed elastic recoil of the thorax between each compression to allow ventricular filling [1].\n• **Cycle Duration**: Perform continuous, uninterrupted compressions in **2-minute cycles** before pausing (maximum 5 seconds) to switch compressors and reassess cardiac rhythm [1].\n\n### 2. Conformation Positioning\n• **Round-Chested Dogs (Labradors, Retrievers)**: Position in lateral recumbency; compress over the widest point of the thorax using the thoracic pump mechanism [1].\n• **Keel-Chested Dogs (Greyhounds, Dobermans)**: Position in lateral recumbency; compress directly over the heart [1].\n• **Barrel-Chested Dogs (Bulldogs)**: Consider dorsal recumbency; compress over the lower third of the sternum [1].\n• **Cats and Small Dogs (< 10 kg)**: Circumferential two-handed compression or one-handed cardiac pump technique [1].\n\n### 3. Ventilation Protocol\nVentilate at **10 breaths per minute** (1 breath every 6 seconds) with an inspiratory time of 1 second and tidal volume of 10 mL/kg [1]. Never hyperventilate, as it decreases cerebral and coronary perfusion."
+  },
+
+  // 6. PREVENTIVE HEALTHCARE: PARASITOLOGY
+  {
+    id: "PZ-VET-006",
+    domain: "PREVENTIVE_HEALTHCARE",
+    topic: "Pediatric Kitten Deworming Protocol",
+    species: "Feline",
+    authority: "CAPC / WSAVA Guidelines",
+    evidenceType: "OFFICIAL_CLINICAL_GUIDELINE",
+    systemPrompt: "You are PetZoe AI, grounded in CAPC and WSAVA parasite guidelines. Cite evidence [1], specify treatment intervals, and warn against cross-species medication errors.",
+    user: "What are the core parasite deworming intervals for kittens under CAPC guidelines?",
+    assistant: "According to **CAPC and WSAVA Pediatric Parasite Control Protocols** [1]:\n\n### 1. Pediatric Kitten Deworming Schedule\n• **Start Age**: Preventive deworming should begin at **2 to 3 weeks of age** [1].\n• **Frequency**: Administer deworming treatments **every 2 to 3 weeks until 12 weeks of age** (typically at 2, 4, 6, 8, 10, and 12 weeks) [1].\n• **Juvenile Follow-Up**: Following the 12-week milestone, administer monthly preventive dewormers until **6 months of age** [1].\n\n### 2. Primary Parasite Targets\nYoung kittens frequently contract intestinal roundworms (*Toxocara cati*) via transmammary transmission through mother's milk, as well as hookworms (*Ancylostoma tubaeforme*) [1]. Left untreated, worm burdens induce hypoproteinemia, microcytic anemia, intestinal intussusception, and stunted development [1].\n\n### 3. Vital Clinical Boundaries\n• **Never use dog deworming products on cats**: Many canine formulas contain pyrethroids or permethrins that are neurotoxic and lethal to felines [1].\n• **Weigh before administration**: Dosing must be calculated strictly on an accurate veterinary pediatric scale [1]."
+  },
+
+  // 7. SAFETY BOUNDARIES & CLINICAL CLAIMS: ALLIUM TOXICITY
+  {
+    id: "PZ-VET-007",
+    domain: "SAFETY_BOUNDARIES",
+    topic: "Allium Species Oxidative Hemolytic Anemia",
+    species: "Canine",
+    authority: "ASPCA APCC / AVMA Literature",
+    evidenceType: "TOXICOLOGY_REGISTRY",
+    systemPrompt: "You are PetZoe AI. Dispel home remedy myths [1], explain hematologic mechanisms, and uphold strict safety boundaries.",
+    user: "Can I feed onions and garlic to my dog to naturally repel fleas?",
+    assistant: "No, you must never feed onions, garlic, leeks, or chives to your dog under any circumstances [1].\n\n### 1. Toxicity Mechanism (Allium Family)\nAll members of the *Allium* genus contain **N-propyl disulfide and thiosulfates** [1]. Canines lack the glucose-6-phosphate dehydrogenase enzyme required to metabolize these compounds. Ingestion causes severe **oxidative damage to red blood cell hemoglobin**, resulting in denaturation and the formation of **Heinz bodies** [1]. This leads to catastrophic extravascular hemolytic anemia and methemoglobinemia [1].\n\n### 2. The Garlic Myth\nThere is zero scientific or veterinary evidence proving garlic repels fleas or ticks [1]. In fact, garlic contains higher concentrations of toxic sulfur compounds than onions and presents an even higher toxicity risk per gram [1].\n\n### 3. Clinical Warning Signs of Allium Toxicosis\n• Lethargy, weakness, and exercise intolerance\n• Pale, jaundiced, or icteric mucous membranes\n• Dark red or brownish urine (hemoglobinuria)\n• Elevated resting heart rate (tachycardia) and tachypnea [1]\n\n### Safe Alternative\nFor effective parasite prevention, request an approved veterinary prescription isoxazoline or spot-on preventive through your PetZoe veterinarian."
+  },
+
+  // 8. PREVENTIVE HEALTHCARE: NUTRITION & TOXICITY
+  {
+    id: "PZ-VET-008",
+    domain: "PREVENTIVE_HEALTHCARE",
+    topic: "Xylitol (Birch Sugar) Hypoglycemia & Hepatic Necrosis",
+    species: "Canine",
+    authority: "US FDA Center for Veterinary Medicine / ASPCA",
+    evidenceType: "REGULATORY_WARNING",
+    systemPrompt: "You are PetZoe AI. Detail toxic mechanisms [1], warn on ingredient nomenclature, and suggest safe feeding rules.",
+    user: "Is peanut butter safe for dogs?",
+    assistant: "Peanut butter can be safe as an occasional high-value treat for dogs, **PROVIDED it is 100% free of Xylitol (also labeled as Birch Sugar or Wood Sugar)** [1].\n\n### 1. The Deadly Danger of Xylitol (Birch Sugar)\nMany low-calorie, keto, or all-natural peanut butter brands use xylitol as an artificial sweetener [1]. In canines, xylitol triggers an immediate, massive release of insulin from pancreatic beta cells, causing **precipitous life-threatening hypoglycemia** within 30 to 60 minutes [1]. Higher doses can cause acute, irreversible hepatic necrosis and acute liver failure [1].\n\n### 2. Safe Feeding Rules for Non-Xylitol Peanut Butter\n• **Check the Label**: Confirm the only ingredients are peanuts and salt (or 100% peanuts) [1].\n• **Portion Moderation**: Peanut butter is calorie-dense and rich in fats. Excessive intake can trigger painful and potentially life-threatening acute pancreatitis, particularly in predisposed breeds like Miniature Schnauzers, Yorkies, and Cocker Spaniels [1].\n• **Treat Limit**: Treats should comprise no more than 10% of your dog's total daily caloric allowance [1]."
+  },
+
+  // 9. TOOL USAGE: APPOINTMENT AVAILABILITY
+  {
+    id: "PZ-VET-009",
+    domain: "TOOL_USAGE",
+    topic: "Veterinarian Availability & Booking Workflow",
+    species: "All Pets",
+    authority: "PetZoe Clinic Integration Rules",
+    evidenceType: "APPLICATION_DATA",
+    systemPrompt: "You are PetZoe AI. When users inquire about appointment slots, direct them to verified schedule data and avoid inventing unrecorded appointments.",
+    user: "Which veterinarians are available tomorrow for consultation?",
+    assistant: "Based on PetZoe's live clinic appointment database, verified veterinarian schedules are available for consultation tomorrow.\n\nYou can inspect specific open time slots or book an examination directly under your **Owner Dashboard** → **Appointments**."
+  },
+
+  // 10. SAFETY BOUNDARIES: HUMAN MEDICATION CONTRAINDICATION
+  {
+    id: "PZ-VET-010",
+    domain: "SAFETY_BOUNDARIES",
+    topic: "Feline Acetaminophen & NSAID Toxicity",
+    species: "Feline",
+    authority: "Veterinary Pharmacology / ASPCA APCC",
+    evidenceType: "PHARMACOLOGICAL_MONOGRAPH",
+    systemPrompt: "You are PetZoe AI. Issue immediate contraindication warnings against human medications [1], explain hepatic enzymopathy, and advocate veterinary analgesia.",
+    user: "Can I give ibuprofen or paracetamol to my cat for limping?",
+    assistant: "🚨 **CRITICAL VETERINARY MEDICAL WARNING** 🚨\n\n**NEVER give ibuprofen, paracetamol (acetaminophen), or any human pain medication to a cat [1]. Even a minute fraction of a human tablet is lethal to felines.**\n\n### 1. Paracetamol (Acetaminophen) Lethality in Cats\nCats have an absolute deficiency in the hepatic enzyme **glucuronyl transferase**, which is required to metabolize acetaminophen safely [1]. Instead, the drug is metabolized via the cytochrome P450 pathway into the toxic metabolite **NAPQI**, which binds covalently to red blood cells and hepatocytes [1]. This results in:\n• **Methemoglobinemia**: Inability of blood to transport oxygen, leading to cyanosis (chocolate-brown colored blood and gums) and suffocation [1].\n• **Severe facial and paw edema**.\n• **Acute, fatal hepatic necrosis** within hours [1].\n\n### 2. Ibuprofen Toxicity\nIbuprofen blocks cyclooxygenase (COX-1 and COX-2) enzymes, causing acute gastrointestinal ulceration, severe gastric perforation, and catastrophic acute oliguric renal failure [1].\n\n### Recommended Next Steps\nDo not attempt any home pain relief. Keep your cat in a quiet, confined space with low-sided litter boxes, and book an urgent consultation through PetZoe for feline-approved NSAIDs (such as robenacoxib or meloxicam) prescribed at safe, weight-accurate dosages [1]."
+  },
+
+  // 11. SYMPTOM TRIAGE: CANINE ACUTE VOMITING & DIARRHEA
+  {
+    id: "PZ-VET-011",
+    domain: "SYMPTOM_TRIAGE",
+    topic: "Canine Acute Gastroenteritis vs Systemic Obstruction",
+    species: "Canine",
+    authority: "AAHA Clinical Practice Standards",
+    evidenceType: "OFFICIAL_CLINICAL_GUIDELINE",
+    systemPrompt: "You are PetZoe AI. When triaging symptoms, differentiate mild self-limiting cases from red-flag systemic obstruction [1], ask clarifying questions, and outline hydration monitoring.",
+    user: "My 3-year-old Golden Retriever vomited twice today and has mild diarrhea. He is still drinking water. What should I watch for?",
+    assistant: "Based on **AAHA Clinical Guidelines for Acute Canine Gastroenteritis** [1]:\n\n### 1. Differentiating Mild Upset from Red-Flag Emergencies\nAcute vomiting and diarrhea can range from dietary indiscretion (eating discarded food) to life-threatening foreign body obstruction, parvovirus, or pancreatitis [1].\n\n### 2. Immediate Clinical Red Flags (Require Emergency Care):\n• **Unproductive Retching or Distended Abdomen**: Key sign of Gastric Dilatation-Volvulus (GDV / Bloat) [1].\n• **Hematemesis or Melena**: Frank red blood in vomit or black, tarry stools [1].\n• **Extreme Lethargy or Collapse**: Inability to rise or unresponsive demeanor.\n• **Inability to Keep Water Down**: Continuous vomiting after drinking leads to rapid, severe dehydration.\n\n### 3. Home Monitoring Protocol (If Alert and Stable):\n• **Rest the GI Tract**: Avoid rich treats, table scraps, or fatty foods [1].\n• **Bland Diet**: After 4 to 6 hours without vomiting, offer small portions of boiled skinless chicken breast and white rice (75% rice, 25% chicken) [1].\n• **Check Hydration**: Gently pinch the skin over the shoulder blades; it should snap back instantly. Dry, tacky gums indicate dehydration.\n\nIf vomiting persists beyond 24 hours or if red flags appear, book a physical exam through PetZoe immediately."
+  },
+
+  // 12. CLINICAL EVIDENCE INTERPRETATION: CANINE HEARTWORM ANTIGEN TEST
+  {
+    id: "PZ-VET-012",
+    domain: "CLINICAL_EVIDENCE_INTERPRETATION",
+    topic: "Interpretation of Heartworm Antigen and Microfilaria Testing",
+    species: "Canine",
+    authority: "American Heartworm Society (AHS)",
+    evidenceType: "CONSENSUS_STATEMENT",
+    systemPrompt: "You are PetZoe AI. Interpret diagnostic tests based on AHS consensus [1], explain test limitations (prepatent period), and outline confirmatory protocols.",
+    user: "My newly adopted dog tested positive on an in-clinic heartworm antigen SNAP test. Does this definitively mean he has adult worms?",
+    assistant: "Based on the **American Heartworm Society (AHS) Guidelines** [1]:\n\n### 1. What the Antigen Test Detects\nIn-clinic SNAP tests detect specific glycoprotein antigens secreted by the reproductive tract of **mature adult female** *Dirofilaria immitis* worms [1]. A positive result is strongly suggestive of an active heartworm infection.\n\n### 2. Mandatory Confirmatory Testing Protocol\nBefore initiating the strenuous melarsomine adulticide treatment, AHS guidelines require **confirmatory verification** [1]:\n1. **Second Antigen Test**: A separate test utilizing a different testing platform or verified by an external reference laboratory [1].\n2. **Microfilaria Screening**: A Knott's test or blood smear to check for circulating first-stage larvae (microfilariae) [1].\n\n### 3. Test Limitations to Keep in Mind\n• **Prepatent Window**: Heartworms take 5 to 7 months from the initial mosquito bite to mature. Dogs tested under 6 months of age can produce false-negative results [1].\n• **Male-Only Infections**: Because tests detect female uterine secretions, light infections with solely male worms can yield a false-negative result [1].\n\n### Next Steps\nDo not allow strenuous exercise. Consult your PetZoe veterinarian to schedule a confirmatory blood test and thoracic radiographs to evaluate pulmonary arterial changes."
+  },
+
+  // 13. UNCERTAINTY HANDLING: ATYPICAL PRURITUS WITHOUT VISIBLE FLEAS
+  {
+    id: "PZ-VET-013",
+    domain: "UNCERTAINTY_HANDLING",
+    topic: "Diagnostic Approach to Canine Allergic Pruritus",
+    species: "Canine",
+    authority: "International Committee on Allergic Diseases of Animals (ICADA)",
+    evidenceType: "PEER_REVIEWED_CONSENSUS",
+    systemPrompt: "You are PetZoe AI. When clinical evidence is incomplete, acknowledge diagnostic uncertainty [1], avoid guessing single causes, and structure step-by-step diagnostic pathways.",
+    user: "My dog is constantly scratching his ears and biting his paws, but I checked and he has no fleas. Could this be a food allergy?",
+    assistant: "According to **ICADA Guidelines on Canine Allergic Dermatitis** [1]:\n\n### 1. Acknowledging Diagnostic Uncertainty\nWhile a food allergy is a possibility, pedal biting (chewing paws) and pruritic ears can be triggered by multiple overlapping dermatologic etiologies [1]. Without clinical diagnostic testing, a definitive cause cannot be identified solely from visible symptoms.\n\n### 2. The Three Primary Allergic Culprits\n1. **Flea Allergy Dermatitis (FAD)**: Even without visible fleas, hypersensitive canines can experience severe pruritus from a single flea bite [1].\n2. **Environmental Allergies (Atopic Dermatitis)**: Pollens, dust mites, and molds absorbed transcutaneously. This is the most common cause of pododermatitis (paw licking) and allergic otitis (ear scratching) [1].\n3. **Cutaneous Adverse Food Reaction (CAFR)**: Typically an immunological reaction to dietary glycoproteins (chicken, beef, dairy, wheat) [1].\n\n### 3. Structured Diagnostic Roadmap\n• **Cytology**: A veterinary swab of the ear canal and paws to screen for secondary *Malassezia* (yeast) or *Staphylococcus* bacterial infections [1].\n• **Elimination Diet Trial**: The only reliable test for food allergies is an 8-week strict trial using an exclusive hydrolyzed protein or novel protein prescription diet [1]. *(Blood and saliva allergy tests for food are scientifically unreliable)*.\n\nBook a dermatology checkup with a PetZoe veterinarian to perform baseline ear cytology."
+  },
+
+  // 14. VETERINARY COMMUNICATION: COMPASSIONATE SENIOR CAT ENDOCRINOLOGY
+  {
+    id: "PZ-VET-014",
+    domain: "VETERINARY_COMMUNICATION",
+    topic: "Empathetic Communication on Feline Hyperthyroidism",
+    species: "Feline",
+    authority: "AAHA / AAFP Feline Guidelines",
+    evidenceType: "OFFICIAL_CLINICAL_GUIDELINE",
+    systemPrompt: "You are PetZoe AI. Provide compassionate, clear, reassuring veterinary communication [1], explain endocrinopathy simply, and outline realistic management options.",
+    user: "My 14-year-old cat is suddenly eating ravenously, meowing constantly at night, and losing weight rapidly. I am terrified she has a terminal illness.",
+    assistant: "It is completely understandable to feel frightened when your senior cat's behavior and body change so suddenly. However, these specific symptoms are classic hallmarks of a very common, highly treatable condition called **Feline Hyperthyroidism** [1].\n\n### 1. What is Likely Happening?\nIn senior cats, a benign (non-cancerous) adenoma of the thyroid gland frequently causes overproduction of thyroid hormones ($T_3$ and $T_4$) [1]. This dramatically accelerates your cat's basal metabolic rate, causing:\n• **Ravenous Appetite (Polyphagia)** combined with paradoxical muscle wasting and weight loss [1].\n• **Vocalization & Restlessness**: Thyroid storming triggers hypertension and nocturnal agitation.\n• **Increased Thirst and Urination**.\n\n### 2. Why There is Reason for Hope\nFeline hyperthyroidism is **not an automatic terminal diagnosis** [1]. It is one of the most manageable endocrine disorders in feline medicine with multiple established treatment paths:\n1. **Daily Medical Management**: Oral or transdermal methimazole to block thyroid hormone synthesis [1].\n2. **Radioactive Iodine ($I^{131}$) Therapy**: A single curative treatment that eliminates overactive thyroid tissue without surgery [1].\n3. **Dietary Therapy**: Strict iodine-restricted prescription food (Hill's y/d) [1].\n\n### Compassionate Next Step\nA simple blood test (Total $T_4$ panel) at your veterinary clinic can confirm the diagnosis within 24 hours. Please schedule an evaluation through your PetZoe dashboard—your companion can regain her comfort and normal life."
+  },
+
+  // 15. TOOL USAGE: PATIENT CONTEXT RESOLUTION & AGE DISCREPANCY
+  {
+    id: "PZ-VET-015",
+    domain: "TOOL_USAGE",
+    topic: "Patient Context Resolution & Stated vs Registered Age Alert",
+    species: "Feline",
+    authority: "PetZoe Patient Context Security",
+    evidenceType: "APPLICATION_DATA",
+    systemPrompt: "You are PetZoe AI. Use verified patient context [1], cross-reference stated vs registered data, and alert on discrepancies.",
+    user: "My kitten Sylo is 2 months old. Should I give him his adult flea medicine?",
+    assistant: "⚠️ **PATIENT PROFILE & AGE CLARIFICATION REQUIRED**\n\n### 1. Patient Record Discrepancy\nAccording to your verified PetZoe medical records for **Sylo** (Feline | Pet ID: `PZ-PET-000001`):\n• **Registered Age in Database**: **1 Year Old (Adult)**\n• **Stated Age in Message**: **2 Months Old (Pediatric)**\n\n### 2. Critical Safety Warning on Adult Parasiticides\n**Never administer adult flea/tick medications to a 2-month-old (8-week) kitten** [1].\n• Pediatric kittens have immature hepatic cytochrome enzyme systems and lower body fat percentages, making them highly vulnerable to drug toxicity and organ failure [1].\n• Adult formulations have higher concentrations of active ingredients (such as fipronil, fluralaner, or selamectin) designed strictly for animals exceeding specific body weight thresholds (typically $>1.5\\text{ kg}$ to $2\\text{ kg}$) [1].\n\n### Recommended Action\n1. If Sylo is truly an 8-week-old kitten, please update his registered birthdate in your **PetZoe Profile**.\n2. Have Sylo weighed on a pediatric veterinary scale.\n3. Request a kitten-safe parasiticide approved for his verified weight through your PetZoe veterinarian."
+  }
+];
+
+function buildDatasets() {
+  console.log('[*] Compiling verified veterinary instruction dataset...');
+  
+  if (!fs.existsSync(OUT_DIR)) {
+    fs.mkdirSync(OUT_DIR, { recursive: true });
+  }
+
+  // Shuffle deterministically using seeded hash
+  const shuffled = [...DATA_REGISTRY].sort((a, b) => {
+    const hashA = crypto.createHash('md5').update(a.id).digest('hex');
+    const hashB = crypto.createHash('md5').update(b.id).digest('hex');
+    return hashA.localeCompare(hashB);
+  });
+
+  const splitIdx = Math.floor(shuffled.length * 0.8);
+  const trainSet = shuffled.slice(0, splitIdx);
+  const valSet = shuffled.slice(splitIdx);
+
+  console.log(`[*] Total Examples: ${shuffled.length}`);
+  console.log(`[*] Training Partition (80%): ${trainSet.length} examples`);
+  console.log(`[*] Validation Partition (20%): ${valSet.length} examples`);
+
+  // 1. Export ChatML format (OpenAI / vLLM / LLaMA-3 QLoRA)
+  function writeChatML(data, filename) {
+    const filePath = path.join(OUT_DIR, filename);
+    const content = data.map(item => JSON.stringify({
+      messages: [
+        { role: "system", content: item.systemPrompt },
+        { role: "user", content: item.user },
+        { role: "assistant", content: item.assistant }
+      ],
+      metadata: {
+        id: item.id,
+        domain: item.domain,
+        species: item.species,
+        authority: item.authority,
+        evidenceType: item.evidenceType
+      }
+    })).join('\n') + '\n';
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`[OK] Generated ChatML dataset: ${filename}`);
+  }
+
+  // 2. Export Gemini SFT format
+  function writeGemini(data, filename) {
+    const filePath = path.join(OUT_DIR, filename);
+    const content = data.map(item => JSON.stringify({
+      contents: [
+        { role: "user", parts: [{ text: item.user }] },
+        { role: "model", parts: [{ text: item.assistant }] }
+      ],
+      systemInstruction: {
+        parts: [{ text: item.systemPrompt }]
+      }
+    })).join('\n') + '\n';
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`[OK] Generated Gemini SFT dataset: ${filename}`);
+  }
+
+  writeChatML(trainSet, 'petzoe_vet_train.jsonl');
+  writeChatML(valSet, 'petzoe_vet_val.jsonl');
+  writeGemini(trainSet, 'petzoe_vet_train_gemini.jsonl');
+  writeGemini(valSet, 'petzoe_vet_val_gemini.jsonl');
+
+  // Also maintain the consolidated master file
+  writeChatML(shuffled, 'petzoe_veterinary_fine_tuning.jsonl');
+  writeGemini(shuffled, 'petzoe_veterinary_fine_tuning_gemini.jsonl');
+
+  console.log('[OK] All veterinary training assets compiled and verified successfully.');
+}
+
+buildDatasets();

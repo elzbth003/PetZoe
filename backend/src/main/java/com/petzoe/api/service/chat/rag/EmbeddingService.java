@@ -11,21 +11,21 @@ import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Provider-independent EmbeddingService.
- * Calls Google Gemini text-embedding-004 REST API when API key is configured.
- * When in offline/test mode, generates deterministic high-dimensional embeddings (768 dimensions)
- * using term frequency hash projections, ensuring cosine distance between related terms is accurately measurable.
+ * Enterprise EmbeddingService enforcing strict vector space compatibility.
+ * When Gemini API key is configured, uses Google text-embedding-004 (768-dim).
+ * When offline or testing, uses deterministic high-dimensional semantic hash projections (768-dim).
+ * Strictly forbids comparing vectors across different embedding spaces or dimensions.
  */
 @Service
 public class EmbeddingService {
 
     private static final Logger log = LoggerFactory.getLogger(EmbeddingService.class);
     public static final int EMBEDDING_DIMENSION = 768;
+    public static final String LOCAL_DETERMINISTIC_MODEL = "deterministic-hash-projection-768";
 
     @Value("${petzoe.ai.gemini.api-key:}")
     private String apiKey;
@@ -41,10 +41,40 @@ public class EmbeddingService {
         this.objectMapper = objectMapper;
     }
 
+    public boolean isLiveGeminiConfigured() {
+        return apiKey != null && !apiKey.isBlank() && 
+               !apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY") && 
+               !apiKey.contains("placeholder");
+    }
+
+    public String getEmbeddingProvider() {
+        return isLiveGeminiConfigured() ? "GEMINI" : "LOCAL_DETERMINISTIC";
+    }
+
+    public String getActiveModelIdentifier() {
+        return isLiveGeminiConfigured() ? embeddingModel : LOCAL_DETERMINISTIC_MODEL;
+    }
+
     public String getEmbeddingModelName() {
-        return (apiKey != null && !apiKey.isBlank() && !apiKey.contains("placeholder"))
-                ? embeddingModel
-                : "deterministic-hash-projection-768";
+        return getActiveModelIdentifier();
+    }
+
+    public int getEmbeddingDimension() {
+        return EMBEDDING_DIMENSION;
+    }
+
+    /**
+     * Validates whether a stored knowledge chunk's embedding space is compatible with
+     * the active embedding configuration. Prevents cross-space vector corruption.
+     */
+    public boolean isModelCompatible(String storedModel, Integer storedDimension) {
+        if (storedModel == null || storedDimension == null) {
+            return false;
+        }
+        if (storedDimension != EMBEDDING_DIMENSION) {
+            return false;
+        }
+        return storedModel.equalsIgnoreCase(getActiveModelIdentifier());
     }
 
     /**
@@ -57,15 +87,31 @@ public class EmbeddingService {
             return zeros;
         }
 
-        if (apiKey != null && !apiKey.isBlank() && !apiKey.contains("placeholder")) {
+        if (isLiveGeminiConfigured()) {
             try {
-                return callGeminiEmbeddingApi(text);
+                Float[] geminiVector = callGeminiEmbeddingApi(text);
+                validateVector(geminiVector);
+                return geminiVector;
             } catch (Exception e) {
-                log.warn("Gemini Embedding API call failed: {}, falling back to local deterministic embedding", e.getMessage());
+                log.warn("Gemini Embedding API call failed: {}. Not silently mixing vector spaces.", e.getMessage());
+                throw new IllegalStateException("Embedding generation failed for model " + embeddingModel + ": " + e.getMessage(), e);
             }
         }
 
-        return generateDeterministicEmbedding(text);
+        // Offline deterministic hash projection
+        Float[] localVector = generateDeterministicEmbedding(text);
+        validateVector(localVector);
+        return localVector;
+    }
+
+    public void validateVector(Float[] vector) {
+        if (vector == null) {
+            throw new IllegalArgumentException("Vector cannot be null");
+        }
+        if (vector.length != EMBEDDING_DIMENSION) {
+            throw new IllegalArgumentException("Vector dimension mismatch: expected " + EMBEDDING_DIMENSION + 
+                    ", but received " + vector.length);
+        }
     }
 
     private Float[] callGeminiEmbeddingApi(String text) throws Exception {
@@ -97,7 +143,7 @@ public class EmbeddingService {
             }
         }
 
-        throw new IllegalStateException("Invalid embedding response from Gemini API");
+        throw new IllegalStateException("Invalid embedding response received from Gemini API");
     }
 
     /**
@@ -131,7 +177,7 @@ public class EmbeddingService {
         return normalize(vector);
     }
 
-    private Float[] normalize(Float[] v) {
+    public Float[] normalize(Float[] v) {
         double sumSq = 0.0;
         for (Float val : v) {
             sumSq += val * val;

@@ -1,0 +1,66 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 8
+skinparam roundCorner 4
+skinparam ArrowColor black
+
+title Collaboration Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+
+rectangle "owner1 : PetOwner\n--\nuserId = \"U001\"\nname = \"Riya Sharma\"\nemail = \"riya@gmail.com\"" as owner1
+rectangle "vet1 : Veterinarian\n--\nuserId = \"V001\"\nname = \"Dr. Ankit Mehta\"\nspecialization = \"Cardiology\"" as vet1
+rectangle "shelter1 : ShelterManager\n--\nshelterId = \"SH001\"\nname = \"Neha Iyer\"\nshelterName = \"Happy Paws Shelter\"" as shelter1
+rectangle "admin1 : Administrator\n--\nadminId = \"A001\"\nname = \"Admin User\"\nroleLevel = \"SUPER_ADMIN\"" as admin1
+rectangle "cat1 : PetCategory\n--\ncategoryId = \"CAT01\"\nname = \"Dog\"" as cat1
+
+rectangle "pet1 : Pet\n--\npetId = \"PET001\"\nownerId = \"U001\"\nname = \"Bruno\"\nspecies = \"Dog\"\nbreed = \"Golden Retriever\"\ndateOfBirth = \"2022-04-10\"" as pet1
+rectangle "appt1 : Appointment\n--\nappointmentId = \"APP001\"\npetId = \"PET001\"\nvetId = \"V001\"\ndateTime = \"2025-05-20 11:00\"\nreason = \"Regular Checkup\"\nstatus = \"CONFIRMED\"" as appt1
+rectangle "cons1 : Consultation\n--\nconsultationId = \"CONS001\"\nappointmentId = \"APP001\"\nvetId = \"V001\"\ndiagnosis = \"Healthy\"\nnotes = \"No issues found\"" as cons1
+rectangle "srv1 : Service\n--\nserviceId = \"SRV001\"\nname = \"General Checkup\"\nbasePrice = 500.00" as srv1
+rectangle "ps1 : ProviderService\n--\nproviderServiceId = \"PS001\"\nproviderId = \"V001\"\nserviceId = \"SRV001\"\nprice = 500.00\nduration = 30" as ps1
+
+rectangle "rev1 : Review\n--\nreviewId = \"REV001\"\npetId = \"PET001\"\nvetId = \"V001\"\nrating = 5\ncomment = \"Excellent service!\"" as rev1
+rectangle "pay1 : Payment\n--\npaymentId = \"PAY001\"\nappointmentId = \"APP001\"\namount = 500.00\nmethod = \"UPI\"\nstatus = \"PAID\"\npaidAt = \"2025-05-20 11:45\"" as pay1
+rectangle "notif1 : Notification\n--\nnotificationId = \"NOT001\"\nuserId = \"U001\"\ntitle = \"Appointment Confirmed\"\ntype = \"APPOINTMENT\"" as notif1
+rectangle "rec1 : MedicalRecord\n--\nrecordId = \"REC001\"\nrecordType = \"Consultation\"\ntitle = \"Regular Checkup\"" as rec1
+
+rectangle "chat1 : ChatSession\n--\nchatId = \"CHAT001\"\nownerId = \"U001\"\nvetId = \"V001\"\nstartedAt = \"2025-05-20 10:00\"" as chat1
+rectangle "msg1 : Message\n--\nmessageId = \"MSG001\"\nchatId = \"CHAT001\"\nsenderId = \"U001\"\nmessage = \"Please share Bruno's diet details\"" as msg1
+
+rectangle "txn1 : Transaction\n--\ntransactionId = \"TXN1001\"\ngateway = \"Razorpay\"\namount = 500.00\nstatus = \"SUCCESS\"" as txn1
+rectangle "adopt1 : Adoption\n--\nadoptionId = \"ADP001\"\npetId = \"PET002\"\nownerId = \"U001\"\nshelterId = \"SH001\"\nstatus = \"APPROVED\"\nadoptionDate = \"2025-05-24\"" as adopt1
+rectangle "shelterPet1 : ShelterPet\n--\nshelterPetId = \"SP001\"\npetId = \"PET002\"\nshelterId = \"SH001\"\nstatus = \"Available\"" as shelterPet1
+
+' Links with message annotations
+owner1 -down- pet1 : 1: registerPet(petInfo) >
+owner1 -right- appt1 : 2: bookAppointment(petId, serviceId, dateTime) >\n5: bookingConfirmed() <
+appt1 -right- vet1 : 3: checkAppointment() >\n4: appointmentInitiated() <
+
+cons1 -left- appt1 : 6: startConsultation() >\n7: consultationStarted() <\n8: consultationEnded() >
+cons1 -down- rec1 : 9: updateMedicalRecord() >\n10: recordSaved() <
+
+admin1 -left- owner1 : 11: manageUsers() >
+admin1 -right- cat1 : 12: manageSystem() >
+
+cat1 -down- srv1 : 13: getServiceByCategory() >
+srv1 -down- ps1 : 14: getProviderServices() >
+ps1 -left- vet1 : 15: serviceVerified() >
+
+owner1 -down- pay1 : 16: initiatePayment(amount) >\n17: paymentSuccess() <
+pay1 -right- txn1 : 18: processTransaction() >\n19: transactionSuccess() <
+
+shelter1 -down- adopt1 : 20: viewAdoptionRequests() >\n21: requestDetails() <\n22: approveAdoption() >
+adopt1 -right- shelterPet1 : 23: updateShelterPet(status) >\n24: shelterPetUpdated() <
+
+owner1 -down- rev1 : 25: submitReview() >\n26: reviewSubmitted() <
+owner1 -down- chat1 : 27: chatSessionStarted() >
+chat1 -right- msg1 : 28: sendMessage(msg) >
+
+note bottom of shelterPet1
+  Note: Sequence is indicated by
+  numbering of messages (method calls).
+end note
+
+@enduml

@@ -13,7 +13,14 @@ public class AiCitationDTO {
     private String retrievedAt;
     private String snippet;
     private String trustStatus; // "TRUSTED", "ALLOWED", "UNKNOWN", "BLOCKED"
-    private String providerType; // "LIVE_WEB", "CURATED_REFERENCE"
+    private String providerType; // "LIVE_WEB", "CURATED_REFERENCE", "VECTOR_PG", "PLATFORM_DB"
+    private String evidenceType = "OFFICIAL_GUIDELINE"; // "OFFICIAL_GUIDELINE", "PEER_REVIEWED_STUDY", "PLATFORM_DATA", "CURATED_REFERENCE"
+    private String citationStatus = "RETRIEVED_BACKGROUND"; // "RETRIEVED_BACKGROUND", "CITED_IN_RESPONSE", "SUPPORTS_CLAIM"
+    private boolean isReferencedInResponse = false;
+    private String species;
+    private String clinicalTopic;
+    private String license;
+    private String doi;
 
     public AiCitationDTO() {
         this.retrievedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -22,6 +29,22 @@ public class AiCitationDTO {
     public AiCitationDTO(int index, String title, String domain, String url, 
                          String publicationDate, String retrievedAt, String snippet, 
                          String trustStatus, String providerType) {
+        this(index, title, domain, url, publicationDate, retrievedAt, snippet, trustStatus, providerType,
+             "CURATED_REFERENCE", "RETRIEVED_BACKGROUND", false, null, null, null, null);
+    }
+
+    public AiCitationDTO(int index, String title, String domain, String url, 
+                         String publicationDate, String retrievedAt, String snippet, 
+                         String trustStatus, String providerType, String evidenceType) {
+        this(index, title, domain, url, publicationDate, retrievedAt, snippet, trustStatus, providerType,
+             evidenceType, "RETRIEVED_BACKGROUND", false, null, null, null, null);
+    }
+
+    public AiCitationDTO(int index, String title, String domain, String url, 
+                         String publicationDate, String retrievedAt, String snippet, 
+                         String trustStatus, String providerType, String evidenceType,
+                         String citationStatus, boolean isReferencedInResponse,
+                         String species, String clinicalTopic, String license, String doi) {
         this.index = index;
         this.title = title;
         this.domain = domain;
@@ -31,6 +54,13 @@ public class AiCitationDTO {
         this.snippet = snippet;
         this.trustStatus = trustStatus;
         this.providerType = providerType;
+        this.evidenceType = (evidenceType != null) ? evidenceType : "OFFICIAL_GUIDELINE";
+        this.citationStatus = (citationStatus != null) ? citationStatus : "RETRIEVED_BACKGROUND";
+        this.isReferencedInResponse = isReferencedInResponse;
+        this.species = species;
+        this.clinicalTopic = clinicalTopic;
+        this.license = license;
+        this.doi = doi;
     }
 
     public int getIndex() { return index; }
@@ -59,4 +89,25 @@ public class AiCitationDTO {
 
     public String getProviderType() { return providerType; }
     public void setProviderType(String providerType) { this.providerType = providerType; }
+
+    public String getEvidenceType() { return evidenceType; }
+    public void setEvidenceType(String evidenceType) { this.evidenceType = evidenceType; }
+
+    public String getCitationStatus() { return citationStatus; }
+    public void setCitationStatus(String citationStatus) { this.citationStatus = citationStatus; }
+
+    public boolean isReferencedInResponse() { return isReferencedInResponse; }
+    public void setReferencedInResponse(boolean isReferencedInResponse) { this.isReferencedInResponse = isReferencedInResponse; }
+
+    public String getSpecies() { return species; }
+    public void setSpecies(String species) { this.species = species; }
+
+    public String getClinicalTopic() { return clinicalTopic; }
+    public void setClinicalTopic(String clinicalTopic) { this.clinicalTopic = clinicalTopic; }
+
+    public String getLicense() { return license; }
+    public void setLicense(String license) { this.license = license; }
+
+    public String getDoi() { return doi; }
+    public void setDoi(String doi) { this.doi = doi; }
 }

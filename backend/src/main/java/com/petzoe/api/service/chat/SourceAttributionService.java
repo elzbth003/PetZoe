@@ -8,17 +8,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
- * Handles construction, formatting, prompt injection assembly, and JSON serialization of citations.
+ * Handles construction, formatting, prompt injection assembly,
+ * post-generation citation validation, and JSON serialization of citations.
  */
 @Service
 public class SourceAttributionService {
 
     private static final Logger log = LoggerFactory.getLogger(SourceAttributionService.class);
+    private static final Pattern CITATION_INDEX_PATTERN = Pattern.compile("\\[(\\d+)\\]");
 
     private final ObjectMapper objectMapper;
 
@@ -46,7 +49,8 @@ public class SourceAttributionService {
                     res.getRetrievedAt(),
                     res.getSnippet(),
                     res.getTrustStatus(),
-                    res.getProviderType()
+                    res.getProviderType(),
+                    "CURATED_REFERENCE"
             ));
         }
         return citations;
@@ -67,12 +71,58 @@ public class SourceAttributionService {
         for (AiCitationDTO c : citations) {
             sb.append(String.format("[%d] %s (%s)\n", c.getIndex(), c.getTitle(), c.getDomain()));
             sb.append(String.format("    URL: %s\n", c.getUrl()));
-            sb.append(String.format("    Published: %s | Retrieved: %s | Source Type: %s\n", 
-                    c.getPublicationDate(), c.getRetrievedAt(), c.getProviderType()));
+            sb.append(String.format("    Published: %s | Retrieved: %s | Type: %s | Evidence: %s\n", 
+                    c.getPublicationDate(), c.getRetrievedAt(), c.getProviderType(), c.getEvidenceType()));
             sb.append(String.format("    Summary: %s\n\n", c.getSnippet()));
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Post-generation citation integrity and answer-grounding validation.
+     * Scans the generated response text for bracketed indices [1], [2], etc.
+     * Marks citations referenced by the model as CITED_IN_RESPONSE.
+     * Marks unreferenced candidate citations as RETRIEVED_BACKGROUND.
+     * Detects and sanitizes hallucinated citation indices that have no corresponding candidate.
+     */
+    public List<AiCitationDTO> validateAndFilterCitations(List<AiCitationDTO> candidateCitations, String responseText) {
+        if (candidateCitations == null || candidateCitations.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Integer> referencedIndices = new HashSet<>();
+        if (responseText != null && !responseText.isBlank()) {
+            Matcher matcher = CITATION_INDEX_PATTERN.matcher(responseText);
+            while (matcher.find()) {
+                try {
+                    referencedIndices.add(Integer.parseInt(matcher.group(1)));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        Set<Integer> validIndices = candidateCitations.stream()
+                .map(AiCitationDTO::getIndex)
+                .collect(Collectors.toSet());
+
+        // Check for hallucinated indices
+        for (int ref : referencedIndices) {
+            if (!validIndices.contains(ref)) {
+                log.warn("Model generated ungrounded citation [{}] which was not in the retrieved candidate set.", ref);
+            }
+        }
+
+        for (AiCitationDTO cite : candidateCitations) {
+            if (referencedIndices.contains(cite.getIndex())) {
+                cite.setReferencedInResponse(true);
+                cite.setCitationStatus("CITED_IN_RESPONSE");
+            } else {
+                cite.setReferencedInResponse(false);
+                cite.setCitationStatus("RETRIEVED_BACKGROUND");
+            }
+        }
+
+        return candidateCitations;
     }
 
     /**

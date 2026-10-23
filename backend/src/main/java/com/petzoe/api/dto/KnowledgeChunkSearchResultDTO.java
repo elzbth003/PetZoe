@@ -11,6 +11,11 @@ public class KnowledgeChunkSearchResultDTO {
     private String sectionTitle;
     private String content;
     private Double similarityScore;
+    private String retrievalMethod = "SEMANTIC_DENSE"; // SEMANTIC_DENSE, EXACT_LEXICAL, HYBRID_RRF
+    private String species;
+    private String clinicalTopic;
+    private String evidenceType = "OFFICIAL_CLINICAL_GUIDELINE";
+    private String license;
 
     public KnowledgeChunkSearchResultDTO() {}
 
@@ -28,6 +33,29 @@ public class KnowledgeChunkSearchResultDTO {
         this.sectionTitle = sectionTitle;
         this.content = content;
         this.similarityScore = similarityScore;
+        this.retrievalMethod = "SEMANTIC_DENSE";
+    }
+
+    public KnowledgeChunkSearchResultDTO(Long chunkId, Long documentId, String documentTitle,
+                                         String sourceUrl, String publisher, String category,
+                                         String documentVersion, String sectionTitle, String content,
+                                         Double similarityScore, String retrievalMethod,
+                                         String species, String clinicalTopic, String evidenceType, String license) {
+        this.chunkId = chunkId;
+        this.documentId = documentId;
+        this.documentTitle = documentTitle;
+        this.sourceUrl = sourceUrl;
+        this.publisher = publisher;
+        this.category = category;
+        this.documentVersion = documentVersion;
+        this.sectionTitle = sectionTitle;
+        this.content = content;
+        this.similarityScore = similarityScore;
+        this.retrievalMethod = retrievalMethod;
+        this.species = species;
+        this.clinicalTopic = clinicalTopic;
+        this.evidenceType = evidenceType;
+        this.license = license;
     }
 
     public Long getChunkId() { return chunkId; }
@@ -50,4 +78,14 @@ public class KnowledgeChunkSearchResultDTO {
     public void setContent(String content) { this.content = content; }
     public Double getSimilarityScore() { return similarityScore; }
     public void setSimilarityScore(Double similarityScore) { this.similarityScore = similarityScore; }
+    public String getRetrievalMethod() { return retrievalMethod; }
+    public void setRetrievalMethod(String retrievalMethod) { this.retrievalMethod = retrievalMethod; }
+    public String getSpecies() { return species; }
+    public void setSpecies(String species) { this.species = species; }
+    public String getClinicalTopic() { return clinicalTopic; }
+    public void setClinicalTopic(String clinicalTopic) { this.clinicalTopic = clinicalTopic; }
+    public String getEvidenceType() { return evidenceType; }
+    public void setEvidenceType(String evidenceType) { this.evidenceType = evidenceType; }
+    public String getLicense() { return license; }
+    public void setLicense(String license) { this.license = license; }
 }

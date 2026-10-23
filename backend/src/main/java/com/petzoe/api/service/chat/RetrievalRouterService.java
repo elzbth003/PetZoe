@@ -46,6 +46,15 @@ public class RetrievalRouterService {
         return PERSONAL_RECORD_PATTERNS.stream().anyMatch(p -> p.matcher(message).find());
     }
 
+    public boolean isVetAvailabilityQuery(String message) {
+        if (message == null || message.isBlank()) return false;
+        String lower = message.toLowerCase();
+        return lower.contains("available") || lower.contains("free slot") ||
+                lower.contains("open slot") || lower.contains("slots tomorrow") || lower.contains("slots today") ||
+                lower.contains("vet tomorrow") || lower.contains("doctor tomorrow") || lower.contains("appointment slot") ||
+                lower.matches(".*\\b(is dr\\.?|can i book|when is dr\\.?|available on|available tomorrow|available today|clinic hours)\\b.*");
+    }
+
     public String extractCandidatePetName(String message) {
         if (message == null || message.isBlank()) return null;
 
@@ -64,7 +73,16 @@ public class RetrievalRouterService {
             }
         }
 
-        // 3. Phrasing like: "pet Sylo", "cat Sylo", "dog Bruno"
+        // 3. Phrasing like: "Is Buddy vaccinated?", "Does Bruno need..."
+        Matcher isMatcher = Pattern.compile("(?i)\\b(?:is|does|can|will|has|check)\\s+([A-Za-z0-9_]{2,25})\\s+(?:vaccinated|due|need|have|sick|eating|schedule|record)\\b").matcher(message);
+        if (isMatcher.find()) {
+            String candidate = isMatcher.group(1);
+            if (!isStopWord(candidate)) {
+                return candidate;
+            }
+        }
+
+        // 4. Phrasing like: "pet Sylo", "cat Sylo", "dog Bruno"
         Matcher prefixMatcher = Pattern.compile("(?i)\\b(?:pet|dog|cat|puppy|kitten)\\s+([A-Za-z0-9_]{2,25})\\b").matcher(message);
         if (prefixMatcher.find()) {
             String candidate = prefixMatcher.group(1);
@@ -73,7 +91,7 @@ public class RetrievalRouterService {
             }
         }
 
-        // 4. Phrasing like: "for Sylo", "of Sylo", "named Sylo"
+        // 5. Phrasing like: "for Sylo", "of Sylo", "named Sylo"
         Matcher ofMatcher = Pattern.compile("(?i)\\b(?:for|of|named|called)\\s+([A-Za-z0-9_]{2,25})\\b").matcher(message);
         if (ofMatcher.find()) {
             String candidate = ofMatcher.group(1);
@@ -96,7 +114,8 @@ public class RetrievalRouterService {
                w.equals("record") || w.equals("records") || w.equals("history") || w.equals("vaccine") ||
                w.equals("vaccination") || w.equals("medicine") || w.equals("medication") || w.equals("food") ||
                w.equals("diet") || w.equals("care") || w.equals("help") || w.equals("today") ||
-               w.equals("him") || w.equals("her") || w.equals("it") || w.equals("them") || w.equals("here");
+               w.equals("him") || w.equals("her") || w.equals("it") || w.equals("them") || w.equals("here") ||
+               w.equals("dr") || w.equals("doctor");
     }
 
     /**
@@ -118,6 +137,38 @@ public class RetrievalRouterService {
             return plan;
         }
 
+        // Live Veterinarian Availability routing
+        if (intent == ChatIntent.VET_AVAILABILITY) {
+            plan.addSource(RetrievalPlan.EvidenceSource.LIVE_VET_AVAILABILITY);
+            plan.setMode(RetrievalMode.VET_AVAILABILITY_ONLY);
+            return plan;
+        }
+
+        // Personal pet vaccination query (e.g. "Is Buddy vaccinated?") -> PETZOE_ONLY
+        if (intent == ChatIntent.VACCINATION && candidatePet != null && isAuthenticated) {
+            String lower = (message != null) ? message.toLowerCase() : "";
+            boolean isPersonalStatusCheck = lower.startsWith("is ") || lower.contains("status") || lower.contains("record") ||
+                    !isWebSearchRequired(message) && !lower.contains("protocol") && !lower.contains("schedule") && !lower.contains("guideline");
+            if (isPersonalStatusCheck) {
+                plan.addSource(RetrievalPlan.EvidenceSource.DATABASE_RECORDS);
+                plan.addSource(RetrievalPlan.EvidenceSource.PATIENT_CONTEXT);
+                plan.setMode(RetrievalMode.PETZOE_ONLY);
+                return plan;
+            }
+        }
+
+        // Pure research queries (e.g. "What is the latest research on canine skin lesions?") -> WEB_ONLY
+        if (intent == ChatIntent.MEDICAL_QUESTION && isWebSearchRequired(message) && candidatePet == null) {
+            String lower = (message != null) ? message.toLowerCase() : "";
+            if (lower.contains("latest research") || lower.contains("recent research") ||
+                lower.contains("clinical study") || lower.contains("latest study") ||
+                lower.contains("recent studies") || lower.contains("literature on")) {
+                plan.addSource(RetrievalPlan.EvidenceSource.WEB_KNOWLEDGE);
+                plan.setMode(RetrievalMode.WEB_ONLY);
+                return plan;
+            }
+        }
+
         // Check if query is clinical / preventive / healthcare / nutrition / hygiene
         boolean isClinicalCare = (intent == ChatIntent.PREVENTIVE_CARE ||
                                   intent == ChatIntent.VACCINATION ||
@@ -136,11 +187,24 @@ public class RetrievalRouterService {
                 plan.addSource(RetrievalPlan.EvidenceSource.WEB_KNOWLEDGE);
             }
 
+            boolean needsVetAvailability = isVetAvailabilityQuery(message);
+            if (needsVetAvailability) {
+                plan.addSource(RetrievalPlan.EvidenceSource.LIVE_VET_AVAILABILITY);
+            }
+
             if (candidatePet != null && isAuthenticated) {
                 plan.addSource(RetrievalPlan.EvidenceSource.PATIENT_CONTEXT);
-                plan.setMode(needsWeb ? RetrievalMode.PETZOE_PLUS_KNOWLEDGE_PLUS_WEB : RetrievalMode.PETZOE_PLUS_KNOWLEDGE);
+                if (needsVetAvailability) {
+                    plan.setMode(RetrievalMode.CLINICAL_PLUS_VET_AVAILABILITY);
+                } else {
+                    plan.setMode(needsWeb ? RetrievalMode.PETZOE_PLUS_KNOWLEDGE_PLUS_WEB : RetrievalMode.PETZOE_PLUS_KNOWLEDGE);
+                }
             } else {
-                plan.setMode(needsWeb ? RetrievalMode.KNOWLEDGE_PLUS_WEB : RetrievalMode.KNOWLEDGE_BASE_ONLY);
+                if (needsVetAvailability) {
+                    plan.setMode(RetrievalMode.CLINICAL_PLUS_VET_AVAILABILITY);
+                } else {
+                    plan.setMode(needsWeb ? RetrievalMode.KNOWLEDGE_PLUS_WEB : RetrievalMode.KNOWLEDGE_BASE_ONLY);
+                }
             }
             return plan;
         }

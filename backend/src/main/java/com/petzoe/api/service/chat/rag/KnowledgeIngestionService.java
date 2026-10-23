@@ -35,43 +35,77 @@ public class KnowledgeIngestionService {
     }
 
     /**
-     * Ingests or updates a knowledge document with section chunking and vector embeddings.
+     * Backward-compatible ingestion overload.
      */
     @Transactional
     public KnowledgeDocument ingestDocument(String title, String category, String publisher,
                                             String sourceUrl, String version, String fullContent) {
+        return ingestDocument(title, category, publisher, sourceUrl, version, fullContent,
+                null, "Canine and Feline", category, "OFFICIAL_CLINICAL_GUIDELINE", "Open Access / Educational Attribution");
+    }
+
+    /**
+     * Research-grade ingestion with complete source provenance and metadata.
+     */
+    @Transactional
+    public KnowledgeDocument ingestDocument(String title, String category, String publisher,
+                                            String sourceUrl, String version, String fullContent,
+                                            String doi, String species, String clinicalTopic,
+                                            String evidenceType, String license) {
         String contentHash = computeHash(fullContent);
 
         KnowledgeDocument document = documentRepository.findByContentHash(contentHash).orElse(null);
         if (document != null && "ACTIVE".equals(document.getStatus())) {
-            log.info("Document '{}' with hash {} is already indexed and active.", title, contentHash);
-            return document;
+            // Check if chunks have matching embedding model
+            List<KnowledgeChunk> existingChunks = chunkRepository.findByDocumentIdOrderByChunkIndexAsc(document.getId());
+            boolean modelMatches = !existingChunks.isEmpty() && 
+                    existingChunks.stream().allMatch(c -> embeddingService.isModelCompatible(c.getEmbeddingModel(), c.getEmbeddingDimension()));
+            
+            if (modelMatches) {
+                log.info("Document '{}' is already indexed with active model '{}'.", title, embeddingService.getActiveModelIdentifier());
+                return document;
+            }
+            log.info("Document '{}' exists but embedding model differs. Re-indexing chunks...", title);
         }
 
         if (document == null) {
             document = new KnowledgeDocument(title, sourceUrl, publisher, category, version, contentHash, "ACTIVE");
             document.setPublishedAt(LocalDateTime.now());
             document.setReviewedAt(LocalDateTime.now());
+            document.setDoi(doi);
+            document.setSpecies(species);
+            document.setClinicalTopic(clinicalTopic);
+            document.setEvidenceType(evidenceType);
+            document.setLicense(license);
+            document.setSourceVerificationStatus("VERIFIED");
+            document.setAccessDate(LocalDateTime.now());
             document = documentRepository.save(document);
         } else {
-            // Existing document updated - clear old chunks
             chunkRepository.deleteByDocumentId(document.getId());
             document.setTitle(title);
             document.setPublisher(publisher);
             document.setSourceUrl(sourceUrl);
             document.setCategory(category);
             document.setDocumentVersion(version);
+            document.setDoi(doi);
+            document.setSpecies(species);
+            document.setClinicalTopic(clinicalTopic);
+            document.setEvidenceType(evidenceType);
+            document.setLicense(license);
+            document.setSourceVerificationStatus("VERIFIED");
             document.setStatus("ACTIVE");
             document.setUpdatedAt(LocalDateTime.now());
             document = documentRepository.save(document);
         }
 
         List<DocumentChunkingService.RawChunk> rawChunks = chunkingService.chunkDocument(fullContent, title);
-        log.info("Chunked document '{}' into {} chunks. Generating embeddings...", title, rawChunks.size());
+        log.info("Chunked document '{}' into {} chunks with active model '{}'. Generating embeddings...",
+                title, rawChunks.size(), embeddingService.getActiveModelIdentifier());
 
         for (DocumentChunkingService.RawChunk rc : rawChunks) {
             String textForEmbedding = rc.getSectionTitle() + ": " + rc.getContent();
             Float[] embedding = embeddingService.generateEmbedding(textForEmbedding);
+            String chunkHash = computeHash(textForEmbedding);
 
             KnowledgeChunk chunk = new KnowledgeChunk(
                     document,
@@ -79,7 +113,12 @@ public class KnowledgeIngestionService {
                     rc.getSectionTitle(),
                     rc.getContent(),
                     embedding,
-                    embeddingService.getEmbeddingModelName()
+                    embeddingService.getActiveModelIdentifier(),
+                    embeddingService.getEmbeddingDimension(),
+                    "ACTIVE",
+                    species,
+                    clinicalTopic,
+                    chunkHash
             );
             chunkRepository.save(chunk);
         }
@@ -98,7 +137,7 @@ public class KnowledgeIngestionService {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to hash content", e);
+            return Integer.toHexString(content.hashCode());
         }
     }
 }

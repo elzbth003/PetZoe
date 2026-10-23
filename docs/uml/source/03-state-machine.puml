@@ -1,0 +1,145 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 10
+skinparam roundCorner 4
+skinparam ArrowColor black
+skinparam StateBorderColor black
+
+title State Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+
+state "User Account State" as UAS {
+    [*] --> Unregistered
+    Unregistered --> RegPending : Register
+    state "Registered\n(Pending Verification)" as RegPending
+    
+    RegPending --> ActiveVerified : Verify by Admin
+    RegPending --> RejectedAcc : Rejected
+    state "Rejected\n(Account Rejected)" as RejectedAcc
+
+    state "Active\n(Verified)" as ActiveVerified
+    ActiveVerified --> AuthenticatedSession : Login
+    state "Authenticated\n(Active Session)" as AuthenticatedSession
+
+    AuthenticatedSession --> LoggedOut : Logout / Session Expired
+    LoggedOut --> [*]
+
+    ActiveVerified --> SuspendedInactive : Deactivate / Suspend
+    state "Suspended\n(Inactive)" as SuspendedInactive
+    SuspendedInactive --> ActiveVerified : Re-Activate by Admin
+    SuspendedInactive --> LoggedOut : Logout / Session Expired
+}
+
+state "Appointment & Booking State" as ABS {
+    [*] --> NoAppointment
+    state "No Appointment" as NoAppointment
+    NoAppointment --> BookingReqPending : Search &\nSelect Slot
+    state "Booking Requested\n(Pending)" as BookingReqPending
+    
+    BookingReqPending --> ApptConfirmed : Accept
+    state "Appointment\nConfirmed" as ApptConfirmed
+    
+    ApptConfirmed --> ApptCompleted : Complete
+    state "Appointment\nCompleted" as ApptCompleted
+    ApptCompleted --> [*]
+    
+    BookingReqPending --> BookingCancelled : Reject / Cancel
+    state "Booking Cancelled" as BookingCancelled
+    BookingCancelled --> [*]
+}
+
+state "Consultation State" as CS {
+    [*] --> Scheduled
+    Scheduled --> InProgress : Start Consultation
+    state "In Progress" as InProgress
+    InProgress --> Completed : Complete
+    InProgress --> Cancelled : Cancel
+    Completed --> [*]
+    Cancelled --> [*]
+}
+
+state "Medical Record State" as MRS {
+    [*] --> NoRecord
+    state "No Record" as NoRecord
+    NoRecord --> RecordDraft : Create / Add\nRecord
+    state "Record Created\n(Draft)" as RecordDraft
+    
+    RecordDraft --> RecordUpdated : Update
+    state "Record Updated" as RecordUpdated
+    
+    RecordUpdated --> RecordSaved : Publish / Save
+    state "Record Saved\n(Final)" as RecordSaved
+    
+    RecordSaved --> RecordArchived : Archive
+    state "Record Archived" as RecordArchived
+    RecordArchived --> [*]
+}
+
+state "Prescription State" as PS {
+    [*] --> NoPrescription
+    state "No Prescription" as NoPrescription
+    NoPrescription --> RxDraft : Create\nPrescription
+    state "Prescription Created\n(Draft)" as RxDraft
+    
+    RxDraft --> RxActive : Issue Prescription
+    state "Prescription Issued\n(Active)" as RxActive
+    
+    RxActive --> RxCompleted : Complete / Expired
+    state "Prescription Completed\n(Expired)" as RxCompleted
+    RxCompleted --> [*]
+    
+    RxDraft --> RxDiscarded : Discard
+    state "Prescription Discarded" as RxDiscarded
+    RxDiscarded --> [*]
+}
+
+state "Payment State" as PAYS {
+    [*] --> PayInitiated : Make Payment
+    state "Payment Initiated" as PayInitiated
+    PayInitiated --> Processing
+    Processing --> PaySuccess : Success
+    state "Payment Success\n(Completed)" as PaySuccess
+    PaySuccess --> [*]
+    
+    Processing --> PayFailed : Failure
+    state "Payment Failed" as PayFailed
+    PayFailed --> Processing : Retry
+}
+
+state "Adoption State" as AS {
+    [*] --> NoAdoptReq
+    state "No Adoption\nRequest" as NoAdoptReq
+    NoAdoptReq --> ReqSubmitted : Submit Request
+    state "Request Submitted\n(Pending)" as ReqSubmitted
+    
+    ReqSubmitted --> ReqReview : Review
+    state "Request Under\nReview" as ReqReview
+    
+    ReqReview --> AdoptApproved : Approve
+    state "Adoption Approved" as AdoptApproved
+    AdoptApproved --> AdoptCompleted : Handover / Complete
+    state "Adoption Completed" as AdoptCompleted
+    AdoptCompleted --> [*]
+    
+    ReqReview --> ReqRejected : Reject
+    state "Request Rejected" as ReqRejected
+    ReqRejected --> [*]
+}
+
+state "System Access & Role State" as SARS {
+    [*] --> GuestAccess : Start
+    state "Guest Access\n(Limited)" as GuestAccess
+    GuestAccess --> RoleBasedAccess : Login
+    state "Role-based Access\n(Owner / Vet / Shelter / Admin)" as RoleBasedAccess
+    
+    RoleBasedAccess --> ActiveAccess : Access System\nFeatures
+    state "Active Access" as ActiveAccess
+    ActiveAccess --> NoAccess : Session Expired /\nLogout
+    state "No Access" as NoAccess
+    NoAccess --> [*]
+    NoAccess --> RoleBasedAccess : Login Again
+}
+
+@enduml
