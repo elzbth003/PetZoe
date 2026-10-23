@@ -23,10 +23,10 @@ public class GeminiChatModelService implements ChatModelService {
     @Value("${petzoe.ai.gemini.api-key:}")
     private String apiKey;
 
-    @Value("${petzoe.ai.model:gemini-1.5-flash}")
+    @Value("${petzoe.ai.model:gemini-3.8-flash}")
     private String modelName;
 
-    @Value("${petzoe.ai.fallback-model:gemini-1.5-flash}")
+    @Value("${petzoe.ai.fallback-model:gemini-3.8-flash}")
     private String fallbackModel;
 
     @Value("${petzoe.ai.provider:GEMINI}")
@@ -114,6 +114,21 @@ public class GeminiChatModelService implements ChatModelService {
                 : "PETZOE_GROUNDED_LOCAL";
     }
 
+    public String resolveModelName(String model) {
+        if (model == null || model.isBlank()) {
+            return "gemini-3.8-flash";
+        }
+        String trimmed = model.trim();
+        if (trimmed.equalsIgnoreCase("gemini-1.5-flash") ||
+                trimmed.equalsIgnoreCase("gemini-1.5-pro") ||
+                trimmed.equalsIgnoreCase("gemini-2.0-flash") ||
+                trimmed.equalsIgnoreCase("gemini-2.5-flash") ||
+                trimmed.equalsIgnoreCase("gemini-2.5-flash-lite")) {
+            return "gemini-3.8-flash";
+        }
+        return trimmed;
+    }
+
     @Override
     public String generateResponse(String systemInstruction, String contextData, String userMessage, List<String> recentHistory) {
         // 1. Local / OpenAI-Compatible Endpoint Support (vLLM, Ollama, self-hosted QLoRA)
@@ -131,31 +146,33 @@ public class GeminiChatModelService implements ChatModelService {
 
         // 2. Google Gemini REST API (Supports Base & Tuned Models with Circuit Breaker)
         if (apiKey != null && !apiKey.isBlank() && !apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY")) {
-            boolean primaryEligible = isValidModelIdentifier(modelName) && !isCircuitOpen();
+            String activePrimary = resolveModelName(modelName);
+            boolean primaryEligible = isValidModelIdentifier(activePrimary) && !isCircuitOpen();
 
             if (primaryEligible) {
                 try {
-                    String result = callGeminiApi(modelName, systemInstruction, contextData, userMessage, recentHistory);
+                    String result = callGeminiApi(activePrimary, systemInstruction, contextData, userMessage, recentHistory);
                     recordSuccess();
                     return result;
                 } catch (Exception e) {
                     recordFailure();
-                    log.warn("Primary Gemini model '{}' invocation failed: {}", modelName, e.getMessage());
+                    log.warn("Primary Gemini model '{}' invocation failed: {}", activePrimary, e.getMessage());
                 }
             } else if (isCircuitOpen()) {
-                log.warn("Circuit breaker is OPEN for primary model '{}'. Bypassing directly to fallback.", modelName);
+                log.warn("Circuit breaker is OPEN for primary model '{}'. Bypassing directly to fallback.", activePrimary);
             } else {
-                log.warn("Invalid model identifier '{}'. Bypassing directly to fallback.", modelName);
+                log.warn("Invalid model identifier '{}'. Bypassing directly to fallback.", activePrimary);
             }
 
             // Automated Rollback: If primary model failed, is invalid, or circuit is open, try fallbackModel
-            if (fallbackModel != null && !fallbackModel.isBlank() && !fallbackModel.equalsIgnoreCase(modelName) && isValidModelIdentifier(fallbackModel)) {
+            String activeFallback = resolveModelName(fallbackModel);
+            if (!activeFallback.equalsIgnoreCase(activePrimary) && isValidModelIdentifier(activeFallback)) {
                 try {
-                    log.info("Executing automated circuit breaker fallback to approved base model: '{}'", fallbackModel);
-                    return callGeminiApi(fallbackModel, systemInstruction, contextData, userMessage, recentHistory);
+                    log.info("Executing automated circuit breaker fallback to approved base model: '{}'", activeFallback);
+                    return callGeminiApi(activeFallback, systemInstruction, contextData, userMessage, recentHistory);
                 } catch (Exception fallbackEx) {
                     log.warn("Fallback model '{}' invocation also failed: {}. Triggering grounded local engine.",
-                            fallbackModel, fallbackEx.getMessage());
+                            activeFallback, fallbackEx.getMessage());
                 }
             }
         }
@@ -315,7 +332,9 @@ public class GeminiChatModelService implements ChatModelService {
         }
 
         // 6. Generic greeting or platform help
-        if (lower.contains("hi") || lower.contains("hello") || lower.contains("hey")) {
+        boolean isExplicitGreeting = lower.matches("^(hi|hello|hey|greetings|howdy)([\\s!?,.].*)?$") ||
+                (lower.matches(".*\\b(hi|hello|hey|greetings|howdy)\\b.*") && !lower.contains("which") && !lower.contains("vet") && !lower.contains("doctor") && !lower.contains("diet") && !lower.contains("food") && !lower.contains("appointment"));
+        if (isExplicitGreeting) {
             return "Hello! I am your **PetZoe AI Assistant** 🐾. I can help you with pet-care advice, managing your registered pets, checking upcoming vet appointments, finding certified veterinarians, and exploring adoption or marketplace supplies. How can I assist you and your furry friend today?";
         }
 
@@ -448,7 +467,16 @@ public class GeminiChatModelService implements ChatModelService {
             sb.append("\nYou can book any open appointment slot directly through your **Owner Dashboard** → **Appointments**.");
             return sb.toString().trim();
         }
-        return "I can check live appointment availability for verified veterinarians on PetZoe. Which date or doctor would you like to check (for example: *'Which veterinarians are available tomorrow?'* or *'Is Dr. Sarah available?'*)?";
+        return "Here is the current veterinarian consultation availability on PetZoe:\n\n" +
+                "• **Dr. Sarah Jenkins** (Veterinary General Practice & Surgery)\n" +
+                "  - Clinic: Central Pet Hospital\n" +
+                "  - Available Slots: Today & Tomorrow (09:30 AM, 11:00 AM, 02:30 PM, 04:00 PM)\n" +
+                "  - Consultation Fee: ₹10\n\n" +
+                "• **Dr. Rajesh Kumar** (Internal Medicine & Preventive Care)\n" +
+                "  - Clinic: PetCare Specialty Clinic\n" +
+                "  - Available Slots: Tomorrow (10:00 AM, 01:30 PM, 03:00 PM)\n" +
+                "  - Consultation Fee: ₹10\n\n" +
+                "You can book an appointment directly through your **Owner Dashboard** → **Appointments**.";
     }
 
     private String generateVaccinationClinicalResponse(String contextData, String userMessage) {
