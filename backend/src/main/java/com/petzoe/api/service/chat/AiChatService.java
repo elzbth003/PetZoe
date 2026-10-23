@@ -54,6 +54,22 @@ public class AiChatService {
              new RetrievalRouterService(), null, new SourceAttributionService(new com.fasterxml.jackson.databind.ObjectMapper()), null, null, null);
     }
 
+    public AiChatService(UserRepository userRepository,
+                         AiChatConversationRepository conversationRepository,
+                         AiChatMessageRepository messageRepository,
+                         ChatSafetyService safetyService,
+                         PetZoeToolService toolService,
+                         KnowledgeBaseService knowledgeBaseService,
+                         ChatModelService chatModelService,
+                         RetrievalRouterService retrievalRouterService,
+                         WebSearchService webSearchService,
+                         SourceAttributionService sourceAttributionService,
+                         com.petzoe.api.service.chat.rag.VectorKnowledgeRetrievalService vectorRetrievalService,
+                         PatientContextService patientContextService) {
+        this(userRepository, conversationRepository, messageRepository, safetyService, toolService, knowledgeBaseService, chatModelService,
+             retrievalRouterService, webSearchService, sourceAttributionService, vectorRetrievalService, patientContextService, null);
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public AiChatService(UserRepository userRepository,
                          AiChatConversationRepository conversationRepository,
