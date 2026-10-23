@@ -477,6 +477,76 @@ public class GeminiChatModelService implements ChatModelService {
     }
 
     private String generateNutritionClinicalResponse(String contextData, String userMessage) {
+        StringBuilder sb = new StringBuilder();
+        String rawMsg = (userMessage != null) ? userMessage : "";
+        String lower = rawMsg.toLowerCase();
+
+        boolean hasPatientContext = (contextData != null && contextData.contains("VERIFIED PATIENT PROFILE"));
+        String petName = extractField(contextData, "Pet Name:\\s*([A-Za-z0-9_]+)");
+        String species = extractField(contextData, "Species:\\s*([A-Za-z0-9_]+)");
+        String weight = extractField(contextData, "Recorded Weight:\\s*([^\n]+)");
+
+        if (species == null) {
+            if (lower.contains("cat") || lower.contains("kitten") || lower.contains("feline")) species = "Cat";
+            else if (lower.contains("dog") || lower.contains("puppy") || lower.contains("canine")) species = "Dog";
+        }
+
+        boolean asksDietPlan = lower.contains("diet plan") || lower.contains("meal plan") || lower.contains("prepare a diet") ||
+                lower.contains("food plan") || lower.contains("what should i feed") || lower.contains("how much food") ||
+                lower.contains("how much to feed") || lower.contains("calorie");
+
+        if (asksDietPlan) {
+            sb.append("**Evidence-Based Veterinary Diet Plan Formulation (AAHA & WSAVA Guidelines)**:\n\n");
+            if (hasPatientContext && petName != null) {
+                sb.append("Here is the structured nutritional plan for your registered pet **").append(petName).append("**");
+                if (species != null) sb.append(" (").append(species).append(")");
+                if (weight != null) sb.append(", recorded weight: ").append(weight);
+                sb.append(":\n\n");
+            } else if (species != null) {
+                sb.append("Here is the structured daily nutritional framework for your **").append(species).append("**:\n\n");
+            } else {
+                sb.append("To formulate a complete, balanced daily diet plan for your pet, veterinary clinical nutritionists follow the standard **AAHA & WSAVA Global Nutritional Assessment Guidelines**:\n\n");
+            }
+
+            sb.append("### 1. Caloric Energy Calculation (WSAVA Standard Formula):\n");
+            sb.append("• **Resting Energy Requirement (RER)**: `RER (kcal/day) = 70 × (Body Weight in kg)^0.75`\n");
+            sb.append("• **Daily Energy Requirement (DER)** Multipliers:\n");
+            sb.append("  - **Adult Neutered Dog**: `1.4 to 1.6 × RER`\n");
+            sb.append("  - **Growing Puppy**: `2.0 to 3.0 × RER` (requires controlled Ca:P ratio for skeletal growth)\n");
+            sb.append("  - **Adult Neutered Cat**: `1.0 to 1.2 × RER`\n");
+            sb.append("  - **Senior / Inactive Pet**: `1.0 × RER` to prevent obesity\n\n");
+
+            sb.append("### 2. Species-Specific Nutrient Composition:\n");
+            if ("Cat".equalsIgnoreCase(species)) {
+                sb.append("• **Obligate Carnivore Formulation**:\n");
+                sb.append("  - **High Protein**: Minimum 30–45% dry matter protein from animal sources.\n");
+                sb.append("  - **Essential Amino Acids**: Mandatory **Taurine** and **Arginine** (taurine deficiency leads to dilated cardiomyopathy and retinal degeneration).\n");
+                sb.append("  - **Essential Fatty Acids & Vitamins**: Preformed Vitamin A and Arachidonic Acid (cats cannot synthesize these from plant sources).\n");
+                sb.append("  - **Moisture & Hydration**: Strongly prefer high-moisture canned wet food or broth additions to safeguard feline renal and lower urinary tract health.\n\n");
+            } else if ("Dog".equalsIgnoreCase(species)) {
+                sb.append("• **Canine Omnivore Formulation**:\n");
+                sb.append("  - **Balanced Protein**: Minimum 18–26% dry matter (AAFCO compliant) from digestible animal proteins.\n");
+                sb.append("  - **Essential Fatty Acids**: Omega-3 (EPA/DHA from marine fish oil) and Omega-6 for coat barrier and joint inflammation modulation.\n");
+                sb.append("  - **Calcium to Phosphorus Ratio**: Strictly 1.1:1 to 1.4:1 (vital for bone density and joint protection in large breeds).\n");
+                sb.append("  - **Dietary Fiber**: 2–5% soluble and insoluble fiber for healthy gut motility.\n\n");
+            } else {
+                sb.append("• **Canine vs Feline Requirements**:\n");
+                sb.append("  - **Dogs**: Complete balanced proteins (min 18-26%), healthy fats, dietary fiber, and balanced Ca:P ratio.\n");
+                sb.append("  - **Cats (Obligate Carnivores)**: High animal proteins (min 30-45%), mandatory Taurine, preformed Vitamin A, and high hydration.\n\n");
+            }
+
+            sb.append("### 3. Recommended Daily Feeding Schedule:\n");
+            sb.append("• **Pediatric (< 6 months)**: 3 to 4 scheduled meals per day to maintain steady blood glucose.\n");
+            sb.append("• **Adult (1–7 years)**: 2 measured meals per day (morning & evening); avoid free-feeding to prevent obesity.\n");
+            sb.append("• **Senior (7+ years)**: High-digestibility proteins, joint chondroprotectants, and controlled phosphorus.\n\n");
+
+            sb.append("### 4. Strictly Prohibited & Fatal Household Foods:\n");
+            sb.append("• **Never feed**: Chocolate/Cocoa (theobromine toxicity), Xylitol/birch sugar (acute hypoglycemia & liver necrosis), Grapes/Raisins (acute kidney failure), Onions/Garlic/Chives (hemolytic anemia), Cooked bones (GI perforation), or Macadamia nuts.\n\n");
+
+            sb.append("To calculate exact daily cup or gram portions tailored to your pet's exact Body Condition Score (BCS 1–9) and current health status, please book a dietary consultation with a certified PetZoe veterinarian.");
+            return sb.toString();
+        }
+
         return "**Veterinary Nutritional Guidelines & Toxic Substances (AAHA & WSAVA)**:\n\n" +
                 "### Strictly Prohibited & Fatal Household Foods:\n" +
                 "• **Chocolate & Cocoa**: Contains theobromine and caffeine; triggers tachycardia, arrhythmias, seizures, and death.\n" +
