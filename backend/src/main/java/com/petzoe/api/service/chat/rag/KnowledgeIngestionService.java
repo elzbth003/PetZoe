@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -82,6 +83,7 @@ public class KnowledgeIngestionService {
             document = documentRepository.save(document);
         } else {
             chunkRepository.deleteByDocumentId(document.getId());
+            chunkRepository.flush();
             document.setTitle(title);
             document.setPublisher(publisher);
             document.setSourceUrl(sourceUrl);
@@ -95,13 +97,14 @@ public class KnowledgeIngestionService {
             document.setSourceVerificationStatus("VERIFIED");
             document.setStatus("ACTIVE");
             document.setUpdatedAt(LocalDateTime.now());
-            document = documentRepository.save(document);
+            document = documentRepository.saveAndFlush(document);
         }
 
         List<DocumentChunkingService.RawChunk> rawChunks = chunkingService.chunkDocument(fullContent, title);
         log.info("Chunked document '{}' into {} chunks with active model '{}'. Generating embeddings...",
                 title, rawChunks.size(), embeddingService.getActiveModelIdentifier());
 
+        List<KnowledgeChunk> chunksToSave = new ArrayList<>();
         for (DocumentChunkingService.RawChunk rc : rawChunks) {
             String textForEmbedding = rc.getSectionTitle() + ": " + rc.getContent();
             Float[] embedding = embeddingService.generateEmbedding(textForEmbedding);
@@ -120,8 +123,9 @@ public class KnowledgeIngestionService {
                     clinicalTopic,
                     chunkHash
             );
-            chunkRepository.save(chunk);
+            chunksToSave.add(chunk);
         }
+        chunkRepository.saveAllAndFlush(chunksToSave);
 
         log.info("Successfully ingested document '{}' with {} vector chunks.", title, rawChunks.size());
         return document;

@@ -2,7 +2,10 @@ package com.petzoe.api.repository;
 
 import com.petzoe.api.dto.KnowledgeChunkSearchResultDTO;
 import com.petzoe.api.entity.KnowledgeChunk;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,7 +17,9 @@ public interface KnowledgeChunkRepository extends JpaRepository<KnowledgeChunk, 
 
     List<KnowledgeChunk> findByDocumentIdOrderByChunkIndexAsc(Long documentId);
 
-    void deleteByDocumentId(Long documentId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM KnowledgeChunk kc WHERE kc.document.id = :documentId")
+    void deleteByDocumentId(@Param("documentId") Long documentId);
 
     @Query(value = """
         SELECT new com.petzoe.api.dto.KnowledgeChunkSearchResultDTO(
@@ -39,12 +44,15 @@ public interface KnowledgeChunkRepository extends JpaRepository<KnowledgeChunk, 
         WHERE kd.status = 'ACTIVE'
           AND (kc.embeddingStatus IS NULL OR kc.embeddingStatus = 'ACTIVE')
         ORDER BY cosine_similarity_arr(kc.embedding, :queryEmbedding) DESC
-        LIMIT :limit
     """)
     List<KnowledgeChunkSearchResultDTO> searchSimilarChunks(
             @Param("queryEmbedding") Float[] queryEmbedding,
-            @Param("limit") int limit
+            Pageable pageable
     );
+
+    default List<KnowledgeChunkSearchResultDTO> searchSimilarChunks(Float[] queryEmbedding, int limit) {
+        return searchSimilarChunks(queryEmbedding, PageRequest.of(0, Math.max(1, limit)));
+    }
 
     @Query(value = """
         SELECT new com.petzoe.api.dto.KnowledgeChunkSearchResultDTO(
@@ -70,13 +78,16 @@ public interface KnowledgeChunkRepository extends JpaRepository<KnowledgeChunk, 
           AND kc.embeddingModel = :embeddingModel
           AND (kc.embeddingStatus IS NULL OR kc.embeddingStatus = 'ACTIVE')
         ORDER BY cosine_similarity_arr(kc.embedding, :queryEmbedding) DESC
-        LIMIT :limit
     """)
     List<KnowledgeChunkSearchResultDTO> searchSimilarChunksByModel(
             @Param("queryEmbedding") Float[] queryEmbedding,
             @Param("embeddingModel") String embeddingModel,
-            @Param("limit") int limit
+            Pageable pageable
     );
+
+    default List<KnowledgeChunkSearchResultDTO> searchSimilarChunksByModel(Float[] queryEmbedding, String embeddingModel, int limit) {
+        return searchSimilarChunksByModel(queryEmbedding, embeddingModel, PageRequest.of(0, Math.max(1, limit)));
+    }
 
     @Query(value = """
         SELECT new com.petzoe.api.dto.KnowledgeChunkSearchResultDTO(
@@ -104,10 +115,13 @@ public interface KnowledgeChunkRepository extends JpaRepository<KnowledgeChunk, 
               OR LOWER(kc.sectionTitle) LIKE LOWER(CONCAT('%', :term, '%'))
               OR LOWER(kd.title) LIKE LOWER(CONCAT('%', :term, '%'))
           )
-        LIMIT :limit
     """)
     List<KnowledgeChunkSearchResultDTO> searchByKeyword(
             @Param("term") String term,
-            @Param("limit") int limit
+            Pageable pageable
     );
+
+    default List<KnowledgeChunkSearchResultDTO> searchByKeyword(String term, int limit) {
+        return searchByKeyword(term, PageRequest.of(0, Math.max(1, limit)));
+    }
 }
