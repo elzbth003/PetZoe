@@ -136,15 +136,19 @@ public class ChatSafetyService {
             return ChatIntent.MEDICAL_QUESTION;
         }
 
-        boolean isExplicitPetProfileRequest = lower.matches(".*\\b(show|list|view|display|what|who|see|my registered)\\s+.*(pets?|dogs?|cats?|profile|code|id).*")
+        boolean isExplicitPetProfileRequest = lower.matches(".*\\b(show|list|view|display|see)\\s+(?:me\\s+)?(?:all\\s+)?(?:of\\s+)?(?:my\\s+)?(?:registered\\s+)?pets?\\b.*")
+                || lower.matches(".*\\b(show|list|view|display)\\s+(?:all\\s+)?(?:of\\s+)?my\\s+(?:dogs?|cats?|pets?)\\b.*")
+                || lower.matches(".*\\b(what|who|which)\\s+(?:are\\s+)?my\\s+(?:registered\\s+)?pets?\\b.*")
+                || lower.matches(".*\\bwhat\\s+pets?\\s+do\\s+i\\s+have\\b.*")
                 || lower.equals("show me my registered pets")
+                || lower.equals("show registered pets")
                 || lower.equals("show pets")
                 || lower.equals("list pets")
                 || lower.equals("my pets")
                 || lower.equals("registered pets")
-                || lower.matches("^(view\\s+)?(pet\\s+profile|profile\\s+of\\s+.*)$")
+                || lower.matches("^(view\\s+)?(my\\s+)?(pet\\s+profile|profile\\s+of\\s+my\\s+pet.*)$")
                 || lower.matches("^pz-pet-[a-z0-9]+$")
-                || (lower.contains("pet details") || lower.contains("pet code") || lower.contains("pet id"));
+                || lower.matches(".*\\b(my\\s+pet\\s+details|my\\s+pet\\s+code|my\\s+pet\\s+id|registered\\s+pet\\s+id)\\b.*");
 
         if (isExplicitPetProfileRequest) {
             return ChatIntent.PET_INFORMATION;

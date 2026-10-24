@@ -86,5 +86,7 @@ public class ChatSafetyServiceTest {
         assertEquals(ChatIntent.MEDICAL_RECORD, safetyService.detectIntent("What is my pet BrunoTest's medical history?"));
         assertEquals(ChatIntent.VACCINATION, safetyService.detectIntent("When is ShadowTest's next vaccination?"));
         assertEquals(ChatIntent.ADOPTION, safetyService.detectIntent("hoe to adopt pet here"));
+        assertEquals(ChatIntent.GENERAL_PET_CARE, safetyService.detectIntent("What is the normal resting heart rate range for an adult dog, and how does it differ for a puppy?"));
+        assertEquals(ChatIntent.NUTRITION, safetyService.detectIntent("What should I feed an adult cat?"));
     }
 }

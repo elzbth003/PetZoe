@@ -108,6 +108,9 @@ public class RetrievalRouterService {
         String w = word.toLowerCase();
         return w.equals("is") || w.equals("are") || w.equals("a") || w.equals("an") || w.equals("the") ||
                w.equals("my") || w.equals("our") || w.equals("your") || w.equals("all") ||
+               w.equals("and") || w.equals("or") || w.equals("for") || w.equals("with") || w.equals("from") ||
+               w.equals("to") || w.equals("in") || w.equals("on") || w.equals("at") || w.equals("how") ||
+               w.equals("what") || w.equals("when") || w.equals("where") || w.equals("which") || w.equals("who") ||
                w.equals("pet") || w.equals("pets") || w.equals("dog") || w.equals("dogs") ||
                w.equals("cat") || w.equals("cats") || w.equals("puppy") || w.equals("puppies") ||
                w.equals("kitten") || w.equals("kittens") || w.equals("details") || w.equals("profile") ||
@@ -115,7 +118,10 @@ public class RetrievalRouterService {
                w.equals("vaccination") || w.equals("medicine") || w.equals("medication") || w.equals("food") ||
                w.equals("diet") || w.equals("care") || w.equals("help") || w.equals("today") ||
                w.equals("him") || w.equals("her") || w.equals("it") || w.equals("them") || w.equals("here") ||
-               w.equals("dr") || w.equals("doctor") || w.equals("outdoor") || w.equals("indoor") || w.equals("multi") || w.equals("environment") || w.equals("environments") || w.equals("why") || w.equals("felv") || w.equals("virus");
+               w.equals("dr") || w.equals("doctor") || w.equals("outdoor") || w.equals("indoor") || w.equals("multi") ||
+               w.equals("environment") || w.equals("environments") || w.equals("why") || w.equals("felv") || w.equals("virus") ||
+               w.equals("normal") || w.equals("resting") || w.equals("heart") || w.equals("rate") || w.equals("range") ||
+               w.equals("adult") || w.equals("senior") || w.equals("differ") || w.equals("difference");
     }
 
     /**
