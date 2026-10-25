@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Check, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Heart, Check, Loader2, Sparkles, AlertCircle, Zap } from 'lucide-react';
 import StarRating from './StarRating';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
@@ -11,7 +11,9 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de
 export default function ProductCard({ product, onWishlistUpdate }) {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [imgSrc, setImgSrc] = useState(product?.imageUrl || FALLBACK_IMAGE);
 
@@ -44,6 +46,31 @@ export default function ProductCard({ product, onWishlistUpdate }) {
       showToast(err.response?.data?.message || 'Failed to add to cart', 'error');
     } finally {
       setIsAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      showToast('Please login to purchase products', 'error');
+      navigate('/login');
+      return;
+    }
+    if (!canBuy) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
+      return;
+    }
+
+    try {
+      setIsBuyingNow(true);
+      await marketplaceService.addToCart(product.id, 1);
+      window.dispatchEvent(new Event('cart-updated'));
+      navigate('/marketplace/cart');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to proceed to checkout', 'error');
+    } finally {
+      setIsBuyingNow(false);
     }
   };
 
@@ -174,24 +201,38 @@ export default function ProductCard({ product, onWishlistUpdate }) {
           </div>
 
           {canBuy && (
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={isAddingToCart || product.stockQuantity === 0}
-              aria-label={product.stockQuantity === 0 ? 'Out of stock' : 'Add to cart'}
-              title={product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-              className={`relative z-10 h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                product.stockQuantity === 0
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white shadow-sm hover:shadow active:scale-95'
-              }`}
-            >
-              {isAddingToCart ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <ShoppingCart size={18} />
-              )}
-            </button>
+            <div className="flex items-center gap-1.5 z-10">
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={isBuyingNow || product.stockQuantity === 0}
+                aria-label={product.stockQuantity === 0 ? 'Out of stock' : 'Buy Now'}
+                title={product.stockQuantity === 0 ? 'Out of Stock' : 'Buy Now'}
+                className="px-2.5 h-9 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isBuyingNow ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} className="fill-white" />}
+                <span>Buy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart || product.stockQuantity === 0}
+                aria-label={product.stockQuantity === 0 ? 'Out of stock' : 'Add to cart'}
+                title={product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                  product.stockQuantity === 0
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white shadow-xs active:scale-95'
+                }`}
+              >
+                {isAddingToCart ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <ShoppingCart size={16} />
+                )}
+              </button>
+            </div>
           )}
         </div>
       </div>

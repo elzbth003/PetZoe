@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, ChevronRight, Check, AlertCircle, ShieldCheck, Truck, Sparkles, Loader2, Star, User } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Heart, ChevronRight, Check, AlertCircle, ShieldCheck, Truck, Sparkles, Loader2, Star, User, Zap } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { vendorProductService } from '../../services/vendorProductService';
 import StarRating from '../../components/marketplace/StarRating';
@@ -16,6 +16,7 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
   const [imgSrc, setImgSrc] = useState(FALLBACK_IMAGE);
@@ -26,6 +27,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('description'); // description, specs, reviews
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
 
@@ -108,6 +110,28 @@ export default function ProductDetailPage() {
       showToast(err.response?.data?.message || 'Failed to add to cart', 'error');
     } finally {
       setIsAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!user) {
+      showToast('Please login to purchase products', 'error');
+      navigate('/login');
+      return;
+    }
+    if (isSeller || isNonBuyer) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
+      return;
+    }
+    try {
+      setIsBuyingNow(true);
+      await marketplaceService.addToCart(product.id, quantity);
+      window.dispatchEvent(new Event('cart-updated'));
+      navigate('/marketplace/cart');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to proceed to checkout', 'error');
+    } finally {
+      setIsBuyingNow(false);
     }
   };
 
@@ -370,6 +394,21 @@ export default function ProductDetailPage() {
                     <span>{product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
                   </button>
                 </div>
+
+                {/* Buy Now Button */}
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={isBuyingNow || product.stockQuantity === 0}
+                  className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-orange-500/20 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isBuyingNow ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Zap size={18} className="fill-white" />
+                  )}
+                  <span>{product.stockQuantity === 0 ? 'Out of Stock' : 'Buy Now'}</span>
+                </button>
 
                 {/* Wishlist Button */}
                 <button
