@@ -139,11 +139,8 @@ export function analyzeProductNameAndGetImage(productOrName, categoryName = '', 
   }
 
   // 6. Grooming & Hygiene
-  if (text.includes('erina') || text.includes('himalaya')) {
+  if (text.includes('shampoo') || text.includes('erina') || text.includes('himalaya') || text.includes('wash') || text.includes('burt\'s bees')) {
     return PRODUCT_IMAGE_REGISTRY.HIMALAYA_ERINA_SHAMPOO;
-  }
-  if (text.includes('shampoo') || text.includes('burt\'s bees') || text.includes('oatmeal shampoo') || text.includes('wash')) {
-    return PRODUCT_IMAGE_REGISTRY.DOG_SHAMPOO;
   }
   if (text.includes('furminator') || text.includes('deshedding') || text.includes('brush') || text.includes('comb')) {
     return PRODUCT_IMAGE_REGISTRY.DESHEDDING_BRUSH;
@@ -202,7 +199,7 @@ export function getProductImageUrl(product) {
   if (!product) return PRODUCT_IMAGE_REGISTRY.GENERAL_DEFAULT;
 
   const name = (product.name || '').toLowerCase();
-  if (name.includes('erina') || (name.includes('himalaya') && name.includes('shampoo'))) {
+  if (name.includes('shampoo') || name.includes('erina') || (name.includes('himalaya') && name.includes('shampoo'))) {
     return PRODUCT_IMAGE_REGISTRY.HIMALAYA_ERINA_SHAMPOO;
   }
 
@@ -211,11 +208,12 @@ export function getProductImageUrl(product) {
   // List of known mismatched URLs in legacy seed data
   const isMismatchedLegacy =
     url &&
-    ((product.name?.toLowerCase().includes('dog food') && (url.includes('photo-1589924691995-400dc9edfabb') || url.includes('photo-1589924691995-400dc9ecc119'))) ||
+    (url.includes('photo-1701992678972-d5a053ad0fb0') ||
+     (product.name?.toLowerCase().includes('dog food') && (url.includes('photo-1589924691995-400dc9edfabb') || url.includes('photo-1589924691995-400dc9ecc119'))) ||
      (product.name?.toLowerCase().includes('travel crate') && (url.includes('photo-1601758003122-53c40e686a19') || url.includes('photo-1548767797-d8c844163c4c'))) ||
      (product.name?.toLowerCase().includes('laser ball') && (url.includes('photo-1587300003388-59208cc962cb') || url.includes('photo-1615789591457-74a63395c990'))) ||
      (product.name?.toLowerCase().includes('rope') && url.includes('photo-1601758124510-52d02ddb7cbd')) ||
-     (product.name?.toLowerCase().includes('shampoo') && (url.includes('photo-1585664811087-47f65abbad64') || url.includes('photo-1583337130417-3346a1be7dee') || url.includes('photo-1602143407151-7111542de6e8'))) ||
+     (product.name?.toLowerCase().includes('shampoo') && (url.includes('photo-1585664811087-47f65abbad64') || url.includes('photo-1583337130417-3346a1be7dee') || url.includes('photo-1602143407151-7111542de6e8') || url.includes('photo-1701992678972-d5a053ad0fb0'))) ||
      (product.name?.toLowerCase().includes('nail clipper') && (url.includes('photo-1516734212186-a967f81ad0d7') || url.includes('photo-1585664811087-47f65abbad64'))) ||
      (product.name?.toLowerCase().includes('collar') && (url.includes('photo-1601758228041-f3b2795255f1'))) ||
      (product.name?.toLowerCase().includes('harness') && (url.includes('photo-1544568100-847a948585b9'))) ||
