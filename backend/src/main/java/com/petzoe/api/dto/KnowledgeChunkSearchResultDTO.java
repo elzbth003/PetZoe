@@ -11,6 +11,7 @@ public class KnowledgeChunkSearchResultDTO {
     private String sectionTitle;
     private String content;
     private Double similarityScore;
+    private Double rrfScore;
     private String retrievalMethod = "SEMANTIC_DENSE"; // SEMANTIC_DENSE, EXACT_LEXICAL, HYBRID_RRF
     private String species;
     private String clinicalTopic;
@@ -78,6 +79,8 @@ public class KnowledgeChunkSearchResultDTO {
     public void setContent(String content) { this.content = content; }
     public Double getSimilarityScore() { return similarityScore; }
     public void setSimilarityScore(Double similarityScore) { this.similarityScore = similarityScore; }
+    public Double getRrfScore() { return rrfScore; }
+    public void setRrfScore(Double rrfScore) { this.rrfScore = rrfScore; }
     public String getRetrievalMethod() { return retrievalMethod; }
     public void setRetrievalMethod(String retrievalMethod) { this.retrievalMethod = retrievalMethod; }
     public String getSpecies() { return species; }

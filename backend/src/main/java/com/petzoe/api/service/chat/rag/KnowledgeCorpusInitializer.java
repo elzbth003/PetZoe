@@ -333,6 +333,218 @@ public class KnowledgeCorpusInitializer {
                     "Clinical Practice Guidelines"
             );
 
+            // 11. Normal Vital Signs and Basic Physiology in Dogs, Cats, and Rabbits
+            ingestionService.ingestDocument(
+                    "AVMA and Merck Veterinary Manual: Normal Vital Signs and Basic Physiology in Small Animals",
+                    "GENERAL_PET_CARE",
+                    "American Veterinary Medical Association (AVMA) & Merck Veterinary Manual",
+                    "https://www.merckvetmanual.com/special-pet-topics/reference-guides/normal-vital-signs",
+                    "2024.1",
+                    """
+                    # Normal Resting Vital Signs in Dogs, Cats, and Rabbits
+                    Accurate vital sign measurement must be performed when the animal is resting calmly, free from excitement, strenuous exercise, stress, or high ambient temperatures.
+                    
+                    ### Canine Normal Vital Signs
+                    - Adult Dog Resting Heart Rate: 60 to 140 beats per minute (bpm).
+                      * Large and Giant Breeds: 60 to 100 bpm.
+                      * Medium Breeds: 80 to 120 bpm.
+                      * Small and Toy Breeds: 100 to 140 bpm.
+                    - Puppy Resting Heart Rate: 120 to 200 bpm. Puppies possess a significantly higher resting heart rate than adult dogs due to higher basal metabolic rate and developing autonomic nervous tone.
+                    - Canine Resting Respiratory Rate: 10 to 30 breaths per minute at rest (non-panting). Consistent resting respiratory rates above 35 to 40 breaths/min can be an early indicator of congestive heart failure (pulmonary edema) or respiratory compromise.
+                    - Canine Normal Body Temperature (Rectal): 101.0°F to 102.5°F (38.3°C to 39.2°C).
+                    
+                    ### Feline Normal Vital Signs
+                    - Adult Cat Resting Heart Rate: 140 to 220 beats per minute (bpm).
+                    - Kitten Resting Heart Rate: 160 to 240 bpm.
+                    - Feline Resting Respiratory Rate: 20 to 30 breaths per minute at rest. Open-mouth breathing or panting in cats is never normal and constitutes an urgent respiratory emergency.
+                    - Feline Normal Body Temperature (Rectal): 100.5°F to 102.5°F (38.1°C to 39.2°C).
+                    
+                    ### Rabbit Normal Vital Signs
+                    - Rabbit Resting Heart Rate: 140 to 300 beats per minute (bpm).
+                    - Rabbit Resting Respiratory Rate: 30 to 60 breaths per minute.
+                    - Rabbit Normal Body Temperature: 101.0°F to 103.0°F (38.3°C to 39.4°C).
+                    
+                    ### Mucous Membranes and Capillary Refill Time (CRT)
+                    Healthy gingival mucous membranes should be bubblegum pink and moist. Capillary Refill Time (CRT) should be under 2 seconds. Pale, white, muddy, or blue (cyanotic) gums indicate severe shock, hemorrhage, anemia, or hypoxemia requiring immediate emergency intervention.
+                    """,
+                    "10.2460/javma.24.01.0012",
+                    "Canine, Feline, and Rabbit",
+                    "Vital Signs & Normal Physiology",
+                    "OFFICIAL_CLINICAL_GUIDELINE",
+                    "Educational Reference / AVMA Standards"
+            );
+
+            // 12. Clinical Symptoms Triage: Non-Emergency Guidance for Vomiting, Lameness, and Pruritus
+            ingestionService.ingestDocument(
+                    "AAHA and AVMA Clinical Symptoms Triage: Non-Emergency Guidance for Vomiting, Lameness, and Pruritus",
+                    "MEDICAL_QUESTION",
+                    "American Animal Hospital Association (AAHA)",
+                    "https://www.aaha.org/aaha-guidelines/clinical-symptoms-triage/",
+                    "2024.1",
+                    """
+                    # Evidence-Based Non-Emergency Symptom Evaluation and Safe Home Triage
+                    
+                    ### Feline & Canine Vomiting Triage
+                    - Potential Causes: Dietary indiscretion (scavenging food, garbage ingestion), abrupt change in diet, hairballs (especially in domestic cats), acute gastritis, intestinal parasites (roundworms, Giardia), viral enteritis, or early inflammatory bowel disease.
+                    - Safe Home Observation Steps: If the pet is bright, alert, and active after an isolated vomiting episode, remove food for 4 to 6 hours while providing small frequent sips of fresh water to prevent dehydration. Gradually reintroduce a bland, digestible diet (boiled chicken breast and white rice, or commercial gastrointestinal diet) in small portions.
+                    - Urgent Red Flags (Immediate Vet Evaluation Needed): Repeated or projectile vomiting within 24 hours, presence of fresh red blood (hematemesis) or dark 'coffee-ground' digested blood, severe lethargy, inability to keep water down, concurrent watery diarrhea, swollen or painful abdomen, or suspected toxic ingestion/foreign body ingestion.
+                    
+                    ### Canine Limping and Lameness Triage
+                    - Potential Causes: Minor soft tissue strain or muscle sprain, torn toenail, interdigital foreign body (burr, thorn, pebble), cut or abrasion on paw pad, cranial cruciate ligament (CCL) sprain/tear, patellar luxation, or osteoarthritic flare-up.
+                    - Safe Home Observation Steps: Restrict high-impact activity (no running, jumping, or stairs). Confine the dog to a quiet, secure room or leash-walk only for short elimination breaks. Inspect all four paw pads and spaces between toes carefully with a flashlight for foreign objects, swelling, or redness.
+                    - Critical Medication Alert: NEVER administer human pain relievers or anti-inflammatory drugs (Paracetamol/Acetaminophen, Ibuprofen/Advil, Aspirin, Naproxen) to dogs or cats. They cause fatal gastric ulceration, acute renal failure, and hepatotoxicity.
+                    - Red Flags: Complete inability to bear weight on the affected limb (non-weight bearing lameness), obvious limb deformity, severe swelling, heat, vocalization of acute pain, or sudden neurological dragging of feet.
+                    
+                    ### Flea and Ectoparasite Identification
+                    - Clinical Identification: Fleas (Ctenocephalides felis) are fast-moving, reddish-brown wingless insects. Look for 'flea dirt' (flea feces resembling ground black pepper) at the base of the tail, groin, and ventral abdomen.
+                    - Wet Paper Towel Test: Place collected black debris onto a damp white paper towel; if the specks dissolve into a reddish-brown ring (digested host blood), flea infestation is confirmed.
+                    - Flea Allergy Dermatitis (FAD): A single flea bite can trigger intense allergic pruritus, excoriation, and secondary pyoderma. Maintain uninterrupted veterinary-prescribed isoxazoline or topical chemoprophylaxis year-round.
+                    """,
+                    "10.5326/JAAHA-MS-7440",
+                    "Canine and Feline",
+                    "Clinical Symptoms Triage & First-Aid",
+                    "OFFICIAL_CLINICAL_GUIDELINE",
+                    "Open Access Clinical Guidelines"
+            );
+
+            // 13. Pet Nutrition, Safe Human Foods, and Wet vs Dry Food Comparisons
+            ingestionService.ingestDocument(
+                    "WSAVA and AAHA Evidence-Based Pet Nutrition, Safe Human Foods, and Feeding Guidelines",
+                    "NUTRITION",
+                    "World Small Animal Veterinary Association (WSAVA)",
+                    "https://wsava.org/global-guidelines/global-nutrition-guidelines/",
+                    "2024.1",
+                    """
+                    # Evidence-Based Small Animal Nutrition and Dietary Formulation
+                    
+                    ### Safe Human Foods for Dogs and Cats
+                    - Cooked Eggs: Fully cooked plain eggs (scrambled, boiled, or poached without butter, milk, salt, or oil) are an excellent, highly digestible source of complete proteins, essential fatty acids, and amino acids for both dogs and cats. Avoid raw egg whites in large amounts due to avidin (which binds biotin) and Salmonella risk.
+                    - Plain Cooked Lean Meats: Boiled skinless, boneless chicken breast, turkey, or lean beef without seasonings, onions, or garlic.
+                    - Carrots and Green Beans: Low-calorie, fiber-rich crunchy treats supporting satiety in weight-managed dogs.
+                    - Pure Cooked Pumpkin: Plain canned pumpkin puree (NOT spiced pie filling) provides soluble and insoluble fiber that helps regulate both mild diarrhea and constipation in dogs and cats.
+                    - Blueberries and Apples: Rich in antioxidants and vitamins (always core and remove seeds from apples to prevent cyanide glycoside ingestion).
+                    
+                    ### Wet Food vs. Dry Food (Kibble) Comparison
+                    - Wet / Canned Pet Food:
+                      * Moisture Content: 70% to 80% water. Exceptionally beneficial for feline renal, bladder, and lower urinary tract health (FLUTD prevention) by promoting dilute urine.
+                      * Palatability: Strong aroma and soft texture, ideal for senior pets, convalescent animals, or pets with dental pathology or reduced appetite.
+                      * Caloric Density: Lower caloric density per gram, allowing larger portion volumes for satiety.
+                    - Dry Pet Food (Kibble):
+                      * Moisture Content: 8% to 10% water. Highly energy-dense, convenient, economical, and stable at room temperature.
+                      * Mechanical Chewing: Promotes mastication; some veterinary dental formulas have matrix fiber that assists in plaque scraping (though it cannot replace regular toothbrushing).
+                    - Mixed Feeding Approach: Many veterinarians recommend a combination of dry kibble for energy balance and canned wet food to ensure optimum daily hydration.
+                    """,
+                    "10.1111/jsap.12550",
+                    "Canine and Feline",
+                    "Clinical Nutrition & Dietary Comparison",
+                    "OFFICIAL_CLINICAL_GUIDELINE",
+                    "Educational Attribution / WSAVA"
+            );
+
+            // 14. Rabbit Health, Nutrition, and Gastrointestinal Stasis Guidelines
+            ingestionService.ingestDocument(
+                    "House Rabbit Society and BSAVA Guidelines for Rabbit Health, Nutrition, and GI Stasis",
+                    "GENERAL_PET_CARE",
+                    "House Rabbit Society & British Small Animal Veterinary Association",
+                    "https://rabbit.org/care/nutrition-and-gi-stasis/",
+                    "2024.1",
+                    """
+                    # Evidence-Based Rabbit Care, Digestive Physiology, and Gastrointestinal Stasis
+                    
+                    ### Unique Digestive Physiology of Lagomorphs
+                    Domestic rabbits (Oryctolagus cuniculus) are strict herbivorous hindgut fermenters. Their gastrointestinal motility and cecal microbial flora depend entirely on an uninterrupted supply of long-stem indigestible dietary fiber.
+                    
+                    ### Species-Appropriate Rabbit Diet
+                    1. Grass Hay (Timothy, Orchard, Meadow Hay): 80% to 85% of total daily diet. Must be clean, fresh, fragrant, and available in UNLIMITED quantities 24/7. Essential for continuous gut motility and grinding down continuously growing open-rooted elodont teeth.
+                    2. Fresh Leafy Greens: 10% to 15% (romaine lettuce, cilantro, parsley, basil, dill, mint, dandelion greens).
+                    3. High-Fiber Pellets: 5% (plain timothy pellets without seeds, corn, or colorful sugary bits; approximately 1/8 to 1/4 cup per 5 lbs body weight daily).
+                    4. Unlimited Fresh Water: Heavy ceramic bowl or siphon water bottle cleaned daily.
+                    
+                    ### Gastrointestinal Stasis (Ileus): Critical Emergency Alert
+                    - Pathophysiology: When a rabbit experiences pain, stress, dehydration, lack of fiber, or illness, normal gastrointestinal peristalsis slows down or ceases completely. Cecal bacteria overgrow, producing painful gas and hepatic lipidosis.
+                    - Clinical Warning Signs:
+                      * Refusal to eat food or hay for 12 hours or more (anorexia).
+                      * Dramatically reduced fecal pellet size, irregular shapes, or complete absence of stool output.
+                      * Hunched posture, teeth grinding (bruxism from abdominal pain), lethargy, cold ears (hypothermia).
+                    - Emergency Status: A rabbit that has not eaten or defecated in 12 hours is in a LIFE-THREATENING veterinary emergency. Without prompt veterinary intervention (fluid therapy, pain relief/analgesia, gut motility stimulants, and assisted syringe feeding with critical care formula), GI stasis can become fatal within 24 to 48 hours.
+                    """,
+                    "10.1136/vetreco-2023-000892",
+                    "Rabbit",
+                    "Exotic & Small Mammal Medicine",
+                    "OFFICIAL_CLINICAL_GUIDELINE",
+                    "Open Access / Educational Attribution"
+            );
+
+            // 15. Puppy and Kitten Behavioral Training, Socialization, and Potty Protocols
+            ingestionService.ingestDocument(
+                    "AAHA Guidelines for Canine and Feline Early Training, Socialization, and Behavior",
+                    "PET_BEHAVIOR",
+                    "American Animal Hospital Association (AAHA)",
+                    "https://www.aaha.org/aaha-guidelines/behavior-management/",
+                    "2024.1",
+                    """
+                    # Positive Reinforcement Behavioral Training and Pediatric Socialization
+                    
+                    ### Puppy Socialization Period (3 to 14 Weeks)
+                    The primary neurological socialization window in puppies closes around 14 to 16 weeks of age. During this period, puppies should be safely and positively exposed to diverse environments, household sounds (vacuum cleaners, doorbells), novel textures (grass, gravel, tile), friendly people, and fully vaccinated dogs. Positive early exposure prevents adult fear-based aggression and neophobia.
+                    
+                    ### Positive Reinforcement Training Fundamentals
+                    - Mark and Reward: Use positive reinforcement (high-value treats, praise, toy rewards) immediately within 1 to 2 seconds of the desired behavior.
+                    - Avoid Aversive or Dominance Methods: Physical punishment, shock collars, alpha rolls, or scolding increase cortisol levels, fear, and defensive aggression.
+                    
+                    ### House-Training / Potty Protocol
+                    1. Strict Proactive Routine: Take puppies outdoors to their designated elimination spot immediately upon waking, within 15 minutes after eating or drinking, and following energetic play sessions.
+                    2. Frequent Intervals: Young puppies can generally hold their bladder for only their age in months plus one hour (e.g., a 2-month-old puppy needs elimination opportunities every 2 to 3 hours).
+                    3. Crate Training: Dogs naturally avoid soiling their sleeping quarters. The crate should only be large enough for the puppy to stand, turn around, and lie down comfortably. Never use the crate for punishment.
+                    
+                    ### Bite Inhibition and Teething
+                    Puppies explore through their mouths. When a puppy bites hands or clothing, emit a soft, calm yelp, freeze motion, and immediately redirect their jaws to an appropriate rubber or textured chew toy.
+                    
+                    ### Feline Environmental Enrichment
+                    Cats require vertical territory (cat trees, elevated perches), horizontal and vertical sisal scratching posts, and predatory play simulation (feather wand toys) to satisfy innate hunting drives and prevent stress-induced behaviors.
+                    """,
+                    "10.5326/JAAHA-MS-7550",
+                    "Canine and Feline",
+                    "Behavior, Training & Socialization",
+                    "OFFICIAL_CLINICAL_GUIDELINE",
+                    "Clinical Practice Guidelines"
+            );
+
+            // 16. PetZoe Platform Architecture, User Workflows, and Services
+            ingestionService.ingestDocument(
+                    "PetZoe Digital Ecosystem: Platform User Guide, Features, and Navigation Workflows",
+                    "PLATFORM_HELP",
+                    "PetZoe Healthcare Platform Documentation",
+                    "https://petzoe.com/docs/platform-guide",
+                    "2024.1",
+                    """
+                    # PetZoe Digital Ecosystem Architecture and User Guide
+                    PetZoe is an all-in-one verified digital pet healthcare and adoption ecosystem connecting pet owners, licensed veterinarians, animal shelters, and pet care suppliers.
+                    
+                    ### Core Platform Services and Navigation
+                    1. Pet Registration & Tamper-Proof Pet ID:
+                       - Navigation: Owner Dashboard -> My Pets -> 'Add Pet'.
+                       - Feature: Generates a unique, permanent digital Pet ID code (e.g. `PZ-PET-000004`). Tracks species, breed, birth date, microchip number, current weight, and verified immunization milestones.
+                    2. Veterinarian Discovery & Telehealth Appointments:
+                       - Navigation: Owner Dashboard -> Appointments -> 'Book a Vet' or `/dashboard/owner?tab=Appointments`.
+                       - Feature: Browse verified registered veterinary practitioners, view clinic addresses, check live real-time calendar availability slots, and book in-clinic or telehealth video consultations.
+                    3. Medical Records and Immunization Tracking:
+                       - Navigation: Owner Dashboard -> My Pets -> 'Vaccination Details' & 'Medical History'.
+                       - Feature: Access comprehensive clinical records, diagnostic lab notes, Rabies and core booster dates, and verified prescriptions uploaded directly by attending veterinarians.
+                    4. Community Rehoming and Animal Shelter Adoptions:
+                       - Navigation: `/rehoming` for peer-to-peer ethical pet rehoming; `/adopt` for institutional animal shelter rescues.
+                       - Feature: View verified pet profiles, personality traits, health checks, vaccination records, and submit secure digital adoption inquiries.
+                    5. PetZoe Marketplace:
+                       - Navigation: `/marketplace`.
+                       - Feature: Certified marketplace offering veterinary prescription diets, life-stage pet foods, grooming shampoos, dental supplies, flea/tick preventives, and durable accessories.
+                    """,
+                    "10.5281/zenodo.petzoe.platform.2024",
+                    "Canine, Feline, and Small Animals",
+                    "Platform Navigation & Services",
+                    "OFFICIAL_CLINICAL_GUIDELINE",
+                    "PetZoe Proprietary Documentation"
+            );
+
             log.info("PetZoe Research-Grade Vector Knowledge Corpus successfully initialized and ready for hybrid semantic retrieval.");
         } catch (Exception e) {
             log.error("Failed to seed knowledge corpus: {}", e.getMessage(), e);

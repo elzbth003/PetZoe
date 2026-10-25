@@ -87,7 +87,65 @@ public class VectorRagPipelineTest {
 
         assertNotNull(doc);
         verify(documentRepository, times(1)).save(any(KnowledgeDocument.class));
-        verify(chunkRepository, times(1)).save(any(KnowledgeChunk.class));
+        verify(chunkRepository, times(1)).saveAllAndFlush(anyList());
+    }
+
+    @Test
+    void testHybridRrfSeparatesRrfScoreAndCosineSimilarity() {
+        KnowledgeChunkSearchResultDTO denseMatch = new KnowledgeChunkSearchResultDTO(
+                1L, 10L, "AVMA Vital Signs Guidelines", "https://avma.org", "AVMA", "GENERAL_PET_CARE",
+                "2024.1", "Normal Resting Heart Rates", "Adult dogs have a resting heart rate of 60 to 140 bpm.",
+                0.88, "SEMANTIC_DENSE", "Canine and Feline", "Vital Signs & Normal Physiology",
+                "OFFICIAL_CLINICAL_GUIDELINE", "Open Access"
+        );
+        KnowledgeChunkSearchResultDTO lexMatch = new KnowledgeChunkSearchResultDTO(
+                1L, 10L, "AVMA Vital Signs Guidelines", "https://avma.org", "AVMA", "GENERAL_PET_CARE",
+                "2024.1", "Normal Resting Heart Rates", "Adult dogs have a resting heart rate of 60 to 140 bpm.",
+                0.88, "EXACT_LEXICAL", "Canine and Feline", "Vital Signs & Normal Physiology",
+                "OFFICIAL_CLINICAL_GUIDELINE", "Open Access"
+        );
+
+        when(chunkRepository.searchSimilarChunksByModel(any(Float[].class), anyString(), anyInt()))
+                .thenReturn(List.of(denseMatch));
+        when(chunkRepository.searchByKeyword(anyString(), anyInt()))
+                .thenReturn(List.of(lexMatch));
+
+        List<KnowledgeChunkSearchResultDTO> results = retrievalService.search("What is the normal heart rate for a dog?");
+        assertFalse(results.isEmpty());
+        KnowledgeChunkSearchResultDTO top = results.get(0);
+
+        assertEquals("HYBRID_RRF", top.getRetrievalMethod());
+        assertEquals(0.88, top.getSimilarityScore(), 0.001, "Original cosine similarity score must NOT be overwritten by RRF");
+        assertNotNull(top.getRrfScore(), "Dedicated rrfScore must be populated");
+        assertTrue(top.getRrfScore() > 0.0);
+    }
+
+    @Test
+    void testDogHeartRateRanksVitalSignsAboveCPR() {
+        KnowledgeChunkSearchResultDTO cprMatch = new KnowledgeChunkSearchResultDTO(
+                10L, 50L, "RECOVER Resuscitation Guidelines", "https://recover.org", "VECCS", "EMERGENCY_CARE",
+                "2024.1", "Chest Compressions Rate", "Perform compressions at 100 to 120 compressions per minute during CPR.",
+                0.80, "SEMANTIC_DENSE", "Canine and Feline", "Emergency Resuscitation & Critical Care",
+                "CONSENSUS_STATEMENT", "Open Access"
+        );
+        KnowledgeChunkSearchResultDTO vitalSignsMatch = new KnowledgeChunkSearchResultDTO(
+                11L, 51L, "AVMA Vital Signs Guidelines", "https://avma.org", "AVMA", "GENERAL_PET_CARE",
+                "2024.1", "Normal Canine Resting Heart Rate", "Adult dog resting heart rate is 60 to 140 beats per minute.",
+                0.79, "SEMANTIC_DENSE", "Canine", "Vital Signs & Normal Physiology",
+                "OFFICIAL_CLINICAL_GUIDELINE", "Open Access"
+        );
+
+        when(chunkRepository.searchSimilarChunksByModel(any(Float[].class), anyString(), anyInt()))
+                .thenReturn(List.of(cprMatch, vitalSignsMatch));
+        when(chunkRepository.searchByKeyword(anyString(), anyInt()))
+                .thenReturn(List.of(vitalSignsMatch));
+
+        List<KnowledgeChunkSearchResultDTO> results = retrievalService.search("What is the normal heart rate for a dog?");
+        assertFalse(results.isEmpty());
+
+        // Normal Vital Signs chunk must be ranked #1 above CPR compression rate
+        assertEquals("AVMA Vital Signs Guidelines", results.get(0).getDocumentTitle());
+        assertEquals("Vital Signs & Normal Physiology", results.get(0).getClinicalTopic());
     }
 
     @Test

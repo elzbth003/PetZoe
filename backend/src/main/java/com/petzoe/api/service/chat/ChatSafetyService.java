@@ -24,7 +24,13 @@ public class ChatSafetyService {
             Pattern.compile("(?i)\\b(what\\s+disease|diagnose|diagnosis|do\\s+they\\s+have|does\\s+(he|she|it|my\\s+dog|my\\s+cat)\\s+have)\\b"),
             Pattern.compile("(?i)\\b(what\\s+medicine|what\\s+medication|what\\s+drug|prescribe|prescription\\s+for)\\b"),
             Pattern.compile("(?i)\\b((what|how\\s+much)\\s+(dosage|mg|dose|pill|medicine|antibiotic|medication)|dosage|dose)\\b"),
-            Pattern.compile("(?i)\\b(red\\s+skin|scratching|vomiting|diarrhea|limping|lump|coughing|sneezing|eye\\s+discharge)\\b")
+            Pattern.compile("(?i)\\b(red\\s+skin|scratching|vomiting|vomit|diarrhea|limping|limp|lump|coughing|cough|sneezing|sneeze|eye\\s+discharge|not\\s+eating|loss\\s+of\\s+appetite|refusing\\s+food|lethargic|lethargy|itching|itchy|fur\\s+loss|alopecia)\\b")
+    );
+
+    private static final List<Pattern> PRESCRIPTION_DOSAGE_PATTERNS = List.of(
+            Pattern.compile("(?i)\\b(what\\s+dosage|how\\s+much\\s+(?:dosage|dose|mg)|dosage\\s+of|dose\\s+of|calculate\\s+.*(?:dose|dosage|mg)|prescribe\\s+(?:me|my|a|an|some)|prescription\\s+for|can\\s+you\\s+prescribe)\\b"),
+            Pattern.compile("(?i)\\b(paracetamol|acetaminophen|ibuprofen|advil|tylenol|aspirin)\\b"),
+            Pattern.compile("(?i)\\b(?:how\\s+many\\s+mg|how\\s+much\\s+medicine|exact\\s+dosage|calculate\\s+dosage)\\b")
     );
 
     private static final List<Pattern> PROMPT_INJECTION_PATTERNS = List.of(
@@ -44,6 +50,11 @@ public class ChatSafetyService {
         return MEDICAL_QUESTION_PATTERNS.stream().anyMatch(pattern -> pattern.matcher(message).find());
     }
 
+    public boolean isPrescriptionOrDosageRequest(String message) {
+        if (message == null || message.isBlank()) return false;
+        return PRESCRIPTION_DOSAGE_PATTERNS.stream().anyMatch(pattern -> pattern.matcher(message).find());
+    }
+
     public boolean isPromptInjection(String message) {
         if (message == null || message.isBlank()) return false;
         return PROMPT_INJECTION_PATTERNS.stream().anyMatch(pattern -> pattern.matcher(message).find());
@@ -56,6 +67,14 @@ public class ChatSafetyService {
                 "2. **Contact an Emergency Veterinarian Immediately**: Call your nearest emergency animal clinic or veterinary hospital right away.\n" +
                 "3. **PetZoe Directory**: You can locate and call registered veterinarians directly through the PetZoe **Veterinarian Directory** on your dashboard.\n\n" +
                 "_PetZoe AI Assistant is an informational tool and cannot replace immediate emergency clinical triage._";
+    }
+
+    public String formatPrescriptionSafetyGuidance(String symptomContext) {
+        return "⚠️ **Veterinary Prescribing & Dosage Safety Boundary**:\n\n" +
+                "PetZoe AI Assistant cannot calculate pharmaceutical dosages, recommend specific drug amounts, or issue veterinary prescriptions. " +
+                "Drug dosing requires accurate verification of your pet's exact weight, species, organ function, and medical history.\n\n" +
+                "**Critical Safety Alert**: Never administer human medications (such as Paracetamol/Acetaminophen, Ibuprofen, Aspirin, or Tylenol) to dogs or cats. Even small doses can cause fatal liver necrosis, acute kidney failure, or severe gastric perforation.\n\n" +
+                "Please book a consultation with a certified veterinarian through PetZoe for a clinical examination and an accurate, weight-based prescription.";
     }
 
     public String formatMedicalSafetyGuidance(String symptomContext) {
@@ -108,27 +127,28 @@ public class ChatSafetyService {
             return ChatIntent.VETERINARIAN_SEARCH;
         }
 
-        if (lower.contains("deworm") || lower.contains("deworming") || lower.contains("worm") || lower.contains("parasite") || lower.contains("heartworm") || lower.contains("preventive care") || lower.contains("preventative care")) {
+        if (lower.contains("deworm") || lower.contains("deworming") || lower.contains("worm") || lower.contains("parasite") || lower.contains("heartworm") || lower.contains("preventive care") || lower.contains("preventative care") || lower.contains("flea") || lower.contains("fleas") || lower.contains("tick") || lower.contains("ticks") || lower.contains("mite") || lower.contains("mites")) {
             return ChatIntent.PREVENTIVE_CARE;
         }
 
-        if (lower.contains("shop") || lower.contains("buy") || lower.contains("marketplace") || lower.contains("product") || lower.contains("order")) {
+        if (lower.contains("shop") || lower.contains("buy") || lower.contains("marketplace") || lower.contains("product") || lower.contains("order") || lower.contains("supplies")) {
             return ChatIntent.MARKETPLACE;
         }
 
-        if (lower.contains("diet") || lower.contains("food") || lower.contains("nutrition") || lower.contains("feed") || lower.contains("calories")) {
+        if ((lower.contains("diet") || lower.contains("food") || lower.contains("nutrition") || lower.contains("feed") || lower.contains("calories") || lower.contains("eat") || lower.contains("eggs") || lower.contains("kibble") || lower.contains("wet food") || lower.contains("dry food") || lower.contains("treat"))
+                && !lower.contains("not eating") && !lower.contains("refusing food") && !lower.contains("vomit") && !lower.contains("diarrhea")) {
             return ChatIntent.NUTRITION;
         }
 
-        if (lower.contains("groom") || lower.contains("bath") || lower.contains("brush") || lower.contains("nail") || lower.contains("coat")) {
+        if (lower.contains("groom") || lower.contains("bath") || lower.contains("bathe") || lower.contains("brush") || lower.contains("nail") || lower.contains("coat") || lower.contains("shampoo")) {
             return ChatIntent.GROOMING;
         }
 
-        if (lower.contains("hygiene") || lower.contains("teeth") || lower.contains("dental") || lower.contains("ear cleaning") || lower.contains("flea") || lower.contains("tick")) {
+        if (lower.contains("hygiene") || lower.contains("teeth") || lower.contains("dental") || lower.contains("ear cleaning") || lower.contains("brushing teeth")) {
             return ChatIntent.PET_HYGIENE;
         }
 
-        if (lower.contains("behavior") || lower.contains("barking") || lower.contains("scratching furniture") || lower.contains("training") || lower.contains("anxiety") || lower.contains("aggression")) {
+        if (lower.contains("behavior") || lower.contains("barking") || lower.contains("scratching furniture") || lower.contains("training") || lower.contains("train") || lower.contains("anxiety") || lower.contains("aggression") || lower.contains("potty") || lower.contains("crate") || lower.contains("biting")) {
             return ChatIntent.PET_BEHAVIOR;
         }
 

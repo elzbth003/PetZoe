@@ -304,16 +304,48 @@ public class GeminiChatModelService implements ChatModelService {
             return generateVetAvailabilityFallbackResponse(contextData, rawMsg);
         }
 
-        // 2. Check if user asks for vaccination
+        // 2. Check if user asks for vital signs (heart rate, temperature, breathing)
+        boolean isVitalSignsQuery = lower.contains("heart rate") || lower.contains("pulse") ||
+                lower.contains("vital sign") || lower.contains("vitals") || lower.contains("breathing rate") ||
+                lower.contains("respiratory rate") || lower.contains("body temperature");
+        if (isVitalSignsQuery) {
+            return generateVitalSignsClinicalResponse(contextData, rawMsg);
+        }
+
+        // 3. Check if user asks about symptoms (vomiting, limping, itching, fleas)
+        boolean isSymptomQuery = lower.contains("vomit") || lower.contains("vomiting") ||
+                lower.contains("limp") || lower.contains("limping") || lower.contains("itch") ||
+                lower.contains("itching") || lower.contains("scratch") || lower.contains("flea") ||
+                lower.contains("fleas");
+        if (isSymptomQuery) {
+            return generateSymptomTriageResponse(contextData, rawMsg);
+        }
+
+        // 4. Check if user asks about rabbit health / diet / GI stasis
+        boolean isRabbitQuery = lower.contains("rabbit") || lower.contains("bunny") || lower.contains("lagomorph");
+        if (isRabbitQuery) {
+            return generateRabbitCareResponse(contextData, rawMsg);
+        }
+
+        // 5. Check if user asks about behavior / training
+        boolean isBehaviorQuery = lower.contains("train") || lower.contains("training") ||
+                lower.contains("potty") || lower.contains("crate") || lower.contains("bark") ||
+                lower.contains("bite") || lower.contains("biting") || lower.contains("socializ");
+        if (isBehaviorQuery) {
+            return generateBehaviorTrainingResponse(contextData, rawMsg);
+        }
+
+        // 6. Check if user asks for vaccination
         boolean isVaccinationQuery = lower.contains("vaccin") || lower.contains("rabies") ||
                 lower.contains("dhpp") || lower.contains("fvrcp") || lower.contains("shot");
         if (isVaccinationQuery) {
             return generateVaccinationClinicalResponse(contextData, rawMsg);
         }
 
-        // 3. Check if user asks for diet/nutrition
+        // 7. Check if user asks for diet/nutrition
         boolean isNutritionQuery = lower.contains("food") || lower.contains("feed") ||
-                lower.contains("diet") || lower.contains("nutrition") || lower.contains("chocolate");
+                lower.contains("diet") || lower.contains("nutrition") || lower.contains("chocolate") ||
+                lower.contains("egg") || lower.contains("eggs") || lower.contains("kibble");
         if (isNutritionQuery) {
             return generateNutritionClinicalResponse(contextData, rawMsg);
         }
@@ -519,6 +551,34 @@ public class GeminiChatModelService implements ChatModelService {
             else if (lower.contains("dog") || lower.contains("puppy") || lower.contains("canine")) species = "Dog";
         }
 
+        boolean asksEgg = lower.contains("egg") || lower.contains("eggs");
+        if (asksEgg) {
+            return "**Yes, dogs and cats can safely eat eggs when properly prepared.**\n\n" +
+                    "### Veterinary Dietary Guidelines for Feeding Eggs:\n" +
+                    "• **Must Be Cooked**: Always serve eggs plain and thoroughly cooked (scrambled, hard-boiled, or poached). Never use butter, oil, salt, milk, onions, or seasonings.\n" +
+                    "• **Nutritional Benefits**: Eggs provide high-biological-value protein, essential fatty acids (linoleic acid), vitamin A, riboflavin, folate, vitamin B12, iron, and selenium.\n" +
+                    "• **Why Raw Eggs Are Not Recommended**:\n" +
+                    "  - *Salmonella Risk*: Raw eggs carry contamination risks for pets and human household members.\n" +
+                    "  - *Avidin Interference*: Raw egg whites contain avidin, a protein that binds biotin (vitamin B7), potentially causing dermatitis and hair loss if fed raw in large volumes.\n" +
+                    "• **Portion Moderation**: Treat eggs as a supplemental protein or treat (under 10% of total daily caloric intake). One whole egg contains approximately 70–75 calories.\n\n" +
+                    "For pets with kidney disease or dietary fat restrictions (pancreatitis history), consult your PetZoe veterinarian before adding eggs to their diet.";
+        }
+
+        boolean asksWetVsDry = (lower.contains("wet") && lower.contains("dry")) || lower.contains("kibble vs");
+        if (asksWetVsDry) {
+            return "**Evidence-Based Comparison: Wet Pet Food vs. Dry Kibble (WSAVA Guidelines)**:\n\n" +
+                    "### 1. Wet / Canned Food:\n" +
+                    "• **Moisture & Hydration**: Contains 70% to 80% water. Critical for feline health to prevent feline lower urinary tract disease (FLUTD), idiopathic cystitis, and support chronic kidney disease (CKD).\n" +
+                    "• **Palatability**: Strong natural aroma and soft texture make it ideal for picky eaters, senior pets, or pets with dental pain.\n" +
+                    "• **Caloric Density**: Lower calorie density per gram allows larger meal volume for weight management.\n\n" +
+                    "### 2. Dry Food (Kibble):\n" +
+                    "• **Convenience & Cost**: Shelf-stable, convenient to measure, economical, and can be used in puzzle feeders.\n" +
+                    "• **Energy Density**: Approximately 8% to 10% moisture, providing concentrated caloric energy for active working pets.\n" +
+                    "• **Dental Considerations**: While kibble provides mechanical chewing resistance, standard dry food does not replace daily tooth brushing or VOHC-approved dental regimens.\n\n" +
+                    "### 3. Recommended Approach:\n" +
+                    "Many veterinary nutritionists recommend **mixed feeding** (e.g. measured dry kibble in the morning and wet canned food in the evening) to achieve optimum hydration alongside caloric control.";
+        }
+
         boolean asksDietPlan = lower.contains("diet plan") || lower.contains("meal plan") || lower.contains("prepare a diet") ||
                 lower.contains("food plan") || lower.contains("what should i feed") || lower.contains("how much food") ||
                 lower.contains("how much to feed") || lower.contains("calorie");
@@ -586,6 +646,114 @@ public class GeminiChatModelService implements ChatModelService {
                 "• **Cats**: Obligate carnivores requiring essential animal proteins, preformed Vitamin A, and Taurine (deficiency causes dilated cardiomyopathy and blindness).\n" +
                 "• **Dogs**: Require complete balanced proteins, omega fatty acids, and controlled calcium-phosphorus ratios.\n\n" +
                 "Consult your PetZoe veterinarian for customized dietary portions based on your pet's life stage, body condition score, and activity level.";
+    }
+
+    private String generateVitalSignsClinicalResponse(String contextData, String userMessage) {
+        return "**Normal Resting Vital Signs in Dogs, Cats, and Rabbits (AVMA & Merck Veterinary Manual)**:\n\n" +
+                "### 1. Resting Heart Rate Ranges:\n" +
+                "• **Adult Dogs**: **60 to 140 beats per minute (bpm)** at rest.\n" +
+                "  - *Large & Giant Breeds*: 60 to 100 bpm.\n" +
+                "  - *Medium Breeds*: 80 to 120 bpm.\n" +
+                "  - *Small & Toy Breeds*: 100 to 140 bpm.\n" +
+                "• **Puppies**: **120 to 200 bpm**. Puppies have a significantly faster resting heart rate than adult dogs due to their higher basal metabolic rate and developing autonomic nervous tone.\n" +
+                "• **Adult Cats**: **140 to 220 bpm** (Kittens: 160 to 240 bpm).\n" +
+                "• **Rabbits**: **140 to 300 bpm**.\n\n" +
+                "### 2. Normal Respiratory (Breathing) Rates:\n" +
+                "• **Dogs**: 10 to 30 breaths per minute at rest (non-panting).\n" +
+                "• **Cats**: 20 to 30 breaths per minute at rest. *(Note: Open-mouth breathing or panting in cats is abnormal and requires urgent veterinary evaluation)*.\n" +
+                "• **Rabbits**: 30 to 60 breaths per minute.\n\n" +
+                "### 3. Normal Body Temperature (Rectal):\n" +
+                "• **Dogs**: 101.0°F to 102.5°F (38.3°C to 39.2°C).\n" +
+                "• **Cats**: 100.5°F to 102.5°F (38.1°C to 39.2°C).\n" +
+                "• **Rabbits**: 101.0°F to 103.0°F (38.3°C to 39.4°C).\n\n" +
+                "Always check vital signs when your pet is calm and resting. If your pet has a persistently elevated resting heart rate or difficulty breathing, contact a veterinarian through PetZoe.";
+    }
+
+    private String generateSymptomTriageResponse(String contextData, String userMessage) {
+        String lower = (userMessage != null) ? userMessage.toLowerCase() : "";
+
+        if (lower.contains("limp") || lower.contains("limping")) {
+            return "**Veterinary Triage Guidance: Canine and Feline Lameness / Limping (AAHA Guidelines)**:\n\n" +
+                    "### 1. Common Considerations:\n" +
+                    "• Minor muscle strain, paw pad cut, torn toenail, interdigital burr/thorn, sprain, or joint discomfort.\n\n" +
+                    "### 2. Safe Home Observation Steps:\n" +
+                    "• **Restrict Activity**: Keep your pet calm; restrict running, jumping, and stairs. Keep on leash for bathroom breaks.\n" +
+                    "• **Paw Pad Inspection**: Carefully check the bottom of all paw pads and between the toes using a flashlight for cuts, pebbles, or swelling.\n" +
+                    "• **CRITICAL WARNING**: NEVER give human pain relievers (Paracetamol/Acetaminophen, Ibuprofen, Aspirin) to pets. They can cause fatal organ damage.\n\n" +
+                    "### 3. Urgent Warning Signs (Seek Immediate Veterinary Care):\n" +
+                    "• Inability to bear any weight on the leg (holding leg up completely).\n" +
+                    "• Obvious bone deformity, severe swelling, heat, or intense vocalization of pain.\n\n" +
+                    "Please book an examination with a licensed veterinarian through PetZoe for accurate musculoskeletal evaluation.";
+        }
+
+        if (lower.contains("flea") || lower.contains("fleas") || lower.contains("itch") || lower.contains("scratch")) {
+            return "**Veterinary Dermatology Triage: Itching & Flea Identification (CAPC & AAHA Standards)**:\n\n" +
+                    "### 1. How to Identify Fleas on Your Pet:\n" +
+                    "• **Visual Check**: Part the fur along the lower back, tail base, and groin. Fleas are small, wingless, fast-moving reddish-brown insects.\n" +
+                    "• **The Wet Paper Towel Test**: Collect dark pepper-like debris from your pet's coat onto a damp white paper towel. If the specks dissolve into reddish-brown rings, it is digested blood (flea dirt).\n\n" +
+                    "### 2. Common Causes of Pruritus (Itching):\n" +
+                    "• Flea Allergy Dermatitis (FAD), environmental atopy (allergies to pollen/dust mites), food allergies, or secondary bacterial/yeast skin infections.\n\n" +
+                    "### 3. Recommended Actions:\n" +
+                    "• Use veterinary-approved preventive treatments (such as oral or topical isoxazolines). Never use canine permethrin products on cats.\n" +
+                    "• Wash pet bedding in hot water and vacuum living areas thoroughly.\n" +
+                    "• Book a veterinary consultation on PetZoe to prescribe targeted relief and eliminate skin infection.";
+        }
+
+        return "**Veterinary Triage Guidance: Gastrointestinal & General Symptoms (AAHA Standards)**:\n\n" +
+                "### 1. Common Plausible Considerations:\n" +
+                "• Isolated vomiting or loose stool often results from dietary indiscretion (scavenging), sudden diet change, hairballs (in cats), or mild gastritis.\n\n" +
+                "### 2. Safe Home Observation Steps:\n" +
+                "• **Monitor Hydration**: Ensure small, frequent amounts of fresh water are accessible.\n" +
+                "• **Bland Diet**: If advised by your vet and the pet is alert, offer small portions of plain boiled skinless chicken breast and white rice.\n" +
+                "• **Never Give Human Meds**: Never administer human stomach medications or painkillers without direct veterinary guidance.\n\n" +
+                "### 3. Red Flags Requiring Immediate Veterinary Attention:\n" +
+                "• Repeated vomiting within 24 hours, blood in vomit or dark tarry stool.\n" +
+                "• Severe lethargy, collapsed state, or unresponsiveness.\n" +
+                "• Inability to keep water down or swollen, painful abdomen.\n\n" +
+                "If these red flags occur, contact your nearest emergency animal clinic or book a vet consultation through PetZoe.";
+    }
+
+    private String generateRabbitCareResponse(String contextData, String userMessage) {
+        String lower = (userMessage != null) ? userMessage.toLowerCase() : "";
+        boolean asksNotEating = lower.contains("not eating") || lower.contains("stop eating") || lower.contains("hasn't eaten") || lower.contains("appetite");
+
+        if (asksNotEating) {
+            return "🚨 **URGENT VETERINARY ALERT: Rabbit Anorexia & Potential Gastrointestinal Stasis (GI Stasis)**\n\n" +
+                    "### Why a Rabbit Not Eating is a Critical Medical Emergency:\n" +
+                    "Domestic rabbits are strict hindgut fermenters whose digestive system requires an uninterrupted flow of fiber. " +
+                    "If a rabbit stops eating for **12 hours or more**, their gastrointestinal tract can completely shut down (**GI Stasis / Ileus**).\n\n" +
+                    "### Key Signs of GI Stasis:\n" +
+                    "• Complete refusal of favorite greens, pellets, and timothy hay.\n" +
+                    "• Significantly reduced, tiny, irregular, or completely absent fecal pellets.\n" +
+                    "• Hunched posture, pressing abdomen to the floor, tooth grinding (bruxism from pain), cold ears, and severe lethargy.\n\n" +
+                    "### Immediate Actions Required:\n" +
+                    "1. **Do Not Wait**: GI stasis can become fatal within 24 to 48 hours without treatment.\n" +
+                    "2. **Contact an Exotics Veterinarian Immediately**: Your rabbit needs emergency fluid therapy, pain management (analgesia), motility stimulants, and assisted syringe feeding (Critical Care formula).\n" +
+                    "3. **Keep Them Warm & Quiet**: Reduce environmental stress while transporting to the clinic.";
+        }
+
+        return "**Evidence-Based Rabbit Care & Nutrition Guidelines (House Rabbit Society)**:\n\n" +
+                "### 1. Essential Daily Diet Composition:\n" +
+                "• **Fresh Grass Hay (Timothy, Orchard)**: **80% to 85%** of the diet. Must be accessible 24/7 in unlimited quantities for gut motility and dental wear.\n" +
+                "• **Fresh Leafy Greens**: **10% to 15%** (romaine, cilantro, parsley, dill, mint).\n" +
+                "• **High-Fiber Pellets**: **5%** (plain timothy pellets without seeds or corn; approx. 1/8 to 1/4 cup per 5 lbs body weight daily).\n" +
+                "• **Fresh Clean Water**: Provided in a heavy ceramic bowl or clean water bottle.\n\n" +
+                "### 2. Critical Health Alert:\n" +
+                "Rabbits cannot fast. Any refusal of food for 12+ hours is a medical emergency requiring an immediate exotics veterinary visit.";
+    }
+
+    private String generateBehaviorTrainingResponse(String contextData, String userMessage) {
+        return "**Puppy & Kitten Positive Reinforcement Behavioral Training (AAHA Standards)**:\n\n" +
+                "### 1. Core Training Principles:\n" +
+                "• **Positive Reinforcement**: Mark desired behaviors immediately with high-value treats and enthusiastic praise within 1 to 2 seconds.\n" +
+                "• **Avoid Punishment**: Physical discipline or dominance rolls increase fear and anxiety-based aggression. Instead, ignore or gently redirect unwanted behaviors.\n\n" +
+                "### 2. House-Training / Potty Protocol:\n" +
+                "• **Consistent Schedule**: Take your puppy outside immediately upon waking, 10–15 minutes after eating or drinking, and following energetic play sessions.\n" +
+                "• **Crate Training**: A properly sized crate serves as a comforting, secure den. Never use the crate as a punishment.\n\n" +
+                "### 3. Bite Inhibition & Teething:\n" +
+                "• When a puppy bites hands or clothes, emit a calm, soft yelp, freeze movement, and immediately redirect their teeth to a durable rubber chew toy.\n\n" +
+                "### 4. Early Socialization Window (3 to 14 Weeks):\n" +
+                "• Gradually and positively expose puppies to diverse household sounds, friendly vaccinated animals, and diverse environments to build lifelong confidence.";
     }
 
     private String formatCuratedWebSummary(String contextData) {

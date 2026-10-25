@@ -222,4 +222,82 @@ public class ClinicalQuestionAnsweringTest {
         assertTrue(context.isMultipleMatchesFound(), "Must detect multiple matching pets");
         assertEquals(2, context.getMatchingPetNames().size());
     }
+
+    @Test
+    @DisplayName("SCENARIO-C: Canine and puppy resting vital signs answered with clinical ranges")
+    void testScenarioCVitalSignsQuery() {
+        String msg = "What is a normal heart rate for a dog, and how does it differ for a puppy?";
+        AiChatResponseDTO response = chatService.processMessage(new AiChatRequestDTO(msg, null), null, true);
+
+        assertNotNull(response);
+        String reply = response.getMessage();
+        assertTrue(reply.contains("60 to 140") || reply.contains("60–140"), "Must state adult dog heart rate range 60-140 bpm");
+        assertTrue(reply.contains("120 to 200") || reply.contains("120–200"), "Must state puppy heart rate range 120-200 bpm");
+    }
+
+    @Test
+    @DisplayName("SCENARIO-D: Dog egg consumption answered with safe preparation and nutritional value")
+    void testScenarioDEggNutritionQuery() {
+        String msg = "Can dogs eat eggs?";
+        AiChatResponseDTO response = chatService.processMessage(new AiChatRequestDTO(msg, null), null, true);
+
+        assertNotNull(response);
+        String reply = response.getMessage();
+        assertTrue(reply.toLowerCase().contains("cooked"), "Must emphasize eggs should be cooked");
+        assertTrue(reply.toLowerCase().contains("protein"), "Must highlight protein/amino acid value");
+        assertTrue(reply.toLowerCase().contains("raw") || reply.toLowerCase().contains("salmonella"), "Must mention raw egg safety boundary");
+    }
+
+    @Test
+    @DisplayName("SCENARIO-E: Wet vs Dry food differences explained with hydration and dental benefits")
+    void testScenarioEWetVsDryFoodComparison() {
+        String msg = "Explain the difference between wet and dry pet food.";
+        AiChatResponseDTO response = chatService.processMessage(new AiChatRequestDTO(msg, null), null, true);
+
+        assertNotNull(response);
+        String reply = response.getMessage();
+        assertTrue(reply.toLowerCase().contains("moisture") || reply.toLowerCase().contains("hydration"), "Must explain moisture/hydration benefits of wet food");
+        assertTrue(reply.toLowerCase().contains("kibble") || reply.toLowerCase().contains("dry"), "Must explain dry kibble convenience/energy density");
+    }
+
+    @Test
+    @DisplayName("SCENARIO-F: Dog limping triage provides activity restriction and warns against human NSAIDs")
+    void testScenarioFLimpingSymptomTriage() {
+        String msg = "What should I do if my dog is limping?";
+        AiChatResponseDTO response = chatService.processMessage(new AiChatRequestDTO(msg, null), null, true);
+
+        assertNotNull(response);
+        String reply = response.getMessage();
+        assertTrue(reply.toLowerCase().contains("restrict") || reply.toLowerCase().contains("rest"), "Must advise resting/restricting activity");
+        assertTrue(reply.toLowerCase().contains("human") || reply.toLowerCase().contains("paracetamol") || reply.toLowerCase().contains("ibuprofen"),
+                "Must warn against administering human painkillers");
+        assertTrue(reply.toLowerCase().contains("paw") || reply.toLowerCase().contains("toes"), "Must recommend inspecting paws");
+    }
+
+    @Test
+    @DisplayName("SCENARIO-G: Rabbit anorexia recognized as GI stasis life-threatening emergency")
+    void testScenarioGRabbitAnorexiaEmergencyTriage() {
+        String msg = "Why is my rabbit not eating?";
+        AiChatResponseDTO response = chatService.processMessage(new AiChatRequestDTO(msg, null), null, true);
+
+        assertNotNull(response);
+        String reply = response.getMessage();
+        assertTrue(reply.toLowerCase().contains("gi stasis") || reply.toLowerCase().contains("stasis") || reply.toLowerCase().contains("ileus"),
+                "Must identify Gastrointestinal Stasis");
+        assertTrue(reply.toLowerCase().contains("emergency") || reply.toLowerCase().contains("immediately"),
+                "Must urge immediate emergency exotics veterinary care");
+    }
+
+    @Test
+    @DisplayName("SCENARIO-H: Puppy behavioral training promotes positive reinforcement and potty routines")
+    void testScenarioHPuppyTrainingGuidance() {
+        String msg = "How can I train my puppy?";
+        AiChatResponseDTO response = chatService.processMessage(new AiChatRequestDTO(msg, null), null, true);
+
+        assertNotNull(response);
+        String reply = response.getMessage();
+        assertTrue(reply.toLowerCase().contains("positive reinforcement"), "Must recommend positive reinforcement");
+        assertTrue(reply.toLowerCase().contains("potty") || reply.toLowerCase().contains("crate") || reply.toLowerCase().contains("schedule"),
+                "Must outline house-training / crate protocols");
+    }
 }

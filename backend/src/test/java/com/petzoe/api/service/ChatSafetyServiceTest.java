@@ -88,5 +88,29 @@ public class ChatSafetyServiceTest {
         assertEquals(ChatIntent.ADOPTION, safetyService.detectIntent("hoe to adopt pet here"));
         assertEquals(ChatIntent.GENERAL_PET_CARE, safetyService.detectIntent("What is the normal resting heart rate range for an adult dog, and how does it differ for a puppy?"));
         assertEquals(ChatIntent.NUTRITION, safetyService.detectIntent("What should I feed an adult cat?"));
+        assertEquals(ChatIntent.NUTRITION, safetyService.detectIntent("Can dogs eat eggs?"));
+        assertEquals(ChatIntent.NUTRITION, safetyService.detectIntent("Explain the difference between wet and dry pet food."));
+        assertEquals(ChatIntent.GROOMING, safetyService.detectIntent("How often should I bathe my puppy?"));
+        assertEquals(ChatIntent.MEDICAL_QUESTION, safetyService.detectIntent("Why does my cat keep vomiting?"));
+        assertEquals(ChatIntent.MEDICAL_QUESTION, safetyService.detectIntent("What should I do if my dog is limping?"));
+        assertEquals(ChatIntent.MEDICAL_QUESTION, safetyService.detectIntent("Why is my rabbit not eating?"));
+        assertEquals(ChatIntent.PREVENTIVE_CARE, safetyService.detectIntent("How do I identify fleas on my pet?"));
+        assertEquals(ChatIntent.PET_BEHAVIOR, safetyService.detectIntent("How can I train my puppy?"));
+        assertEquals(ChatIntent.VETERINARIAN_SEARCH, safetyService.detectIntent("How can I find a veterinarian?"));
+        assertEquals(ChatIntent.GENERAL_PET_CARE, safetyService.detectIntent("dog heart rate"));
+        assertEquals(ChatIntent.NUTRITION, safetyService.detectIntent("cat food"));
+        assertEquals(ChatIntent.MEDICAL_QUESTION, safetyService.detectIntent("puppy itching"));
+    }
+
+    @Test
+    @DisplayName("SAFETY-07: Prescription & dosage requests detected vs symptom inquiries")
+    void testPrescriptionAndDosageBoundary() {
+        assertTrue(safetyService.isPrescriptionOrDosageRequest("What dosage of paracetamol can I give my cat?"));
+        assertTrue(safetyService.isPrescriptionOrDosageRequest("Calculate 100mg ibuprofen dose for my dog"));
+        assertTrue(safetyService.isPrescriptionOrDosageRequest("Can you prescribe antibiotics for my puppy?"));
+
+        assertFalse(safetyService.isPrescriptionOrDosageRequest("Why does my cat keep vomiting?"));
+        assertFalse(safetyService.isPrescriptionOrDosageRequest("What should I do if my dog is limping?"));
+        assertFalse(safetyService.isPrescriptionOrDosageRequest("What is the normal heart rate for a dog?"));
     }
 }
