@@ -34,7 +34,8 @@ export const PRODUCT_IMAGE_REGISTRY = {
   PUZZLE_TOY: 'https://images.unsplash.com/photo-1615486364134-62a4c72c822d?auto=format&fit=crop&q=80&w=600',
 
   // Grooming & Hygiene
-  DOG_SHAMPOO: 'https://images.unsplash.com/photo-1701992678972-d5a053ad0fb0?auto=format&fit=crop&q=80&w=600',
+  HIMALAYA_ERINA_SHAMPOO: '/images/products/himalaya-erina-ep-shampoo.png',
+  DOG_SHAMPOO: '/images/products/himalaya-erina-ep-shampoo.png',
   DESHEDDING_BRUSH: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=600',
   NAIL_CLIPPER: 'https://images.unsplash.com/photo-1559818469-a289200df0b1?auto=format&fit=crop&q=80&w=600',
   GROOMING_WIPES: 'https://images.unsplash.com/photo-1734599895291-d25a27e4cb45?auto=format&fit=crop&q=80&w=600',
@@ -138,7 +139,10 @@ export function analyzeProductNameAndGetImage(productOrName, categoryName = '', 
   }
 
   // 6. Grooming & Hygiene
-  if (text.includes('shampoo') || text.includes('erina') || text.includes('burt\'s bees') || text.includes('oatmeal shampoo') || text.includes('wash')) {
+  if (text.includes('erina') || text.includes('himalaya')) {
+    return PRODUCT_IMAGE_REGISTRY.HIMALAYA_ERINA_SHAMPOO;
+  }
+  if (text.includes('shampoo') || text.includes('burt\'s bees') || text.includes('oatmeal shampoo') || text.includes('wash')) {
     return PRODUCT_IMAGE_REGISTRY.DOG_SHAMPOO;
   }
   if (text.includes('furminator') || text.includes('deshedding') || text.includes('brush') || text.includes('comb')) {
@@ -197,6 +201,11 @@ export function analyzeProductNameAndGetImage(productOrName, categoryName = '', 
 export function getProductImageUrl(product) {
   if (!product) return PRODUCT_IMAGE_REGISTRY.GENERAL_DEFAULT;
 
+  const name = (product.name || '').toLowerCase();
+  if (name.includes('erina') || (name.includes('himalaya') && name.includes('shampoo'))) {
+    return PRODUCT_IMAGE_REGISTRY.HIMALAYA_ERINA_SHAMPOO;
+  }
+
   const url = product.imageUrl || product.image_url;
 
   // List of known mismatched URLs in legacy seed data
@@ -206,14 +215,14 @@ export function getProductImageUrl(product) {
      (product.name?.toLowerCase().includes('travel crate') && (url.includes('photo-1601758003122-53c40e686a19') || url.includes('photo-1548767797-d8c844163c4c'))) ||
      (product.name?.toLowerCase().includes('laser ball') && (url.includes('photo-1587300003388-59208cc962cb') || url.includes('photo-1615789591457-74a63395c990'))) ||
      (product.name?.toLowerCase().includes('rope') && url.includes('photo-1601758124510-52d02ddb7cbd')) ||
-     (product.name?.toLowerCase().includes('shampoo') && (url.includes('photo-1585664811087-47f65abbad64') || url.includes('photo-1583337130417-3346a1be7dee'))) ||
+     (product.name?.toLowerCase().includes('shampoo') && (url.includes('photo-1585664811087-47f65abbad64') || url.includes('photo-1583337130417-3346a1be7dee') || url.includes('photo-1602143407151-7111542de6e8'))) ||
      (product.name?.toLowerCase().includes('nail clipper') && (url.includes('photo-1516734212186-a967f81ad0d7') || url.includes('photo-1585664811087-47f65abbad64'))) ||
      (product.name?.toLowerCase().includes('collar') && (url.includes('photo-1601758228041-f3b2795255f1'))) ||
      (product.name?.toLowerCase().includes('harness') && (url.includes('photo-1544568100-847a948585b9'))) ||
      (product.name?.toLowerCase().includes('wipes') && (url.includes('photo-1585664811087-47f65abbad64') || url.includes('photo-1559214369-a6b1d7919865'))) ||
      (product.name?.toLowerCase().includes('squirrel') && (url.includes('photo-1535294435445-d7249524ef2e') || url.includes('photo-1576201836106-db1758fd1c97'))));
 
-  if (url && typeof url === 'string' && url.startsWith('http') && !isMismatchedLegacy) {
+  if (url && typeof url === 'string' && (url.startsWith('http') || url.startsWith('/')) && !isMismatchedLegacy) {
     return url;
   }
 
