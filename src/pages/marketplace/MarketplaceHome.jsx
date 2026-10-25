@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, ShoppingCart, Heart, Star, SlidersHorizontal, Filter,
+  Search, ShoppingCart, Heart, Star, SlidersHorizontal, Filter, PawPrint,
   Check, X, ChevronDown, ChevronRight, ArrowRight, Sparkles,
   ShieldCheck, Truck, RotateCcw, Lock, Headphones, LayoutGrid,
   List, Loader2, Mail, CheckCircle2, User, Eye, Tag
@@ -658,16 +658,17 @@ export default function MarketplaceHome() {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
           
-          {/* Left: Brand Logo with Distinct Colorful Dots */}
-          <Link to="/marketplace" className="flex items-center gap-1.5 group select-none shrink-0">
-            <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center">
+          {/* Left: Brand Logo */}
+          <Link to="/" aria-label="PetZoe Home" className="flex items-center gap-1.5 group select-none shrink-0 cursor-pointer">
+            <span className="font-display font-black text-xl sm:text-2xl tracking-tight text-slate-900 flex items-center select-none">
               PetZ
-              <span className="relative inline-flex items-center justify-center mx-0.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#E76F51] inline-block -mt-1 group-hover:scale-125 transition-transform" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F] inline-block absolute -top-1 -right-1" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#F4A261] inline-block absolute -top-1 -left-1" />
+              <span className="inline-block group-hover:rotate-12 transition-transform duration-300">
+                <PawPrint size={22} className="fill-current text-teal-600 mx-0.5" />
               </span>
               e
+            </span>
+            <span className="ml-2 hidden sm:inline-flex items-center text-[11px] font-extrabold uppercase tracking-widest text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
+              Store
             </span>
           </Link>
 
