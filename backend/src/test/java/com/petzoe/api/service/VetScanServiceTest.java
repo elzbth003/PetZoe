@@ -18,6 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -244,5 +248,107 @@ class VetScanServiceTest {
         assertEquals(0.45, erythemaMetric.currentProbability());
         assertEquals(-0.40, erythemaMetric.delta());
         assertEquals("DECREASED", erythemaMetric.trend());
+    }
+
+    @Test
+    @DisplayName("VETSCAN-TEST-08: Rejects non-canine images (e.g. vibrant blue objects / scenery)")
+    void testNonCanineImageRejected() throws IOException {
+        // Create 200x200 blue image (simulating a blue car or non-pet scene)
+        BufferedImage blueImg = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = blueImg.createGraphics();
+        g.setColor(new Color(20, 80, 220));
+        g.fillRect(0, 0, 200, 200);
+        g.dispose();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(blueImg, "jpg", baos);
+        byte[] blueBytes = baos.toByteArray();
+
+        MockMultipartFile file = new MockMultipartFile("image", "blue_car.jpg", "image/jpeg", blueBytes);
+
+        when(userRepository.findByEmail("owner@petverse.com")).thenReturn(Optional.of(owner));
+        when(petRepository.findById(10L)).thenReturn(Optional.of(dog));
+        when(vetScanRecordRepository.save(any(VetScanRecord.class))).thenAnswer(i -> {
+            VetScanRecord r = i.getArgument(0);
+            r.setId(301L);
+            return r;
+        });
+
+        VetScanResponseDTO response = vetScanService.analyzeScan(file, 10L, "{}", "owner@petverse.com");
+
+        assertNotNull(response);
+        assertEquals("INSUFFICIENT_IMAGE", response.status());
+        assertTrue(response.statusMessage().contains("does not appear to be a canine skin or pet lesion photograph"));
+        assertTrue(response.predictions().isEmpty());
+        assertNull(response.explanationImageReference());
+
+        verify(notificationService).createNotification(eq(owner), contains("Clearer Photo Required"), anyString(), eq("VETSCAN"));
+    }
+
+    @Test
+    @DisplayName("VETSCAN-TEST-09: Rejects underexposed / dark images")
+    void testDarkImageRejected() throws IOException {
+        // Create 200x200 almost pitch black image
+        BufferedImage darkImg = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = darkImg.createGraphics();
+        g.setColor(new Color(5, 5, 5));
+        g.fillRect(0, 0, 200, 200);
+        g.dispose();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(darkImg, "jpg", baos);
+        byte[] darkBytes = baos.toByteArray();
+
+        MockMultipartFile file = new MockMultipartFile("image", "dark.jpg", "image/jpeg", darkBytes);
+
+        when(userRepository.findByEmail("owner@petverse.com")).thenReturn(Optional.of(owner));
+        when(petRepository.findById(10L)).thenReturn(Optional.of(dog));
+        when(vetScanRecordRepository.save(any(VetScanRecord.class))).thenAnswer(i -> {
+            VetScanRecord r = i.getArgument(0);
+            r.setId(302L);
+            return r;
+        });
+
+        VetScanResponseDTO response = vetScanService.analyzeScan(file, 10L, "{}", "owner@petverse.com");
+
+        assertNotNull(response);
+        assertEquals("INSUFFICIENT_IMAGE", response.status());
+        assertTrue(response.statusMessage().contains("underexposed / too dark"));
+    }
+
+    @Test
+    @DisplayName("VETSCAN-TEST-10: Generates Grad-CAM overlay for canine lesion photo on completion")
+    void testGradCamOverlayGeneratedOnCompletedScan() throws IOException {
+        // Create 200x200 skin/lesion image with warm background and red erythema patch
+        BufferedImage skinImg = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = skinImg.createGraphics();
+        g.setColor(new Color(220, 185, 150)); // Canine tan/skin background
+        g.fillRect(0, 0, 200, 200);
+        g.setColor(new Color(210, 45, 45));   // Erythema lesion spot
+        g.fillOval(50, 50, 100, 100);
+        g.dispose();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(skinImg, "jpg", baos);
+        byte[] skinBytes = baos.toByteArray();
+
+        MockMultipartFile file = new MockMultipartFile("image", "lesion.jpg", "image/jpeg", skinBytes);
+
+        when(userRepository.findByEmail("owner@petverse.com")).thenReturn(Optional.of(owner));
+        when(petRepository.findById(10L)).thenReturn(Optional.of(dog));
+        when(vetScanRecordRepository.findTopByPetAndStatusOrderByCreatedAtDesc(dog, "COMPLETED"))
+                .thenReturn(Optional.empty());
+        when(vetScanRecordRepository.save(any(VetScanRecord.class))).thenAnswer(i -> {
+            VetScanRecord r = i.getArgument(0);
+            r.setId(303L);
+            return r;
+        });
+
+        VetScanResponseDTO response = vetScanService.analyzeScan(file, 10L, "{}", "owner@petverse.com");
+
+        assertNotNull(response);
+        assertEquals("COMPLETED", response.status());
+        assertNotNull(response.explanationImageReference());
+        assertTrue(response.explanationImageReference().endsWith("-gradcam.png"));
     }
 }

@@ -68,6 +68,29 @@ def validate_image_quality(image_bytes: bytes) -> tuple[ImageQualityResult, Imag
     elif mean_luminance > settings.MAX_LUMINANCE:
         issues.append(f"Image is overexposed / washed out (Luminance: {mean_luminance:.1f}, maximum: {settings.MAX_LUMINANCE}).")
 
+    # 5. Canine Dermal / Coat Biological Chromaticity Check
+    # Convert image to HSV to evaluate biological dermal/fur presence vs non-pet scenes (sky, foliage, cars, UI)
+    hsv_image = image.convert("HSV")
+    hsv_np = np.array(hsv_image, dtype=np.float32)
+    h = hsv_np[:, :, 0] * (360.0 / 255.0)  # [0, 360]
+    s = hsv_np[:, :, 1] / 255.0            # [0, 1]
+    v = hsv_np[:, :, 2] / 255.0            # [0, 1]
+
+    # Dermal/fur tones: warm hues (red/orange/yellow/brown), low saturation fur (black/white/grey)
+    is_warm_dermal = ((h <= 55) | (h >= 330)) & (v >= 0.15)
+    is_fur_neutral = (s < 0.22) & (v >= 0.15)
+    dermal_fur_mask = is_warm_dermal | is_fur_neutral
+    dermal_ratio = float(np.mean(dermal_fur_mask))
+
+    # Unnatural/non-pet dominant spectra (vibrant blue sky, vibrant green foliage, unnatural synthetic neon)
+    is_vibrant_blue = (h >= 170) & (h <= 260) & (s > 0.35)
+    is_vibrant_green = (h >= 75) & (h <= 165) & (s > 0.40)
+    unnatural_mask = is_vibrant_blue | is_vibrant_green
+    unnatural_ratio = float(np.mean(unnatural_mask))
+
+    if dermal_ratio < 0.22 or unnatural_ratio > 0.50:
+        issues.append("The uploaded photograph does not appear to be a canine skin or pet lesion photograph (non-biological colors or non-pet subject detected).")
+
     is_usable = (len(issues) == 0)
 
     quality_result = ImageQualityResult(

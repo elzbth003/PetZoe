@@ -327,16 +327,44 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
                 </div>
               )}
 
-              {/* Quality Flag Warning if INSUFFICIENT_IMAGE */}
+              {/* Quality & Subject Validation Notice if INSUFFICIENT_IMAGE */}
               {scanResult.status === 'INSUFFICIENT_IMAGE' && (
-                <div className="p-5 rounded-3xl bg-rose-50 border border-rose-200 text-rose-800 space-y-2">
-                  <div className="flex items-center gap-2 font-bold text-sm">
-                    <AlertCircle size={18} className="text-rose-600" />
-                    <span>Insufficient Photograph Quality</span>
+                <div className="p-6 rounded-3xl bg-rose-50 border border-rose-200 text-rose-900 space-y-4 shadow-sm animate-in fade-in">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2.5 rounded-2xl bg-rose-100 text-rose-700 shrink-0 mt-0.5">
+                      <AlertCircle size={22} />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-black text-sm text-rose-900">
+                        Photograph Intake Validation Failed
+                      </h3>
+                      <p className="text-xs text-rose-700 leading-relaxed">
+                        {scanResult.statusMessage || "The uploaded image does not meet canine dermatological screening requirements. Please upload a clear photograph of your dog's skin lesion."}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-rose-700 leading-relaxed">
-                    {scanResult.statusMessage || "The image quality is insufficient for preliminary screening. Please upload a clearer image with the affected skin area in focus."}
-                  </p>
+
+                  <div className="p-3.5 rounded-2xl bg-white/80 border border-rose-200/60 text-xs text-slate-700 space-y-1.5">
+                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <Info size={14} className="text-blue-600" />
+                      Canine Lesion Photograph Guidelines:
+                    </span>
+                    <ul className="list-disc list-inside space-y-0.5 text-slate-600 pl-1 text-[11px]">
+                      <li>Subject must be a close-up photograph of canine skin or coat affected area.</li>
+                      <li>Non-animal objects, landscapes, screenshots, or artificial graphics are not accepted.</li>
+                      <li>Ensure adequate natural lighting (avoid severe underexposure or harsh flash washout).</li>
+                      <li>Keep the camera steady to avoid motion blur.</li>
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('vetscan-file-input').click()}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Upload size={14} />
+                    <span>Upload Valid Canine Lesion Photo</span>
+                  </button>
                 </div>
               )}
 
@@ -425,13 +453,25 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
                             src={scanResult.explanationImageReference}
                             alt="Grad-CAM Overlay"
                             className="w-full h-full object-contain max-h-96"
+                            onError={(e) => {
+                              if (scanResult.imageReference && e.target.src !== scanResult.imageReference) {
+                                e.target.src = scanResult.imageReference;
+                              } else if (previewUrl && e.target.src !== previewUrl) {
+                                e.target.src = previewUrl;
+                              }
+                            }}
                           />
                         ) : (
                           <img
                             data-testid="original-image"
-                            src={scanResult.imageReference}
+                            src={scanResult.imageReference || previewUrl}
                             alt="Original Lesion"
                             className="w-full h-full object-contain max-h-96"
+                            onError={(e) => {
+                              if (previewUrl && e.target.src !== previewUrl) {
+                                e.target.src = previewUrl;
+                              }
+                            }}
                           />
                         )}
                         <div className="absolute bottom-3 right-3 px-3 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[10px] font-bold text-white">
