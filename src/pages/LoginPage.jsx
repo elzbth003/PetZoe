@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2, PawPrint, Stethoscope } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { GoogleLogin } from '@react-oauth/google';
+import marketplaceService from '../services/marketplaceService';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const { login, googleLogin } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const {
     register,
@@ -26,9 +28,32 @@ export default function LoginPage() {
     }
   });
 
-  const redirectByRole = (user) => {
+  const redirectByRole = async (user) => {
+    const redirectUrl = searchParams.get('redirect');
+    const pendingBuyNow = localStorage.getItem('petzoe_pending_buy_now');
+
+    if (user.role === 'Pet Owner') {
+      if (pendingBuyNow) {
+        try {
+          const item = JSON.parse(pendingBuyNow);
+          localStorage.removeItem('petzoe_pending_buy_now');
+          if (item?.productId) {
+            await marketplaceService.addToCart(item.productId, item.quantity || 1);
+            window.dispatchEvent(new Event('cart-updated'));
+          }
+        } catch (e) {
+          console.error('Failed to add pending purchase to cart', e);
+        }
+      }
+      if (redirectUrl) {
+        navigate(redirectUrl);
+        return;
+      }
+      navigate('/dashboard/owner');
+      return;
+    }
+
     switch (user.role) {
-      case 'Pet Owner': navigate('/dashboard/owner'); break;
       case 'Veterinarian': navigate('/dashboard/vet'); break;
       case 'Shelter Manager': navigate('/dashboard/shelter'); break;
       case 'Marketplace Seller': navigate('/dashboard/seller'); break;
@@ -42,7 +67,7 @@ export default function LoginPage() {
     try {
       const user = await login(data.email, data.password);
       showToast(`Access Granted. Welcome back, ${user.name}!`, "success");
-      redirectByRole(user);
+      await redirectByRole(user);
     } catch (err) {
       showToast(err.response?.data?.message || err.message || "Invalid credentials.", "error");
     } finally {
@@ -55,7 +80,7 @@ export default function LoginPage() {
     try {
       const user = await googleLogin(credentialResponse.credential);
       showToast(`Welcome, ${user.name}! Signed in with Google.`, "success");
-      redirectByRole(user);
+      await redirectByRole(user);
     } catch (err) {
       showToast(err.response?.data?.message || err.message || "Google sign-in failed.", "error");
     } finally {

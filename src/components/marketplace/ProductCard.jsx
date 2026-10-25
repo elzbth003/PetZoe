@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Check, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Heart, Check, Loader2, Sparkles, AlertCircle, Zap } from 'lucide-react';
 import StarRating from './StarRating';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
@@ -11,7 +11,9 @@ import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/p
 export default function ProductCard({ product, onWishlistUpdate }) {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [imgSrc, setImgSrc] = useState(() => getProductImageUrl(product));
 
@@ -31,11 +33,17 @@ export default function ProductCard({ product, onWishlistUpdate }) {
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      showToast('Please login to add items to cart', 'error');
+      localStorage.setItem('petzoe_pending_buy_now', JSON.stringify({ productId: product.id, quantity: 1, name: product.name }));
+      showToast('Please sign in as a Pet Owner to add items to your cart', 'info');
+      navigate('/login?redirect=/marketplace/cart');
       return;
     }
     if (!canBuy) {
       showToast('Only Pet Owner accounts can purchase products', 'error');
+      return;
+    }
+    if (product.stockQuantity != null && product.stockQuantity <= 0) {
+      showToast('This product is currently out of stock', 'warning');
       return;
     }
 
@@ -48,6 +56,36 @@ export default function ProductCard({ product, onWishlistUpdate }) {
       showToast(err.response?.data?.message || 'Failed to add to cart', 'error');
     } finally {
       setIsAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      localStorage.setItem('petzoe_pending_buy_now', JSON.stringify({ productId: product.id, quantity: 1, name: product.name }));
+      showToast('Please sign in as a Pet Owner to complete your purchase', 'info');
+      navigate('/login?redirect=/marketplace/cart');
+      return;
+    }
+    if (!canBuy) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
+      return;
+    }
+    if (product.stockQuantity != null && product.stockQuantity <= 0) {
+      showToast('This product is currently out of stock', 'warning');
+      return;
+    }
+
+    try {
+      setIsBuyingNow(true);
+      await marketplaceService.addToCart(product.id, 1);
+      window.dispatchEvent(new Event('cart-updated'));
+      navigate('/marketplace/cart');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to proceed to checkout', 'error');
+    } finally {
+      setIsBuyingNow(false);
     }
   };
 
@@ -178,24 +216,34 @@ export default function ProductCard({ product, onWishlistUpdate }) {
           </div>
 
           {canBuy && (
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={isAddingToCart || product.stockQuantity === 0}
-              aria-label={product.stockQuantity === 0 ? 'Out of stock' : 'Add to cart'}
-              title={product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-              className={`relative z-10 h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                product.stockQuantity === 0
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white shadow-sm hover:shadow active:scale-95'
-              }`}
-            >
-              {isAddingToCart ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <ShoppingCart size={18} />
-              )}
-            </button>
+            <div className="flex items-center gap-1.5 z-10">
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={isBuyingNow}
+                aria-label="Buy Now"
+                title="Buy Now"
+                className="px-2.5 h-9 rounded-full bg-[#b5833a] hover:bg-[#a17431] text-white font-bold text-xs flex items-center gap-1 shadow-2xs active:scale-95 transition-all cursor-pointer"
+              >
+                {isBuyingNow ? <Loader2 size={13} className="animate-spin" /> : <Zap size={12} className="fill-white" />}
+                <span>Buy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart}
+                aria-label="Add to cart"
+                title="Add to Cart"
+                className="h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer bg-[#183d2e]/10 text-[#183d2e] hover:bg-[#183d2e] hover:text-white shadow-2xs active:scale-95"
+              >
+                {isAddingToCart ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <ShoppingCart size={16} />
+                )}
+              </button>
+            </div>
           )}
         </div>
       </div>

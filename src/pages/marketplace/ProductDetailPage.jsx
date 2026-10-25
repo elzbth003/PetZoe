@@ -27,6 +27,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('description'); // description, specs, reviews
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
 
@@ -129,11 +130,17 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!user) {
-      showToast('Please login to add items to cart', 'error');
+      localStorage.setItem('petzoe_pending_buy_now', JSON.stringify({ productId: product.id, quantity, name: product.name }));
+      showToast('Please sign in as a Pet Owner to add items to your cart', 'info');
+      navigate('/login?redirect=/marketplace/cart');
       return;
     }
     if (isSeller || isNonBuyer) {
       showToast('Only Pet Owner accounts can purchase products', 'error');
+      return;
+    }
+    if (product.stockQuantity != null && product.stockQuantity <= 0) {
+      showToast('This product is currently out of stock', 'warning');
       return;
     }
     try {
@@ -150,23 +157,28 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = async () => {
     if (!user) {
-      showToast('Please login to complete your purchase', 'error');
-      navigate('/login');
+      localStorage.setItem('petzoe_pending_buy_now', JSON.stringify({ productId: product.id, quantity, name: product.name }));
+      showToast('Please sign in as a Pet Owner to complete your purchase', 'info');
+      navigate('/login?redirect=/marketplace/cart');
       return;
     }
     if (isSeller || isNonBuyer) {
       showToast('Only Pet Owner accounts can purchase products', 'error');
       return;
     }
+    if (product.stockQuantity != null && product.stockQuantity <= 0) {
+      showToast('This product is currently out of stock', 'warning');
+      return;
+    }
     try {
-      setIsAddingToCart(true);
+      setIsBuyingNow(true);
       await marketplaceService.addToCart(product.id, quantity);
       window.dispatchEvent(new Event('cart-updated'));
       navigate('/marketplace/cart');
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to process purchase', 'error');
     } finally {
-      setIsAddingToCart(false);
+      setIsBuyingNow(false);
     }
   };
 
@@ -292,7 +304,7 @@ export default function ProductDetailPage() {
               <h1 className="font-display font-bold text-2xl sm:text-3xl lg:text-[32px] text-slate-900 leading-tight">
                 {product.name}
               </h1>
-              {product.stockQuantity > 0 ? (
+              {product.stockQuantity == null || product.stockQuantity > 0 ? (
                 <span className="bg-[#e6f7ef] text-[#1e824c] border border-[#a2dfbe]/70 text-[11px] font-semibold px-3 py-0.5 rounded-full inline-flex items-center">
                   In Stock
                 </span>
@@ -391,7 +403,7 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    disabled={product.stockQuantity === 0}
+                    disabled={quantity <= 1}
                     className="text-slate-400 hover:text-slate-700 font-bold px-2 disabled:opacity-30 cursor-pointer select-none text-base"
                     aria-label="Decrease quantity"
                   >
@@ -402,8 +414,8 @@ export default function ProductDetailPage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setQuantity(q => Math.min(product.stockQuantity || 1, q + 1))}
-                    disabled={product.stockQuantity === 0 || quantity >= product.stockQuantity}
+                    onClick={() => setQuantity(q => Math.min(product.stockQuantity || 99, q + 1))}
+                    disabled={product.stockQuantity != null && product.stockQuantity > 0 && quantity >= product.stockQuantity}
                     className="text-slate-400 hover:text-slate-700 font-bold px-2 disabled:opacity-30 cursor-pointer select-none text-base"
                     aria-label="Increase quantity"
                   >
@@ -415,8 +427,8 @@ export default function ProductDetailPage() {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  disabled={isAddingToCart || product.stockQuantity === 0}
-                  className="bg-[#183d2e] hover:bg-[#122e23] text-white font-medium text-xs sm:text-sm px-7 h-11 rounded-full flex items-center justify-center gap-2 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98"
+                  disabled={isAddingToCart}
+                  className="bg-[#183d2e] hover:bg-[#122e23] text-white font-medium text-xs sm:text-sm px-7 h-11 rounded-full flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-98"
                 >
                   {isAddingToCart ? <Loader2 size={16} className="animate-spin" /> : null}
                   <span>Add To Cart</span>
@@ -426,10 +438,11 @@ export default function ProductDetailPage() {
                 <button
                   type="button"
                   onClick={handleBuyNow}
-                  disabled={isAddingToCart || product.stockQuantity === 0}
-                  className="bg-[#b5833a] hover:bg-[#a17431] text-white font-medium text-xs sm:text-sm px-7 h-11 rounded-full flex items-center justify-center gap-2 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98"
+                  disabled={isBuyingNow}
+                  className="bg-[#b5833a] hover:bg-[#a17431] text-white font-medium text-xs sm:text-sm px-7 h-11 rounded-full flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-98"
                 >
-                  <span>Buy Now</span>
+                  {isBuyingNow ? <Loader2 size={16} className="animate-spin" /> : null}
+                  <span>{isBuyingNow ? 'Processing...' : 'Buy Now'}</span>
                 </button>
 
                 {/* Wishlist Button (Circular Outline) */}
