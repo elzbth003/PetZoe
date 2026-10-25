@@ -41,17 +41,9 @@ public class ProductService {
         ProductResponse response = new ProductResponse();
         response.setId(product.getId());
         response.setName(product.getName());
-        response.setShortDescription(product.getShortDescription() != null ? product.getShortDescription() :
-                (product.getDescription() != null && product.getDescription().length() > 100
-                        ? product.getDescription().substring(0, 97) + "..."
-                        : product.getDescription()));
         response.setDescription(product.getDescription());
         response.setBrand(product.getBrand());
         response.setPrice(product.getPrice());
-        response.setMrp(product.getMrp() != null ? product.getMrp() :
-                (product.getDiscountPrice() != null && product.getDiscountPrice() < product.getPrice()
-                        ? product.getPrice()
-                        : (product.getPrice() != null ? Math.round(product.getPrice() * 1.25 * 100.0) / 100.0 : null)));
         response.setDiscountPrice(product.getDiscountPrice());
         response.setSku(product.getSku());
         response.setStockQuantity(product.getStockQuantity());
@@ -62,16 +54,11 @@ public class ProductService {
         response.setReviewCount(product.getReviewCount());
         response.setApproved(product.getApproved());
         response.setFeatured(product.getFeatured());
-        response.setPetType(product.getPetType());
         response.setCreatedAt(product.getCreatedAt());
-        if (product.getCategory() != null) {
-            response.setCategoryId(product.getCategory().getId());
-            response.setCategoryName(product.getCategory().getName());
-        }
-        if (product.getSeller() != null) {
-            response.setSellerId(product.getSeller().getId());
-            response.setSellerName(product.getSeller().getName());
-        }
+        response.setCategoryId(product.getCategory().getId());
+        response.setCategoryName(product.getCategory().getName());
+        response.setSellerId(product.getSeller().getId());
+        response.setSellerName(product.getSeller().getName());
         return response;
     }
 

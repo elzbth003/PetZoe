@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Check, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import StarRating from './StarRating';
 import marketplaceService from '../../services/marketplaceService';
@@ -11,7 +11,6 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de
 export default function ProductCard({ product, onWishlistUpdate }) {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const navigate = useNavigate();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [imgSrc, setImgSrc] = useState(product?.imageUrl || FALLBACK_IMAGE);
@@ -181,16 +180,16 @@ export default function ProductCard({ product, onWishlistUpdate }) {
               disabled={isAddingToCart || product.stockQuantity === 0}
               aria-label={product.stockQuantity === 0 ? 'Out of stock' : 'Add to cart'}
               title={product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-              className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer z-10 ${
+              className={`relative z-10 h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer ${
                 product.stockQuantity === 0
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white shadow-xs active:scale-95'
+                  : 'bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white shadow-sm hover:shadow active:scale-95'
               }`}
             >
               {isAddingToCart ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={18} className="animate-spin" />
               ) : (
-                <ShoppingCart size={16} />
+                <ShoppingCart size={18} />
               )}
             </button>
           )}
