@@ -66,6 +66,10 @@ export const router = createBrowserRouter([
         element: <MarketplaceHome />
       },
       {
+        path: 'store',
+        element: <MarketplaceHome />
+      },
+      {
         path: 'marketplace/products',
         element: <ProductListingPage />
       },

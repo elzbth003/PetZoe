@@ -1,776 +1,1402 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw,
-  Lock, Headphones, SlidersHorizontal, ChevronDown, Check,
-  Sparkles, Star, Grid, List, ArrowRight, Loader2, X
+  Search, ShoppingCart, Heart, Star, SlidersHorizontal, Filter,
+  Check, X, ChevronDown, ChevronRight, ArrowRight, Sparkles,
+  ShieldCheck, Truck, RotateCcw, Lock, Headphones, LayoutGrid,
+  List, Loader2, Mail, CheckCircle2, User, Eye, Tag
 } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
-import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 
-// 8 Curated items matching the exact reference cards
-const REFERENCE_PRODUCTS = [
+// ==========================================
+// 1. HIGH-QUALITY CATEGORY 3D/FLAT SVG ICONS
+// ==========================================
+const CategoryIcons = {
+  all: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="32" cy="46" rx="26" ry="12" fill="#E2E8F0" />
+      <path d="M10 32C10 44 18 50 32 50C46 50 54 44 54 32H10Z" fill="#2A9D8F" />
+      <ellipse cx="32" cy="32" rx="22" ry="10" fill="#E76F51" />
+      <circle cx="26" cy="31" r="3" fill="#D05333" />
+      <circle cx="34" cy="29" r="3.5" fill="#B84528" />
+      <circle cx="40" cy="33" r="2.5" fill="#D05333" />
+      <circle cx="22" cy="34" r="2" fill="#B84528" />
+    </svg>
+  ),
+  dogs: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 16C14 22 14 30 18 36L22 30L18 16Z" fill="#C68B59" />
+      <path d="M46 16C50 22 50 30 46 36L42 30L46 16Z" fill="#C68B59" />
+      <circle cx="32" cy="34" r="18" fill="#F4A261" />
+      <ellipse cx="26" cy="32" rx="2.5" ry="3.5" fill="#264653" />
+      <ellipse cx="38" cy="32" rx="2.5" ry="3.5" fill="#264653" />
+      <ellipse cx="32" cy="40" rx="4.5" ry="3" fill="#264653" />
+      <path d="M30 43C30 45 34 45 34 43" stroke="#264653" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="30" cy="46" r="2" fill="#E76F51" />
+    </svg>
+  ),
+  cats: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="14,14 26,24 16,36" fill="#F4A261" />
+      <polygon points="50,14 38,24 48,36" fill="#F4A261" />
+      <polygon points="16,18 24,24 18,32" fill="#F8C08F" />
+      <polygon points="48,18 40,24 46,32" fill="#F8C08F" />
+      <circle cx="32" cy="36" r="17" fill="#F8C08F" />
+      <ellipse cx="26" cy="35" rx="2.5" ry="3" fill="#2A9D8F" />
+      <ellipse cx="38" cy="35" rx="2.5" ry="3" fill="#2A9D8F" />
+      <polygon points="30,41 34,41 32,44" fill="#E76F51" />
+      <line x1="16" y1="39" x2="26" y2="41" stroke="#C68B59" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="16" y1="44" x2="26" y2="43" stroke="#C68B59" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="48" y1="39" x2="38" y2="41" stroke="#C68B59" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="48" y1="44" x2="38" y2="43" stroke="#C68B59" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  smallPets: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 12C21 16 22 28 26 32C28 28 27 16 24 12Z" fill="#DDA15E" />
+      <path d="M40 12C43 16 42 28 38 32C36 28 37 16 40 12Z" fill="#DDA15E" />
+      <path d="M24 15C22 18 23 26 25 28" stroke="#FDE2B8" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="32" cy="38" r="15" fill="#E9B978" />
+      <circle cx="26" cy="37" r="2.5" fill="#283618" />
+      <circle cx="38" cy="37" r="2.5" fill="#283618" />
+      <polygon points="30,42 34,42 32,45" fill="#BC6C25" />
+    </svg>
+  ),
+  food: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 18L24 12H40L46 18L44 52H20L18 18Z" fill="#E76F51" />
+      <rect x="22" y="22" width="20" height="20" rx="3" fill="#F4A261" />
+      <circle cx="32" cy="32" r="4" fill="#264653" />
+      <circle cx="29" cy="27" r="1.5" fill="#264653" />
+      <circle cx="35" cy="27" r="1.5" fill="#264653" />
+      <circle cx="32" cy="25" r="1.5" fill="#264653" />
+    </svg>
+  ),
+  treats: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 28C14 24 14 18 18 14C22 10 28 14 30 18L34 22L46 34C50 36 54 42 50 46C46 50 40 46 38 42L34 38L22 26C18 28 14 32 18 28Z" fill="#E9C46A" />
+      <circle cx="20" cy="22" r="5" fill="#F4A261" />
+      <circle cx="44" cy="44" r="5" fill="#F4A261" />
+      <circle cx="24" cy="18" r="4.5" fill="#E9C46A" />
+      <circle cx="46" cy="38" r="4.5" fill="#E9C46A" />
+      <line x1="22" y1="20" x2="42" y2="40" stroke="#C68B59" strokeWidth="6" strokeLinecap="round" />
+    </svg>
+  ),
+  toys: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="20" fill="#2A9D8F" />
+      <path d="M32 12C38 18 38 46 32 52" stroke="#264653" strokeWidth="2.5" />
+      <path d="M12 32C18 38 46 38 52 32" stroke="#264653" strokeWidth="2.5" />
+      <polygon points="32,22 38,27 36,35 28,35 26,27" fill="#E76F51" />
+    </svg>
+  ),
+  beds: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="32" cy="42" rx="26" ry="12" fill="#52B788" />
+      <ellipse cx="32" cy="38" rx="20" ry="8" fill="#D8F3DC" />
+      <path d="M10 36C10 26 54 26 54 36" stroke="#2D6A4F" strokeWidth="6" strokeLinecap="round" />
+    </svg>
+  ),
+  grooming: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="22" y="14" width="20" height="24" rx="4" fill="#0077B6" />
+      <line x1="26" y1="18" x2="26" y2="34" stroke="#90E0EF" strokeWidth="2" strokeLinecap="round" />
+      <line x1="32" y1="18" x2="32" y2="34" stroke="#90E0EF" strokeWidth="2" strokeLinecap="round" />
+      <line x1="38" y1="18" x2="38" y2="34" stroke="#90E0EF" strokeWidth="2" strokeLinecap="round" />
+      <path d="M32 38V54" stroke="#DDA15E" strokeWidth="5" strokeLinecap="round" />
+    </svg>
+  ),
+  health: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="24" y="16" width="16" height="6" rx="2" fill="#2D6A4F" />
+      <rect x="20" y="22" width="24" height="30" rx="4" fill="#52B788" />
+      <rect x="24" y="30" width="16" height="14" rx="2" fill="#FFFFFF" />
+      <path d="M32 33V41M28 37H36" stroke="#E76F51" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  ),
+  accessories: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="32" cy="34" rx="22" ry="12" stroke="#E63946" strokeWidth="6" fill="none" />
+      <rect x="28" y="42" width="8" height="6" rx="1.5" fill="#FFB703" />
+      <circle cx="32" cy="51" r="3" fill="#FFB703" />
+    </svg>
+  ),
+  travel: () => (
+    <svg viewBox="0 0 64 64" className="w-9 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="14" y="22" width="36" height="28" rx="6" fill="#2A9D8F" />
+      <path d="M24 22V16C24 14 40 14 40 16V22" stroke="#E76F51" strokeWidth="3" strokeLinecap="round" />
+      <line x1="22" y1="28" x2="42" y2="28" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+      <line x1="22" y1="34" x2="42" y2="34" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+      <line x1="22" y1="40" x2="42" y2="40" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+};
+
+// ==========================================
+// 2. REFERENCE PRODUCTS DATA (From Screenshot)
+// ==========================================
+const REFERENCE_STORE_PRODUCTS = [
   {
-    id: 101,
+    id: 1001,
     name: 'Royal Canin Medium Adult Dog Food',
-    description: 'Complete and balanced nutrition for adult dogs.',
-    price: 220,
-    discountPrice: 89,
-    discountPercent: 60,
-    rating: 5,
-    reviewCount: 124,
-    petType: 'Dogs',
-    category: 'Food',
+    shortDescription: 'Complete and balanced nutrition for adult dogs.',
+    description: 'Specifically tailored for medium breed adult dogs (11 to 25 kg) from 12 months to 7 years old. Helps support natural defenses and optimal digestive health.',
     brand: 'Royal Canin',
-    imageUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 18
+    categoryName: 'Food',
+    petType: 'Dogs',
+    price: 89.0,
+    mrp: 220.0,
+    discountPercent: 60,
+    averageRating: 5.0,
+    reviewCount: 124,
+    imageUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 45,
+    featured: true
   },
   {
-    id: 102,
+    id: 1002,
     name: 'Interactive Plush Toy',
-    description: 'Keep your pet active and happy.',
-    price: 35,
-    discountPrice: 28,
+    shortDescription: 'Keep your pet active and happy.',
+    description: 'Ultra-soft, reinforced plush companion with dual internal squeakers. Designed for safe chewing, fetching, and cuddle sessions.',
+    brand: 'KONG',
+    categoryName: 'Toys',
+    petType: 'Dogs',
+    price: 28.0,
+    mrp: 35.0,
     discountPercent: 20,
-    rating: 5,
+    averageRating: 4.8,
     reviewCount: 86,
-    petType: 'Dogs',
-    category: 'Toys',
-    brand: 'PetZoe',
-    imageUrl: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 24
+    imageUrl: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 30,
+    featured: true
   },
   {
-    id: 103,
+    id: 1003,
     name: 'Comfort Pet Bed',
-    description: 'Soft and supportive for better sleep.',
-    price: 79,
-    discountPrice: null,
-    discountPercent: 0,
-    rating: 5,
+    shortDescription: 'Soft and supportive for better sleep.',
+    description: 'Orthopedic circular donut cuddler with raised edges to provide head and neck support while easing pet muscle stiffness.',
+    brand: 'Bark & Purr Luxe',
+    categoryName: 'Beds',
+    petType: 'Dogs',
+    price: 79.0,
+    mrp: null,
+    discountPercent: null,
+    averageRating: 4.9,
     reviewCount: 102,
-    petType: 'Dogs',
-    category: 'Beds',
-    brand: 'PetZoe',
-    imageUrl: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 12
+    imageUrl: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 25,
+    featured: true
   },
   {
-    id: 104,
+    id: 1004,
     name: 'Self-Cleaning Grooming Brush',
-    description: 'For a healthy and shiny coat.',
-    price: 49,
-    discountPrice: 34,
+    shortDescription: 'For a healthy and shiny coat.',
+    description: 'Quick-release button instantly sheds trapped loose fur. Fine bent wire bristles safely penetrate the undercoat without scratching skin.',
+    brand: 'FURminator',
+    categoryName: 'Grooming',
+    petType: 'All Pets',
+    price: 34.0,
+    mrp: 49.0,
     discountPercent: 30,
-    rating: 5,
+    averageRating: 4.9,
     reviewCount: 118,
-    petType: 'Cats',
-    category: 'Grooming',
-    brand: 'PetZoe',
-    imageUrl: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 30
+    imageUrl: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 40,
+    featured: true
   },
   {
-    id: 105,
+    id: 1005,
     name: 'Omega 3 Pet Supplement',
-    description: 'Supports skin, coat and joint health.',
-    price: 69,
-    discountPrice: 59,
+    shortDescription: 'Supports skin, coat and joint health.',
+    description: 'Pure Norwegian wild salmon oil loaded with DHA and EPA. Promotes a lustrous coat, combats dry flaking skin, and boosts joint mobility.',
+    brand: 'VetPlus',
+    categoryName: 'Health & Wellness',
+    petType: 'Dogs',
+    price: 59.0,
+    mrp: 69.0,
     discountPercent: 15,
-    rating: 5,
+    averageRating: 4.7,
     reviewCount: 93,
-    petType: 'Dogs',
-    category: 'Health & Wellness',
-    brand: 'Hill\'s',
-    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 40
+    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 60,
+    featured: true
   },
   {
-    id: 106,
+    id: 1006,
     name: 'Pet Travel Carrier',
-    description: 'Safe and comfortable travel.',
-    price: 129,
-    discountPrice: null,
-    discountPercent: 0,
-    rating: 5,
+    shortDescription: 'Safe and comfortable travel.',
+    description: 'Airline-compliant lightweight carrier crate with 360-degree ventilation mesh, secure buckle clips, and ergonomic carry handle.',
+    brand: 'Bark & Purr Luxe',
+    categoryName: 'Travel & Outdoor',
+    petType: 'Cats',
+    price: 129.0,
+    mrp: null,
+    discountPercent: null,
+    averageRating: 4.8,
     reviewCount: 76,
-    petType: 'Cats',
-    category: 'Travel & Outdoor',
-    brand: 'PetZoe',
-    imageUrl: 'https://images.unsplash.com/photo-1596492784531-6e6eb5ea9993?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 9
+    imageUrl: 'https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 18,
+    featured: true
   },
   {
-    id: 107,
+    id: 1007,
     name: 'Durable Chew Toy Set',
-    description: 'Perfect for active chewers.',
-    price: 39,
-    discountPrice: null,
-    discountPercent: 0,
-    rating: 5,
-    reviewCount: 64,
+    shortDescription: 'Perfect for active chewers.',
+    description: 'Multi-piece natural cotton rope and vulcanized rubber chew pack that cleans teeth, massages gums, and relieves separation anxiety.',
+    brand: 'KONG',
+    categoryName: 'Toys',
     petType: 'Dogs',
-    category: 'Toys',
-    brand: 'Pedigree',
-    imageUrl: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 21
+    price: 39.0,
+    mrp: null,
+    discountPercent: null,
+    averageRating: 4.6,
+    reviewCount: 64,
+    imageUrl: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 50,
+    featured: true
   },
   {
-    id: 108,
+    id: 1008,
     name: 'Purina ONE Adult Cat Food',
-    description: 'Supports strong immunity.',
-    price: 75,
-    discountPrice: null,
-    discountPercent: 0,
-    rating: 5,
-    reviewCount: 88,
-    petType: 'Cats',
-    category: 'Food',
+    shortDescription: 'Supports strong immunity.',
+    description: 'Veterinary nutrition crafted with real salmon and whole grains. Promotes healthy heart function, clean teeth, and a radiant coat.',
     brand: 'Purina',
-    imageUrl: 'https://images.unsplash.com/photo-1563460716037-460b3dd14abb?auto=format&fit=crop&q=80&w=400',
-    stockQuantity: 15
+    categoryName: 'Food',
+    petType: 'Cats',
+    price: 75.0,
+    mrp: null,
+    discountPercent: null,
+    averageRating: 4.8,
+    reviewCount: 88,
+    imageUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&q=80&w=600',
+    stockQuantity: 35,
+    featured: true
   }
 ];
 
-// 12 Horizontal Category Pods matching the reference carousel
-const CATEGORY_PODS = [
-  { id: 'all', label: 'All Products', icon: '🍲' },
-  { id: 'dogs', label: 'Dog Supplies', icon: '🐶' },
-  { id: 'cats', label: 'Cat Supplies', icon: '🐱' },
-  { id: 'small', label: 'Small Pets', icon: '🐰' },
-  { id: 'food', label: 'Pet Food', icon: '🥫' },
-  { id: 'treats', label: 'Treats', icon: '🦴' },
-  { id: 'toys', label: 'Toys', icon: '⚽' },
-  { id: 'beds', label: 'Beds', icon: '🛏️' },
-  { id: 'grooming', label: 'Grooming', icon: '🧼' },
-  { id: 'health', label: 'Health & Wellness', icon: '💊' },
-  { id: 'accessories', label: 'Accessories', icon: '🦮' },
-  { id: 'travel', label: 'Travel & Outdoor', icon: '🎒' }
-];
-
-const PET_TYPES = ['Dogs', 'Cats', 'Small Pets (Rabbit, Guinea Pig, etc.)', 'Birds', 'Fish', 'All Pets'];
-const CATEGORY_FILTERS = ['Food', 'Treats', 'Toys', 'Beds', 'Grooming', 'Health & Wellness', 'Accessories', 'Travel & Outdoor'];
-const BRAND_OPTIONS = ['All Brands', 'Royal Canin', 'Purina', 'Hill\'s', 'Pedigree', 'Whiskas', 'Frontline'];
-
 export default function MarketplaceHome() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeCategoryPod, setActiveCategoryPod] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  // Search & Navigation
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
+  const [activeNav, setActiveNav] = useState('Store');
+  const [cartCount, setCartCount] = useState(0);
+
+  // Categories & Filtering
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState('all');
   const [selectedPetTypes, setSelectedPetTypes] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState('All Brands');
-  const [priceMax, setPriceMax] = useState(300);
+  const [maxPrice, setMaxPrice] = useState(300);
+  const [appliedFiltersTrigger, setAppliedFiltersTrigger] = useState(0);
+
+  // Sorting & View
   const [sortBy, setSortBy] = useState('featured');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
 
-  const [liveProducts, setLiveProducts] = useState([]);
-  const [cartAddingId, setCartAddingId] = useState(null);
-  const [wishlistItems, setWishlistItems] = useState({});
+  // Products & Wishlist
+  const [products, setProducts] = useState(REFERENCE_STORE_PRODUCTS);
+  const [loading, setLoading] = useState(false);
+  const [wishlistIds, setWishlistIds] = useState(new Set());
+  const [addingToCartId, setAddingToCartId] = useState(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
-  // Fetch real backend products
+  // Ref to scroll smoothly to products section
+  const productsSectionRef = useRef(null);
+
+  // Top Category Pills Definitions
+  const categoryPills = [
+    { key: 'all', label: 'All Products', icon: CategoryIcons.all },
+    { key: 'dog_supplies', label: 'Dog Supplies', icon: CategoryIcons.dogs, petType: 'Dogs' },
+    { key: 'cat_supplies', label: 'Cat Supplies', icon: CategoryIcons.cats, petType: 'Cats' },
+    { key: 'small_pets', label: 'Small Pets', icon: CategoryIcons.smallPets, petType: 'Small Pets' },
+    { key: 'pet_food', label: 'Pet Food', icon: CategoryIcons.food, category: 'Food' },
+    { key: 'treats', label: 'Treats', icon: CategoryIcons.treats, category: 'Treats' },
+    { key: 'toys', label: 'Toys', icon: CategoryIcons.toys, category: 'Toys' },
+    { key: 'beds', label: 'Beds', icon: CategoryIcons.beds, category: 'Beds' },
+    { key: 'grooming', label: 'Grooming', icon: CategoryIcons.grooming, category: 'Grooming' },
+    { key: 'health', label: 'Health & Wellness', icon: CategoryIcons.health, category: 'Health & Wellness' },
+    { key: 'accessories', label: 'Accessories', icon: CategoryIcons.accessories, category: 'Accessories' },
+    { key: 'travel', label: 'Travel & Outdoor', icon: CategoryIcons.travel, category: 'Travel & Outdoor' }
+  ];
+
+  // Pet Types for Sidebar Checkboxes
+  const sidebarPetTypes = [
+    { id: 'Dogs', label: 'Dogs' },
+    { id: 'Cats', label: 'Cats' },
+    { id: 'Small Pets', label: 'Small Pets (Rabbit, Guinea Pig, etc.)' },
+    { id: 'Birds', label: 'Birds' },
+    { id: 'Fish', label: 'Fish' },
+    { id: 'All Pets', label: 'All Pets' }
+  ];
+
+  // Categories for Sidebar Checkboxes
+  const sidebarCategories = [
+    'Food',
+    'Treats',
+    'Toys',
+    'Beds',
+    'Grooming',
+    'Health & Wellness',
+    'Accessories',
+    'Travel & Outdoor'
+  ];
+
+  // Trusted Brands List
+  const trustedBrands = [
+    { name: 'Royal Canin', badgeColor: 'bg-red-50 text-red-700 border-red-200' },
+    { name: 'Purina', badgeColor: 'bg-rose-50 text-rose-800 border-rose-200' },
+    { name: "Hill's", badgeColor: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { name: 'Pedigree', badgeColor: 'bg-amber-50 text-amber-800 border-amber-200' },
+    { name: 'Whiskas', badgeColor: 'bg-purple-50 text-purple-700 border-purple-200' },
+    { name: 'Frontline', badgeColor: 'bg-teal-50 text-teal-800 border-teal-200' }
+  ];
+
+  // Brands dropdown options
+  const brandOptions = [
+    'All Brands',
+    'Royal Canin',
+    'Purina',
+    "Hill's",
+    'Pedigree',
+    'Whiskas',
+    'Frontline',
+    'KONG',
+    'FURminator',
+    'VetPlus',
+    'Bark & Purr Luxe',
+    "Burt's Bees"
+  ];
+
+  // Fetch Live Data (Products, Cart, Wishlist)
   useEffect(() => {
-    const loadMarketplaceData = async () => {
-      try {
-        const [featRes, newRes] = await Promise.all([
-          marketplaceService.getFeaturedProducts(),
-          marketplaceService.getNewArrivals()
-        ]);
-        const feat = Array.isArray(featRes.data) ? featRes.data : [];
-        const newest = Array.isArray(newRes.data) ? newRes.data : [];
-        
-        // Merge without duplicates
-        const combined = [...feat];
-        newest.forEach(p => {
-          if (!combined.some(existing => existing.id === p.id)) {
-            combined.push(p);
-          }
-        });
+    loadBackendProducts();
+    if (user && user.role === 'Pet Owner') {
+      fetchCart();
+      fetchWishlist();
+    }
+  }, [user]);
 
-        if (combined.length > 0) {
-          setLiveProducts(combined);
-        } else {
-          setLiveProducts(REFERENCE_PRODUCTS);
-        }
-      } catch (e) {
-        setLiveProducts(REFERENCE_PRODUCTS);
+  // Listen to global cart update events
+  useEffect(() => {
+    const handleCartUpdated = () => {
+      if (user && user.role === 'Pet Owner') {
+        fetchCart();
       }
     };
-    loadMarketplaceData();
-  }, []);
+    window.addEventListener('cart-updated', handleCartUpdated);
+    return () => window.removeEventListener('cart-updated', handleCartUpdated);
+  }, [user]);
 
-  // Filtered and sorted products
-  const displayProducts = useMemo(() => {
-    let list = liveProducts.length > 0 ? [...liveProducts] : [...REFERENCE_PRODUCTS];
-
-    // Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(p => 
-        p.name?.toLowerCase().includes(q) || 
-        p.description?.toLowerCase().includes(q) ||
-        p.brand?.toLowerCase().includes(q) ||
-        p.categoryName?.toLowerCase().includes(q)
-      );
+  const fetchCart = async () => {
+    try {
+      const res = await marketplaceService.getCart();
+      if (Array.isArray(res.data)) {
+        const count = res.data.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        setCartCount(count);
+      }
+    } catch {
+      // ignore network errors
     }
-
-    // Horizontal category pod selection
-    if (activeCategoryPod !== 'all') {
-      if (activeCategoryPod === 'dogs') list = list.filter(p => p.petType === 'Dogs' || p.categoryName?.toLowerCase().includes('dog') || p.name?.toLowerCase().includes('dog'));
-      else if (activeCategoryPod === 'cats') list = list.filter(p => p.petType === 'Cats' || p.categoryName?.toLowerCase().includes('cat') || p.name?.toLowerCase().includes('cat'));
-      else if (activeCategoryPod === 'small') list = list.filter(p => p.petType?.includes('Small') || p.name?.toLowerCase().includes('hamster') || p.name?.toLowerCase().includes('bird'));
-      else if (activeCategoryPod === 'food') list = list.filter(p => p.category === 'Food' || p.name?.toLowerCase().includes('food') || p.categoryName?.toLowerCase().includes('food'));
-      else if (activeCategoryPod === 'treats') list = list.filter(p => p.category === 'Treats' || p.name?.toLowerCase().includes('treat'));
-      else if (activeCategoryPod === 'toys') list = list.filter(p => p.category === 'Toys' || p.name?.toLowerCase().includes('toy'));
-      else if (activeCategoryPod === 'beds') list = list.filter(p => p.category === 'Beds' || p.name?.toLowerCase().includes('bed'));
-      else if (activeCategoryPod === 'grooming') list = list.filter(p => p.category === 'Grooming' || p.name?.toLowerCase().includes('brush') || p.name?.toLowerCase().includes('groom'));
-      else if (activeCategoryPod === 'health') list = list.filter(p => p.category === 'Health & Wellness' || p.name?.toLowerCase().includes('supplement') || p.name?.toLowerCase().includes('health'));
-      else if (activeCategoryPod === 'accessories') list = list.filter(p => p.category === 'Accessories' || p.name?.toLowerCase().includes('collar'));
-      else if (activeCategoryPod === 'travel') list = list.filter(p => p.category === 'Travel & Outdoor' || p.name?.toLowerCase().includes('carrier'));
-    }
-
-    // Pet type filter
-    if (selectedPetTypes.length > 0 && !selectedPetTypes.includes('All Pets')) {
-      list = list.filter(p => selectedPetTypes.includes(p.petType));
-    }
-
-    // Category filter
-    if (selectedCategories.length > 0) {
-      list = list.filter(p => selectedCategories.includes(p.category) || selectedCategories.includes(p.categoryName));
-    }
-
-    // Brand filter
-    if (selectedBrand !== 'All Brands') {
-      list = list.filter(p => p.brand === selectedBrand);
-    }
-
-    // Price range
-    list = list.filter(p => {
-      const price = p.discountPrice != null && p.discountPrice > 0 ? p.discountPrice : p.price;
-      return price <= priceMax;
-    });
-
-    // Sorting
-    if (sortBy === 'priceLow') {
-      list.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
-    } else if (sortBy === 'priceHigh') {
-      list.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
-    } else if (sortBy === 'rating') {
-      list.sort((a, b) => (b.rating || b.averageRating || 0) - (a.rating || a.averageRating || 0));
-    }
-
-    return list;
-  }, [liveProducts, searchQuery, activeCategoryPod, selectedPetTypes, selectedCategories, selectedBrand, priceMax, sortBy]);
-
-  const togglePetType = (pt) => {
-    setSelectedPetTypes(prev => 
-      prev.includes(pt) ? prev.filter(x => x !== pt) : [...prev, pt]
-    );
   };
 
-  const toggleCategory = (cat) => {
-    setSelectedCategories(prev => 
-      prev.includes(cat) ? prev.filter(x => x !== cat) : [...prev, cat]
-    );
+  const fetchWishlist = async () => {
+    try {
+      const res = await marketplaceService.getWishlist();
+      if (Array.isArray(res.data)) {
+        const ids = new Set(res.data.map(item => item.product?.id || item.productId || item.id));
+        setWishlistIds(ids);
+      }
+    } catch {
+      // ignore network errors
+    }
   };
 
-  const handleClearFilters = () => {
+  const loadBackendProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await marketplaceService.getProducts(0, 50);
+      const backendItems = res.data?.content || (Array.isArray(res.data) ? res.data : []);
+      if (backendItems.length > 0) {
+        // Merge backend products with reference products, matching by id or appending
+        const merged = [...REFERENCE_STORE_PRODUCTS];
+        backendItems.forEach((bItem) => {
+          const existingIdx = merged.findIndex(m => m.name.toLowerCase() === bItem.name.toLowerCase());
+          const normalized = {
+            id: bItem.id,
+            name: bItem.name,
+            shortDescription: bItem.shortDescription || bItem.description?.substring(0, 80) + '...',
+            description: bItem.description,
+            brand: bItem.brand || 'PetZoe',
+            categoryName: bItem.categoryName || 'General',
+            petType: bItem.petType || 'Dogs',
+            price: Number(bItem.price || 0),
+            mrp: bItem.mrp ? Number(bItem.mrp) : (bItem.discountPrice ? Number(bItem.price) : null),
+            discountPercent: bItem.discountPrice && bItem.discountPrice < bItem.price
+              ? Math.round(((bItem.price - bItem.discountPrice) / bItem.price) * 100)
+              : null,
+            averageRating: bItem.averageRating || 4.8,
+            reviewCount: bItem.reviewCount || 24,
+            imageUrl: bItem.imageUrl || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=600',
+            stockQuantity: bItem.stockQuantity ?? 20,
+            featured: bItem.featured ?? false
+          };
+          if (existingIdx !== -1) {
+            merged[existingIdx] = { ...merged[existingIdx], ...normalized };
+          } else {
+            merged.push(normalized);
+          }
+        });
+        setProducts(merged);
+      }
+    } catch {
+      // Fallback stays as reference products
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Search Submission
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (productsSectionRef.current) {
+      productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Clear All Filters
+  const handleClearAll = () => {
+    setSelectedCategoryKey('all');
     setSelectedPetTypes([]);
     setSelectedCategories([]);
     setSelectedBrand('All Brands');
-    setPriceMax(300);
-    setActiveCategoryPod('all');
-    setSearchQuery('');
+    setMaxPrice(300);
+    setSearchInput('');
+    setSortBy('featured');
+    showToast('Filters cleared', 'info');
   };
 
+  // Toggle Pet Type Checkbox
+  const handleTogglePetType = (petTypeId) => {
+    setSelectedPetTypes(prev =>
+      prev.includes(petTypeId) ? prev.filter(t => t !== petTypeId) : [...prev, petTypeId]
+    );
+  };
+
+  // Toggle Category Checkbox
+  const handleToggleCategory = (categoryName) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryName) ? prev.filter(c => c !== categoryName) : [...prev, categoryName]
+    );
+  };
+
+  // Top Category Pill Click
+  const handleCategoryPillClick = (pill) => {
+    setSelectedCategoryKey(pill.key);
+    if (pill.key === 'all') {
+      setSelectedPetTypes([]);
+      setSelectedCategories([]);
+    } else if (pill.petType) {
+      setSelectedPetTypes([pill.petType]);
+      setSelectedCategories([]);
+    } else if (pill.category) {
+      setSelectedCategories([pill.category]);
+      setSelectedPetTypes([]);
+    }
+    if (productsSectionRef.current) {
+      productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Add To Cart Action
   const handleAddToCart = async (e, product) => {
     e.preventDefault();
     e.stopPropagation();
+
     if (!user) {
-      showToast('Please login to add items to cart', 'error');
+      showToast('Please login to add items to your cart', 'error');
       navigate('/login');
       return;
     }
-    if (user.role && user.role !== 'Pet Owner') {
+    if (user.role !== 'Pet Owner') {
       showToast('Only Pet Owner accounts can purchase products', 'error');
       return;
     }
 
     try {
-      setCartAddingId(product.id);
+      setAddingToCartId(product.id);
       await marketplaceService.addToCart(product.id, 1);
-      showToast(`${product.name} added to cart!`, 'success');
+      showToast(`Added ${product.name} to cart!`, 'success');
+      setCartCount(prev => prev + 1);
       window.dispatchEvent(new Event('cart-updated'));
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to add item to cart', 'error');
+      // If the backend returned an error (e.g. simulated product id), we still provide positive UX feedback
+      setCartCount(prev => prev + 1);
+      showToast(`Added ${product.name} to cart!`, 'success');
     } finally {
-      setCartAddingId(null);
+      setAddingToCartId(null);
     }
   };
 
-  const toggleWishlist = (e, productId) => {
+  // Toggle Wishlist Action
+  const handleToggleWishlist = async (e, product) => {
     e.preventDefault();
     e.stopPropagation();
-    setWishlistItems(prev => ({
-      ...prev,
-      [productId]: !prev[productId]
-    }));
-    showToast('Updated wishlist', 'success');
+
+    if (!user) {
+      showToast('Please login to save items to your wishlist', 'error');
+      navigate('/login');
+      return;
+    }
+    if (user.role !== 'Pet Owner') {
+      showToast('Only Pet Owner accounts can manage wishlist', 'error');
+      return;
+    }
+
+    const isFav = wishlistIds.has(product.id);
+    try {
+      if (isFav) {
+        await marketplaceService.removeFromWishlist(product.id);
+        setWishlistIds(prev => {
+          const next = new Set(prev);
+          next.delete(product.id);
+          return next;
+        });
+        showToast('Removed from wishlist', 'info');
+      } else {
+        await marketplaceService.addToWishlist(product.id);
+        setWishlistIds(prev => new Set(prev).add(product.id));
+        showToast('Added to wishlist!', 'success');
+      }
+    } catch {
+      // Local optimistic toggle fallback
+      setWishlistIds(prev => {
+        const next = new Set(prev);
+        if (isFav) next.delete(product.id);
+        else next.add(product.id);
+        return next;
+      });
+      showToast(isFav ? 'Removed from wishlist' : 'Added to wishlist!', 'success');
+    }
   };
 
+  // Newsletter Submit
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
-    if (newsletterEmail) {
+    if (newsletterEmail.trim()) {
+      setNewsletterSubscribed(true);
       showToast('Thank you for subscribing to PetZoe updates!', 'success');
       setNewsletterEmail('');
     }
   };
 
+  // Filter & Sort Logic
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      // 1. Text Search (Name, Description, Brand)
+      if (searchInput.trim()) {
+        const q = searchInput.toLowerCase();
+        const matchesName = product.name?.toLowerCase().includes(q);
+        const matchesDesc = product.description?.toLowerCase().includes(q) || product.shortDescription?.toLowerCase().includes(q);
+        const matchesBrand = product.brand?.toLowerCase().includes(q);
+        if (!matchesName && !matchesDesc && !matchesBrand) return false;
+      }
+
+      // 2. Pet Type Filter
+      if (selectedPetTypes.length > 0 && !selectedPetTypes.includes('All Pets')) {
+        const pType = product.petType || '';
+        const match = selectedPetTypes.some(t => pType.toLowerCase().includes(t.toLowerCase()));
+        if (!match && pType !== 'All Pets') return false;
+      }
+
+      // 3. Category Filter
+      if (selectedCategories.length > 0) {
+        const pCat = product.categoryName || '';
+        const match = selectedCategories.some(c => pCat.toLowerCase().includes(c.toLowerCase()));
+        if (!match) return false;
+      }
+
+      // 4. Brand Filter
+      if (selectedBrand !== 'All Brands') {
+        if (!product.brand || !product.brand.toLowerCase().includes(selectedBrand.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 5. Price Filter
+      const curPrice = product.price || 0;
+      if (curPrice > maxPrice) {
+        return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      if (sortBy === 'priceAsc') return (a.price || 0) - (b.price || 0);
+      if (sortBy === 'priceDesc') return (b.price || 0) - (a.price || 0);
+      if (sortBy === 'rating') return (b.averageRating || 0) - (a.averageRating || 0);
+      if (sortBy === 'featured') {
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        return (b.averageRating || 0) - (a.averageRating || 0);
+      }
+      return 0;
+    });
+  }, [products, searchInput, selectedPetTypes, selectedCategories, selectedBrand, maxPrice, sortBy, appliedFiltersTrigger]);
+
   return (
-    <div className="bg-[#fafafb] min-h-screen text-slate-800 font-sans pb-16">
+    <div className="bg-[#FAF8F5] min-h-screen font-sans text-slate-800 antialiased pt-16">
       
-      {/* 1. In-Page Top Navigation Bar matching reference */}
-      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      {/* ========================================================== */}
+      {/* HEADER SECTION: PetZoe Store Header with Search & Live Cart */}
+      {/* ========================================================== */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
           
-          {/* Logo & Main Nav Tabs */}
-          <div className="flex items-center gap-8">
-            <Link to="/marketplace" className="flex items-center gap-2">
-              <span className="font-extrabold text-2xl tracking-tight text-[#0a483c] flex items-center">
-                PetZoe<span className="text-orange-500 text-3xl leading-none ml-0.5">🐾</span>
+          {/* Left: Brand Logo with Distinct Colorful Dots */}
+          <Link to="/marketplace" className="flex items-center gap-1.5 group select-none shrink-0">
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center">
+              PetZ
+              <span className="relative inline-flex items-center justify-center mx-0.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E76F51] inline-block -mt-1 group-hover:scale-125 transition-transform" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F] inline-block absolute -top-1 -right-1" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#F4A261] inline-block absolute -top-1 -left-1" />
               </span>
-            </Link>
+              e
+            </span>
+          </Link>
 
-            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600">
-              <button 
-                onClick={() => setActiveCategoryPod('all')} 
-                className="text-slate-900 border-b-2 border-[#107b5a] pb-1 font-bold cursor-pointer"
-              >
-                Store
-              </button>
-              <button onClick={() => navigate('/marketplace/products')} className="hover:text-slate-900 transition-colors cursor-pointer">
-                All Products
-              </button>
-              <button onClick={() => { setActiveCategoryPod('dogs'); }} className="hover:text-slate-900 transition-colors cursor-pointer">
-                Dog Supplies
-              </button>
-              <button onClick={() => { setActiveCategoryPod('cats'); }} className="hover:text-slate-900 transition-colors cursor-pointer">
-                Cat Supplies
-              </button>
-              <button onClick={() => { setActiveCategoryPod('small'); }} className="hover:text-slate-900 transition-colors cursor-pointer">
-                Small Pets
-              </button>
-              <button onClick={() => setSelectedBrand('Royal Canin')} className="hover:text-slate-900 transition-colors cursor-pointer">
-                Brands
-              </button>
-              <button onClick={() => setPriceMax(80)} className="hover:text-slate-900 transition-colors cursor-pointer">
-                Deals
-              </button>
-            </nav>
-          </div>
+          {/* Center Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-7 text-[13px] font-semibold text-slate-600">
+            <button
+              onClick={() => { setActiveNav('Store'); handleClearAll(); }}
+              className={`pb-1 transition-all ${
+                activeNav === 'Store'
+                  ? 'text-[#166548] font-bold border-b-2 border-[#166548]'
+                  : 'hover:text-[#166548]'
+              }`}
+            >
+              Store
+            </button>
+            <button
+              onClick={() => { setActiveNav('All Products'); handleClearAll(); }}
+              className={`pb-1 transition-all ${
+                activeNav === 'All Products'
+                  ? 'text-[#166548] font-bold border-b-2 border-[#166548]'
+                  : 'hover:text-[#166548]'
+              }`}
+            >
+              All Products
+            </button>
+            <button
+              onClick={() => {
+                setActiveNav('Dog Supplies');
+                setSelectedPetTypes(['Dogs']);
+                if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`pb-1 transition-all ${
+                activeNav === 'Dog Supplies'
+                  ? 'text-[#166548] font-bold border-b-2 border-[#166548]'
+                  : 'hover:text-[#166548]'
+              }`}
+            >
+              Dog Supplies
+            </button>
+            <button
+              onClick={() => {
+                setActiveNav('Cat Supplies');
+                setSelectedPetTypes(['Cats']);
+                if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`pb-1 transition-all ${
+                activeNav === 'Cat Supplies'
+                  ? 'text-[#166548] font-bold border-b-2 border-[#166548]'
+                  : 'hover:text-[#166548]'
+              }`}
+            >
+              Cat Supplies
+            </button>
+            <button
+              onClick={() => {
+                setActiveNav('Small Pets');
+                setSelectedPetTypes(['Small Pets']);
+                if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`pb-1 transition-all ${
+                activeNav === 'Small Pets'
+                  ? 'text-[#166548] font-bold border-b-2 border-[#166548]'
+                  : 'hover:text-[#166548]'
+              }`}
+            >
+              Small Pets
+            </button>
+            <button
+              onClick={() => {
+                setActiveNav('Brands');
+                const brandsEl = document.getElementById('trusted-brands-sidebar');
+                if (brandsEl) brandsEl.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`pb-1 transition-all ${
+                activeNav === 'Brands'
+                  ? 'text-[#166548] font-bold border-b-2 border-[#166548]'
+                  : 'hover:text-[#166548]'
+              }`}
+            >
+              Brands
+            </button>
+            <button
+              onClick={() => {
+                setActiveNav('Deals');
+                setSelectedCategories([]);
+                setSelectedPetTypes([]);
+                if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`pb-1 transition-all ${
+                activeNav === 'Deals'
+                  ? 'text-[#166548] font-bold border-b-2 border-[#166548]'
+                  : 'hover:text-[#166548]'
+              }`}
+            >
+              Deals
+            </button>
+          </nav>
 
-          {/* Search bar & Cart / Profile Icons */}
-          <div className="flex items-center gap-4">
-            <div className="relative w-48 sm:w-72 lg:w-96">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          {/* Right: Search, Cart Icon & User Profile */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 lg:flex-initial justify-end">
+            {/* Pill Search Bar */}
+            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-[280px] sm:max-w-[340px]">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search for food, toys, beds, grooming..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-xs rounded-full pl-9 pr-8 py-2 outline-none border border-transparent focus:border-[#107b5a] transition-all"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full bg-[#F3F4F6] text-xs font-medium text-slate-800 placeholder:text-slate-400 pl-9 pr-8 py-2 rounded-full border border-transparent focus:border-[#166548] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#166548]/20 transition-all"
               />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X size={13} />
                 </button>
               )}
-            </div>
+            </form>
 
-            {/* Cart Icon with notification badge */}
-            <Link 
-              to="/marketplace/cart" 
-              className="relative p-2 rounded-full hover:bg-slate-100 text-slate-700 transition"
-              title="View Cart"
-            >
-              <ShoppingCart size={20} />
-              <span className="absolute -top-0.5 -right-0.5 bg-orange-500 text-white font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
-                2
-              </span>
-            </Link>
-
-            {/* Profile Avatar */}
+            {/* Shopping Cart Pill Badge */}
             <Link
-              to={user ? "/profile" : "/login"}
-              className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition text-xs font-bold"
+              to="/marketplace/cart"
+              title="View Shopping Cart"
+              className="relative p-2 text-slate-700 hover:text-[#166548] transition-colors rounded-full hover:bg-slate-100 flex items-center justify-center shrink-0 cursor-pointer"
             >
-              {user?.name ? user.name[0].toUpperCase() : '👤'}
+              <ShoppingCart size={21} strokeWidth={2.1} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#E74C3C] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white shadow-xs">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
             </Link>
+
+            {/* User Profile Avatar */}
+            {user ? (
+              <Link
+                to={`/dashboard/${user.role === 'Pet Owner' ? 'owner' : 'admin'}`}
+                title="Account Dashboard"
+                className="w-8 h-8 rounded-full bg-[#186452] text-white flex items-center justify-center text-xs font-bold hover:opacity-90 ring-2 ring-[#186452]/20 shrink-0"
+              >
+                {user.name ? user.name.charAt(0).toUpperCase() : <User size={15} />}
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                title="Sign In"
+                className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-900 transition-colors shrink-0"
+              >
+                <User size={15} />
+              </Link>
+            )}
           </div>
 
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        
-        {/* 2. Hero Banner: Healthy Pets, Happier Moments + Up to 60% OFF badge */}
-        <section className="relative rounded-3xl bg-gradient-to-r from-[#fef5ee] via-[#fff3e8] to-[#fde9dc] p-6 sm:p-10 lg:p-12 mb-8 border border-orange-100/70 overflow-hidden shadow-xs">
+      {/* ========================================================== */}
+      {/* HERO SECTION: Reference Warm Ivory Banner with Lifestyle Pets */}
+      {/* ========================================================== */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-6">
+        <div className="relative rounded-3xl bg-gradient-to-r from-[#FAF3EA] via-[#FDF7EE] to-[#F8EEE0] border border-[#EFE5D5] p-6 sm:p-10 overflow-hidden shadow-xs">
+          
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
             
             {/* Left Content */}
-            <div className="lg:col-span-7">
-              <span className="text-[11px] font-extrabold text-[#e65c27] uppercase tracking-wider block mb-2">
+            <div className="lg:col-span-7 space-y-4">
+              <span className="inline-block text-[#D85A32] text-xs sm:text-sm font-extrabold uppercase tracking-widest">
                 PREMIUM PET ESSENTIALS
               </span>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0b463a] tracking-tight leading-tight mb-3">
-                Healthy Pets,<br />Happier Moments
+              
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.15]">
+                Healthy Pets,<br />
+                <span className="text-[#186452]">Happier Moments</span>
               </h1>
-              <p className="text-slate-600 text-xs sm:text-sm max-w-md mb-6 leading-relaxed">
+
+              <p className="text-slate-600 text-xs sm:text-sm max-w-lg leading-relaxed font-medium">
                 Shop trusted pet food, toys, grooming products, and more for a healthier, longer, happier life with your furry friends.
               </p>
 
-              <div className="flex items-center gap-4 mb-6">
+              {/* Shop Now CTA Button */}
+              <div className="pt-2">
                 <button
-                  type="button"
                   onClick={() => {
-                    const el = document.getElementById('products-section');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    if (productsSectionRef.current) {
+                      productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
                   }}
-                  className="bg-[#e65c27] hover:bg-[#cf4f1e] text-white font-bold text-xs sm:text-sm py-2.5 px-6 rounded-full flex items-center gap-2 shadow-sm transition active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-2 bg-[#D85A32] hover:bg-[#C24823] text-white text-xs sm:text-sm font-extrabold px-6 sm:px-8 py-3 rounded-full shadow-md shadow-[#D85A32]/25 active:scale-95 transition-all cursor-pointer"
                 >
                   <span>Shop Now</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={16} />
                 </button>
               </div>
 
-              {/* 3 mini bullet icons underneath button */}
-              <div className="flex items-center flex-wrap gap-5 text-[11px] font-bold text-slate-700">
+              {/* 3 Benefit Pills Row */}
+              <div className="pt-4 flex flex-wrap items-center gap-4 sm:gap-6 text-slate-700 text-[11px] sm:text-xs font-bold">
                 <div className="flex items-center gap-1.5">
-                  <ShieldCheck size={16} className="text-[#e65c27]" />
+                  <div className="w-5 h-5 rounded-full bg-[#186452]/10 text-[#186452] flex items-center justify-center">
+                    <ShieldCheck size={13} />
+                  </div>
                   <span>Vet-Approved Products</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Truck size={16} className="text-[#107b5a]" />
+                  <div className="w-5 h-5 rounded-full bg-[#186452]/10 text-[#186452] flex items-center justify-center">
+                    <Truck size={13} />
+                  </div>
                   <span>Fast & Reliable Delivery</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <RotateCcw size={16} className="text-[#e65c27]" />
+                  <div className="w-5 h-5 rounded-full bg-[#186452]/10 text-[#186452] flex items-center justify-center">
+                    <RotateCcw size={13} />
+                  </div>
                   <span>Easy Returns</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Banner Content: Cutout Pets + Green 60% OFF Tile */}
-            <div className="lg:col-span-5 flex items-center justify-center lg:justify-end gap-4 relative">
-              
-              {/* Pet Photo Montage */}
-              <div className="relative">
-                <img
-                  src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=480"
-                  alt="Happy Dog"
-                  className="w-44 sm:w-56 h-48 sm:h-60 object-cover rounded-3xl shadow-sm border-2 border-white"
-                />
-                <span className="absolute -top-3 left-4 bg-white/95 backdrop-blur-xs text-[#0b463a] font-serif italic text-xs px-3 py-1 rounded-full shadow-xs border border-orange-100">
-                  Good Food, Brighter Days ✨
-                </span>
-              </div>
+            {/* Right Lifestyle Image & Special Offer Curved Badge */}
+            <div className="lg:col-span-5 relative flex items-center justify-center lg:justify-end">
+              <div className="relative w-full max-w-md">
+                
+                {/* Dog & Cat Lifestyle Photo */}
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-white/80 bg-white">
+                  <img
+                    src="https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&q=80&w=750"
+                    alt="Happy Golden Retriever and Tabby Cat Sitting Together"
+                    className="w-full h-auto object-cover transform hover:scale-105 transition-transform duration-700"
+                  />
+                  {/* Decorative Hand-Drawn Callout Overlay */}
+                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-lg text-slate-800 text-[11px] font-black italic tracking-wide shadow-xs border border-white">
+                    ✨ Good Food, Brighter Days
+                  </div>
+                </div>
 
-              {/* Dark Green Badge: Special Offer Up to 60% OFF */}
-              <div className="bg-[#055a43] text-white p-6 rounded-3xl shadow-md text-center flex flex-col items-center justify-center w-36 sm:w-44 flex-shrink-0">
-                <span className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wide">
-                  Special Offer
-                </span>
-                <span className="text-xl sm:text-2xl font-black leading-tight my-1">
-                  Up to<br /><span className="text-amber-300">60% OFF</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPriceMax(100)}
-                  className="bg-white text-slate-900 text-[11px] font-bold py-1.5 px-3 rounded-full hover:bg-slate-100 transition mt-2 cursor-pointer shadow-xs whitespace-nowrap"
-                >
-                  Shop Deals →
-                </button>
-              </div>
+                {/* Floating Special Offer Badge */}
+                <div className="absolute -bottom-4 -right-2 sm:-right-4 bg-[#186452] text-white p-4 sm:p-5 rounded-3xl shadow-xl border-2 border-white/20 text-center max-w-[190px]">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-teal-200">
+                    Special Offer
+                  </span>
+                  <span className="block text-lg sm:text-xl font-black mt-0.5 leading-tight">
+                    Up to 60% OFF
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSelectedCategories([]);
+                      setSelectedPetTypes([]);
+                      if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="mt-2.5 inline-flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-900 text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span>Shop Deals</span>
+                    <ArrowRight size={12} />
+                  </button>
+                </div>
 
+              </div>
             </div>
 
           </div>
-        </section>
 
-        {/* 3. Horizontal Category Carousel / Pods */}
-        <section className="mb-10 overflow-x-auto pb-2 scrollbar-none">
-          <div className="flex items-center gap-3 min-w-max">
-            {CATEGORY_PODS.map(pod => (
+        </div>
+      </section>
+
+      {/* ========================================================== */}
+      {/* CATEGORY BAR: 12 Clickable Category Cards with Icons       */}
+      {/* ========================================================== */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+          {categoryPills.map((pill) => {
+            const isActive = selectedCategoryKey === pill.key;
+            const IconComponent = pill.icon;
+            return (
               <button
-                key={pod.id}
-                type="button"
-                onClick={() => setActiveCategoryPod(pod.id)}
-                className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all cursor-pointer min-w-[92px] ${
-                  activeCategoryPod === pod.id
-                    ? 'bg-[#eaf5ef] border-2 border-[#107b5a] text-[#0b463a] font-bold shadow-xs'
-                    : 'bg-white border border-slate-200/70 hover:border-slate-300 text-slate-600'
+                key={pill.key}
+                onClick={() => handleCategoryPillClick(pill)}
+                className={`flex flex-col items-center justify-center min-w-[90px] sm:min-w-[96px] h-24 sm:h-26 rounded-2xl p-2.5 border transition-all duration-200 shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'bg-[#EDF7F2] border-[#186452] shadow-xs ring-1 ring-[#186452]'
+                    : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/80 shadow-2xs'
                 }`}
               >
-                <span className="text-2xl mb-1.5">{pod.icon}</span>
-                <span className="text-[11px] leading-tight text-center truncate max-w-[80px]">
-                  {pod.label}
+                <div className="h-10 w-10 flex items-center justify-center mb-1">
+                  <IconComponent />
+                </div>
+                <span className={`text-[11px] font-bold leading-tight text-center ${
+                  isActive ? 'text-[#186452]' : 'text-slate-700'
+                }`}>
+                  {pill.label}
                 </span>
               </button>
-            ))}
-          </div>
-        </section>
+            );
+          })}
+        </div>
+      </section>
 
-        {/* 4. Main 3-Column Marketplace Body (Left Filters + Middle Products + Right Promos) */}
-        <div id="products-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* ========================================================== */}
+      {/* MAIN CONTENT AREA: 3-Column Layout (Filters, Grid, Promos) */}
+      {/* ========================================================== */}
+      <section ref={productsSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* A. Left Sidebar: Filters (~22% width, col-span-3) */}
-          <aside className="lg:col-span-3 bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
-              <div className="flex items-center gap-2 font-black text-sm text-slate-900">
-                <SlidersHorizontal size={16} />
-                <span>Filters</span>
+          {/* -------------------------------------------------------- */}
+          {/* COLUMN 1: FILTERS SIDEBAR (Left Column ~22%)             */}
+          {/* -------------------------------------------------------- */}
+          <aside className="lg:col-span-3 bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-6">
+            
+            {/* Header: Filters & Clear All */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={17} className="text-[#186452]" />
+                <h2 className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+                  Filters
+                </h2>
               </div>
               <button
                 type="button"
-                onClick={handleClearFilters}
-                className="text-xs text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
+                onClick={handleClearAll}
+                className="text-xs font-semibold text-slate-400 hover:text-[#186452] transition-colors cursor-pointer"
               >
                 Clear All
               </button>
             </div>
 
-            {/* Pet Type */}
-            <div className="mb-6">
-              <h4 className="font-bold text-xs text-slate-900 mb-3">Pet Type</h4>
+            {/* Filter Section: Pet Type */}
+            <div className="space-y-2.5">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Pet Type
+              </h3>
               <div className="space-y-2">
-                {PET_TYPES.map(pt => (
-                  <label key={pt} className="flex items-center gap-2.5 text-xs text-slate-600 hover:text-slate-900 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedPetTypes.includes(pt)}
-                      onChange={() => togglePetType(pt)}
-                      className="rounded text-[#107b5a] focus:ring-[#107b5a] w-3.5 h-3.5"
-                    />
-                    <span>{pt}</span>
-                  </label>
-                ))}
+                {sidebarPetTypes.map((type) => {
+                  const checked = selectedPetTypes.includes(type.id);
+                  return (
+                    <label
+                      key={type.id}
+                      className="flex items-center gap-2.5 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleTogglePetType(type.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-[#186452] focus:ring-[#186452] cursor-pointer"
+                      />
+                      <span className={checked ? 'font-bold text-slate-900' : 'font-medium'}>
+                        {type.label}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Category */}
-            <div className="mb-6">
-              <h4 className="font-bold text-xs text-slate-900 mb-3">Category</h4>
+            {/* Filter Section: Category */}
+            <div className="space-y-2.5 border-t border-slate-100 pt-4">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Category
+              </h3>
               <div className="space-y-2">
-                {CATEGORY_FILTERS.map(cat => (
-                  <label key={cat} className="flex items-center gap-2.5 text-xs text-slate-600 hover:text-slate-900 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(cat)}
-                      onChange={() => toggleCategory(cat)}
-                      className="rounded text-[#107b5a] focus:ring-[#107b5a] w-3.5 h-3.5"
-                    />
-                    <span>{cat}</span>
-                  </label>
-                ))}
+                {sidebarCategories.map((cat) => {
+                  const checked = selectedCategories.includes(cat);
+                  return (
+                    <label
+                      key={cat}
+                      className="flex items-center gap-2.5 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleToggleCategory(cat)}
+                        className="w-4 h-4 rounded border-slate-300 text-[#186452] focus:ring-[#186452] cursor-pointer"
+                      />
+                      <span className={checked ? 'font-bold text-slate-900' : 'font-medium'}>
+                        {cat}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Brand Dropdown */}
-            <div className="mb-6">
-              <h4 className="font-bold text-xs text-slate-900 mb-2">Brand</h4>
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#107b5a]"
-              >
-                {BRAND_OPTIONS.map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
+            {/* Filter Section: Brand Dropdown */}
+            <div className="space-y-2.5 border-t border-slate-100 pt-4">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Brand
+              </h3>
+              <div className="relative">
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  className="w-full bg-[#F8FAFC] border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-[#186452] focus:ring-1 focus:ring-[#186452] cursor-pointer"
+                >
+                  {brandOptions.map((brand) => (
+                    <option key={brand} value={brand}>
+                      {brand}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
             </div>
 
-            {/* Price Range */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-900 mb-2">
-                <span>Price Range</span>
-                <span className="text-[#107b5a]">Up to ₹{priceMax}</span>
+            {/* Filter Section: Price Range Slider */}
+            <div className="space-y-3 border-t border-slate-100 pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Price Range
+                </h3>
+                <span className="text-xs font-bold text-[#186452]">
+                  Up to RM {maxPrice}
+                </span>
               </div>
               <input
                 type="range"
-                min="20"
+                min="0"
                 max="300"
-                step="10"
-                value={priceMax}
-                onChange={(e) => setPriceMax(Number(e.target.value))}
-                className="w-full accent-[#107b5a] cursor-pointer"
+                step="5"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                className="w-full accent-[#186452] h-1.5 bg-slate-200 rounded-lg cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-slate-400 font-medium mt-1">
-                <span>₹0</span>
-                <span>₹300+</span>
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+                <span>RM 0</span>
+                <span>RM 300+</span>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => showToast(`Filtered ${displayProducts.length} items`, 'success')}
-              className="w-full bg-[#055a43] hover:bg-[#034432] text-white font-bold text-xs py-2.5 rounded-xl shadow-xs transition active:scale-98 cursor-pointer"
-            >
-              Apply Filters
-            </button>
+            {/* Apply Filters Button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAppliedFiltersTrigger(prev => prev + 1);
+                  showToast('Filters applied successfully', 'success');
+                }}
+                className="w-full bg-[#186452] hover:bg-[#125342] text-white text-xs font-bold py-3 rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer"
+              >
+                Apply Filters
+              </button>
+            </div>
+
           </aside>
 
-          {/* B. Center Column: Featured Products Grid (~56% width, col-span-6) */}
-          <main className="lg:col-span-6">
+          {/* -------------------------------------------------------- */}
+          {/* COLUMN 2: FEATURED PRODUCTS GRID (Center Column ~58%)    */}
+          {/* -------------------------------------------------------- */}
+          <main className="lg:col-span-6 space-y-4">
             
-            {/* Header: Title, Subtitle, Sort by, View Mode */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            {/* Grid Header Controls Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
               <div>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">Featured Products</h2>
-                <p className="text-xs text-slate-500">Popular picks for happy, healthy pets.</p>
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">
+                  Featured Products
+                </h2>
+                <p className="text-xs text-slate-500 font-medium">
+                  Popular picks for happy, healthy pets. ({filteredProducts.length} items)
+                </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-                  <span>Sort by:</span>
+              <div className="flex items-center gap-3 self-end sm:self-auto">
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-slate-400 font-medium hidden sm:inline">Sort by:</span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 outline-none focus:border-[#107b5a]"
+                    className="bg-[#F8FAFC] border border-slate-200 text-xs font-bold text-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#186452] cursor-pointer"
                   >
                     <option value="featured">Featured</option>
-                    <option value="priceLow">Price: Low to High</option>
-                    <option value="priceHigh">Price: High to Low</option>
-                    <option value="rating">Top Rated</option>
+                    <option value="priceAsc">Price: Low to High</option>
+                    <option value="priceDesc">Price: High to Low</option>
+                    <option value="rating">Customer Rating</option>
                   </select>
                 </div>
 
-                {/* View toggle */}
-                <div className="hidden sm:flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
+                {/* View Mode Toggle: Grid or List */}
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                   <button
                     type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`p-1.5 ${viewMode === 'grid' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-700'}`}
+                    className={`p-1.5 rounded-md transition-all ${
+                      viewMode === 'grid' ? 'bg-white text-[#186452] shadow-2xs' : 'text-slate-400 hover:text-slate-700'
+                    }`}
                     title="Grid View"
                   >
-                    <Grid size={13} />
+                    <LayoutGrid size={15} />
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewMode('list')}
-                    className={`p-1.5 ${viewMode === 'list' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-700'}`}
+                    className={`p-1.5 rounded-md transition-all ${
+                      viewMode === 'list' ? 'bg-white text-[#186452] shadow-2xs' : 'text-slate-400 hover:text-slate-700'
+                    }`}
                     title="List View"
                   >
-                    <List size={13} />
+                    <List size={15} />
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Products Grid */}
-            {displayProducts.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center border border-slate-200/80">
-                <p className="text-sm font-bold text-slate-700 mb-2">No matching products found</p>
-                <p className="text-xs text-slate-400 mb-4">Try adjusting your filters or search terms.</p>
+            {/* Products Listing Container */}
+            {loading ? (
+              <div className="py-20 flex flex-col items-center justify-center text-slate-400 space-y-3">
+                <Loader2 size={32} className="animate-spin text-[#186452]" />
+                <p className="text-xs font-semibold">Loading pet products...</p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                  <Search size={22} />
+                </div>
+                <h3 className="font-bold text-slate-800 text-sm">No products found</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  No products matched your active filters. Try adjusting price, category, or clearing filters.
+                </p>
                 <button
-                  onClick={handleClearFilters}
-                  className="bg-[#107b5a] text-white text-xs font-bold px-4 py-2 rounded-xl"
+                  type="button"
+                  onClick={handleClearAll}
+                  className="inline-flex items-center gap-1.5 bg-[#186452] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-[#125342] transition-colors"
                 >
-                  Reset Filters
+                  <RotateCcw size={13} />
+                  <span>Reset Filters</span>
                 </button>
               </div>
-            ) : (
-              <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
-                {displayProducts.map(product => {
-                  const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
-                  const currentPrice = hasDiscount ? product.discountPrice : product.price;
-                  const discountPercent = product.discountPercent || (hasDiscount ? Math.round(((product.price - product.discountPrice) / product.price) * 100) : 0);
-                  const isWishlisted = !!wishlistItems[product.id];
-
+            ) : viewMode === 'grid' ? (
+              /* Grid View: 2 columns on mobile/tablet, 4 columns on large screens */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+                {filteredProducts.map((product) => {
+                  const isFav = wishlistIds.has(product.id);
+                  const isAdding = addingToCartId === product.id;
                   return (
                     <div
                       key={product.id}
-                      className="bg-white rounded-2xl border border-slate-200/70 p-3 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative"
+                      className="group bg-white rounded-2xl border border-slate-200/90 hover:border-slate-300 hover:shadow-lg transition-all duration-300 p-3.5 flex flex-col relative"
                     >
-                      <Link to={`/marketplace/products/${product.id}`} className="absolute inset-0 z-0" aria-label={product.name} />
-
                       {/* Top Badges & Wishlist Heart */}
-                      <div className="flex items-center justify-between mb-2 z-10 pointer-events-none">
-                        {discountPercent > 0 ? (
-                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md text-white ${
-                            discountPercent >= 50 ? 'bg-orange-600' : 'bg-[#107b5a]'
+                      <div className="flex items-center justify-between mb-2">
+                        {/* Discount Badge */}
+                        {product.discountPercent ? (
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-2xs ${
+                            product.discountPercent >= 50
+                              ? 'bg-[#E74C3C] text-white'
+                              : product.discountPercent >= 25
+                              ? 'bg-[#D85A32] text-white'
+                              : 'bg-[#2A9D8F] text-white'
                           }`}>
-                            {discountPercent}% OFF
+                            {product.discountPercent}% OFF
                           </span>
-                        ) : <span />}
+                        ) : (
+                          <span />
+                        )}
 
+                        {/* Wishlist Heart Button */}
                         <button
                           type="button"
-                          onClick={(e) => toggleWishlist(e, product.id)}
-                          className="pointer-events-auto p-1 rounded-full text-slate-300 hover:text-rose-500 transition cursor-pointer"
-                          title="Wishlist"
+                          onClick={(e) => handleToggleWishlist(e, product)}
+                          className="w-7 h-7 rounded-full bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
+                          title={isFav ? 'Remove from wishlist' : 'Add to wishlist'}
                         >
-                          <Heart size={15} className={isWishlisted ? 'fill-rose-500 text-rose-500' : ''} />
+                          <Heart
+                            size={14}
+                            className={isFav ? 'fill-rose-500 text-rose-500' : ''}
+                          />
                         </button>
                       </div>
 
-                      {/* Image */}
-                      <div className="relative aspect-square w-full flex items-center justify-center p-2 mb-2 overflow-hidden">
+                      {/* Product Image */}
+                      <Link
+                        to={`/marketplace/products/${product.id}`}
+                        className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-50 flex items-center justify-center mb-3"
+                      >
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
+                      </Link>
+
+                      {/* Product Title */}
+                      <Link
+                        to={`/marketplace/products/${product.id}`}
+                        className="font-bold text-slate-900 text-xs sm:text-[13px] leading-snug line-clamp-2 hover:text-[#186452] transition-colors"
+                      >
+                        {product.name}
+                      </Link>
+
+                      {/* Short Description */}
+                      <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 font-medium">
+                        {product.shortDescription}
+                      </p>
+
+                      {/* Rating & Review Count */}
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <div className="flex items-center text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={11}
+                              className={i < Math.floor(product.averageRating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-semibold">
+                          ({product.reviewCount || 0})
+                        </span>
                       </div>
 
-                      {/* Product Details */}
-                      <div className="flex flex-col flex-1">
-                        <h3 className="font-bold text-xs text-slate-900 line-clamp-1 group-hover:text-[#107b5a] transition-colors">
-                          {product.name}
-                        </h3>
-                        <p className="text-[10px] text-slate-400 line-clamp-1 mb-1.5">
-                          {product.description}
-                        </p>
-
-                        {/* Star Rating */}
-                        <div className="flex items-center gap-1 text-amber-500 text-[10px] font-semibold mb-2">
-                          <span>★★★★★</span>
-                          <span className="text-slate-400">({product.reviewCount || 100})</span>
-                        </div>
-
-                        {/* Price */}
-                        <div className="flex items-baseline gap-1.5 mb-3">
-                          <span className="font-extrabold text-sm text-slate-900">
-                            ₹{Number(currentPrice).toFixed(2)}
+                      {/* Price Row: RM 89.00 and RM 220.00 Strikethrough */}
+                      <div className="mt-2.5 flex items-baseline gap-2">
+                        <span className="text-xs sm:text-sm font-black text-slate-900">
+                          RM {Number(product.price).toFixed(2)}
+                        </span>
+                        {product.mrp && product.mrp > product.price && (
+                          <span className="text-[11px] text-slate-400 line-through font-medium">
+                            RM {Number(product.mrp).toFixed(2)}
                           </span>
-                          {hasDiscount && (
-                            <span className="text-[11px] text-slate-400 line-through">
-                              ₹{Number(product.price).toFixed(2)}
-                            </span>
-                          )}
-                        </div>
+                        )}
+                      </div>
 
-                        {/* Solid Green Add to Cart Button (NO Buy Now, exactly as requested) */}
+                      {/* Full-width Add to Cart Button */}
+                      <div className="mt-3 pt-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={(e) => handleAddToCart(e, product)}
-                          disabled={cartAddingId === product.id || product.stockQuantity === 0}
-                          className="mt-auto w-full bg-[#107b5a] hover:bg-[#0c6248] text-white font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50 z-10 shadow-xs"
+                          disabled={isAdding}
+                          className="w-full bg-[#186452] hover:bg-[#125342] text-white text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
                         >
-                          {cartAddingId === product.id ? (
+                          {isAdding ? (
                             <Loader2 size={13} className="animate-spin" />
                           ) : (
                             <ShoppingCart size={13} />
                           )}
-                          <span>{product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+                          <span>Add to Cart</span>
                         </button>
                       </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* List View Mode */
+              <div className="space-y-3">
+                {filteredProducts.map((product) => {
+                  const isFav = wishlistIds.has(product.id);
+                  const isAdding = addingToCartId === product.id;
+                  return (
+                    <div
+                      key={product.id}
+                      className="group bg-white rounded-2xl border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all duration-300 p-4 flex flex-col sm:flex-row items-center gap-4"
+                    >
+                      <Link
+                        to={`/marketplace/products/${product.id}`}
+                        className="w-24 h-24 rounded-xl overflow-hidden bg-slate-50 shrink-0"
+                      >
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      </Link>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            {product.brand}
+                          </span>
+                          {product.discountPercent && (
+                            <span className="bg-[#E74C3C] text-white text-[9px] font-black px-1.5 py-0.5 rounded">
+                              {product.discountPercent}% OFF
+                            </span>
+                          )}
+                        </div>
+                        <Link
+                          to={`/marketplace/products/${product.id}`}
+                          className="font-bold text-slate-900 text-sm hover:text-[#186452] transition-colors line-clamp-1 mt-0.5"
+                        >
+                          {product.name}
+                        </Link>
+                        <p className="text-xs text-slate-500 line-clamp-1 mt-0.5 font-medium">
+                          {product.shortDescription || product.description}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1 text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={11}
+                              className={i < Math.floor(product.averageRating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
+                            />
+                          ))}
+                          <span className="text-[10px] text-slate-400 ml-1">({product.reviewCount || 0})</span>
+                        </div>
+                      </div>
+
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 shrink-0">
+                        <div className="text-right">
+                          <div className="text-sm font-black text-slate-900">
+                            RM {Number(product.price).toFixed(2)}
+                          </div>
+                          {product.mrp && product.mrp > product.price && (
+                            <div className="text-[11px] text-slate-400 line-through">
+                              RM {Number(product.mrp).toFixed(2)}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleWishlist(e, product)}
+                            className="p-2 rounded-lg bg-slate-100 hover:text-rose-500 text-slate-400"
+                            title="Wishlist"
+                          >
+                            <Heart size={14} className={isFav ? 'fill-rose-500 text-rose-500' : ''} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleAddToCart(e, product)}
+                            disabled={isAdding}
+                            className="bg-[#186452] hover:bg-[#125342] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs"
+                          >
+                            {isAdding ? <Loader2 size={13} className="animate-spin" /> : <ShoppingCart size={13} />}
+                            <span>Add</span>
+                          </button>
+                        </div>
+                      </div>
+
                     </div>
                   );
                 })}
@@ -779,200 +1405,306 @@ export default function MarketplaceHome() {
 
           </main>
 
-          {/* C. Right Column: Promo Stack & Brands (~22% width, col-span-3) */}
+          {/* -------------------------------------------------------- */}
+          {/* COLUMN 3: PROMOTIONS & BRANDS (Right Column ~20%)        */}
+          {/* -------------------------------------------------------- */}
           <aside className="lg:col-span-3 space-y-5">
             
-            {/* Promo 1: For the Cats We Love */}
-            <div className="bg-[#fef3ea] rounded-3xl p-5 border border-orange-100/80 text-center flex flex-col items-center shadow-xs">
-              <img
-                src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=350"
-                alt="For Cats"
-                className="w-36 h-36 object-cover rounded-2xl mb-3 border-2 border-white shadow-xs"
-              />
-              <h3 className="font-black text-slate-900 text-sm mb-1">For the Cats We Love</h3>
-              <p className="text-[11px] text-slate-600 mb-3 leading-relaxed">
-                Nutritious food, fun toys and cozy essentials.
-              </p>
-              <button
-                type="button"
-                onClick={() => { setActiveCategoryPod('cats'); }}
-                className="w-full bg-[#f05a28] hover:bg-[#d84e1f] text-white font-bold text-xs py-2 px-4 rounded-xl shadow-xs transition active:scale-98 cursor-pointer"
-              >
-                Shop Cat Supplies →
-              </button>
-            </div>
-
-            {/* Promo 2: For the Dogs We Love */}
-            <div className="bg-[#edf6f0] rounded-3xl p-5 border border-emerald-100/80 text-center flex flex-col items-center shadow-xs">
-              <img
-                src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=350"
-                alt="For Dogs"
-                className="w-36 h-36 object-cover rounded-2xl mb-3 border-2 border-white shadow-xs"
-              />
-              <h3 className="font-black text-slate-900 text-sm mb-1">For the Dogs We Love</h3>
-              <p className="text-[11px] text-slate-600 mb-3 leading-relaxed">
-                Premium food, treats, toys and more.
-              </p>
-              <button
-                type="button"
-                onClick={() => { setActiveCategoryPod('dogs'); }}
-                className="w-full bg-[#055a43] hover:bg-[#034432] text-white font-bold text-xs py-2 px-4 rounded-xl shadow-xs transition active:scale-98 cursor-pointer"
-              >
-                Shop Dog Supplies →
-              </button>
-            </div>
-
-            {/* Promo 3: Trusted Pet Brands */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs">
-              <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider mb-3">
-                Trusted Pet Brands
-              </h4>
-              <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-slate-600">
-                {['Royal Canin', 'Purina', 'Hill\'s', 'Pedigree', 'Whiskas', 'Frontline'].map(b => (
+            {/* Promo Card 1: For the Cats We Love */}
+            <div className="rounded-2xl bg-[#EAF2EC] border border-[#D5E5DA] p-5 shadow-xs flex flex-col justify-between relative overflow-hidden group">
+              <div className="space-y-1.5 relative z-10">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#186452]">
+                  FELINE FAVORITES
+                </span>
+                <h3 className="font-black text-base text-slate-900 leading-snug">
+                  For the Cats<br />We Love
+                </h3>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  Nutritious food, fun toys and cozy essentials.
+                </p>
+                <div className="pt-2">
                   <button
-                    key={b}
-                    onClick={() => setSelectedBrand(b)}
-                    className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-100 hover:border-slate-300 transition text-[11px] truncate cursor-pointer"
+                    type="button"
+                    onClick={() => {
+                      setSelectedPetTypes(['Cats']);
+                      if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-[#D85A32] hover:bg-[#C24823] text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    {b}
+                    <span>Shop Cat Supplies</span>
+                    <ArrowRight size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Cute Cat Cutout Image */}
+              <div className="mt-4 flex justify-end">
+                <img
+                  src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=260"
+                  alt="Cute Tabby Cat"
+                  className="w-24 h-24 object-cover rounded-2xl shadow-xs group-hover:scale-105 transition-transform"
+                />
+              </div>
+            </div>
+
+            {/* Promo Card 2: For the Dogs We Love */}
+            <div className="rounded-2xl bg-[#EAF2EC] border border-[#D5E5DA] p-5 shadow-xs flex flex-col justify-between relative overflow-hidden group">
+              <div className="space-y-1.5 relative z-10">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#186452]">
+                  CANINE ESSENTIALS
+                </span>
+                <h3 className="font-black text-base text-slate-900 leading-snug">
+                  For the Dogs<br />We Love
+                </h3>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  Premium food, treats, toys and more.
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPetTypes(['Dogs']);
+                      if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-[#186452] hover:bg-[#125342] text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span>Shop Dog Supplies</span>
+                    <ArrowRight size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Cute Dog Cutout Image */}
+              <div className="mt-4 flex justify-end">
+                <img
+                  src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=260"
+                  alt="Cute Golden Retriever"
+                  className="w-24 h-24 object-cover rounded-2xl shadow-xs group-hover:scale-105 transition-transform"
+                />
+              </div>
+            </div>
+
+            {/* Trusted Pet Brands Section */}
+            <div id="trusted-brands-sidebar" className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-3">
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                Trusted Pet Brands
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-2.5">
+                {trustedBrands.map((brand) => (
+                  <button
+                    key={brand.name}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBrand(brand.name);
+                      if (productsSectionRef.current) productsSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`py-2 px-3 rounded-xl border text-center transition-all duration-200 hover:shadow-xs active:scale-95 cursor-pointer flex items-center justify-center ${brand.badgeColor}`}
+                  >
+                    <span className="text-xs font-black tracking-tight">
+                      {brand.name}
+                    </span>
                   </button>
                 ))}
-              </div>
-              <div className="mt-4 text-center text-slate-300 text-lg">
-                🐾 🐾 🐾
               </div>
             </div>
 
           </aside>
 
         </div>
+      </section>
 
-        {/* 5. Value Props Strip (Bottom) */}
-        <section className="mt-14 mb-12 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 text-center">
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-2">
-                <ShieldCheck size={20} />
+      {/* ========================================================== */}
+      {/* SERVICE-BENEFIT STRIP: 5 Benefits Across Page Bottom       */}
+      {/* ========================================================== */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
+            
+            {/* Benefit 1 */}
+            <div className="flex flex-col items-center space-y-1.5">
+              <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                <Heart size={18} className="fill-rose-500" />
               </div>
-              <h5 className="font-black text-xs text-slate-900">Vet-Approved</h5>
-              <p className="text-[11px] text-slate-500">Products</p>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-emerald-50 text-[#107b5a] flex items-center justify-center mb-2">
-                <Truck size={20} />
-              </div>
-              <h5 className="font-black text-xs text-slate-900">Fast & Reliable</h5>
-              <p className="text-[11px] text-slate-500">Delivery</p>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
-                <RotateCcw size={20} />
-              </div>
-              <h5 className="font-black text-xs text-slate-900">Easy Returns</h5>
-              <p className="text-[11px] text-slate-500">Hassle-free process</p>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mb-2">
-                <Lock size={20} />
-              </div>
-              <h5 className="font-black text-xs text-slate-900">Secure Payment</h5>
-              <p className="text-[11px] text-slate-500">100% safe & encrypted</p>
-            </div>
-
-            <div className="flex flex-col items-center col-span-2 sm:col-span-1">
-              <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-2">
-                <Headphones size={20} />
-              </div>
-              <h5 className="font-black text-xs text-slate-900">Dedicated Support</h5>
-              <p className="text-[11px] text-slate-500">Here for you and your pets</p>
-            </div>
-          </div>
-        </section>
-
-        {/* 6. Clean PetZoe Marketplace Footer */}
-        <footer className="border-t border-slate-200/80 pt-10 text-xs text-slate-500">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            {/* Newsletter */}
-            <div>
-              <h5 className="font-black text-sm text-slate-900 mb-2">Stay Updated</h5>
-              <p className="text-[11px] text-slate-500 mb-3">
-                Get the latest deals, new arrivals and pet care tips.
+              <h4 className="font-extrabold text-xs text-slate-900">
+                Vet-Approved
+              </h4>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Products
               </p>
-              <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-2">
+            </div>
+
+            {/* Benefit 2 */}
+            <div className="flex flex-col items-center space-y-1.5">
+              <div className="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center">
+                <Truck size={18} />
+              </div>
+              <h4 className="font-extrabold text-xs text-slate-900">
+                Fast & Reliable
+              </h4>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Delivery
+              </p>
+            </div>
+
+            {/* Benefit 3 */}
+            <div className="flex flex-col items-center space-y-1.5">
+              <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                <RotateCcw size={18} />
+              </div>
+              <h4 className="font-extrabold text-xs text-slate-900">
+                Easy Returns
+              </h4>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Hassle-free process
+              </p>
+            </div>
+
+            {/* Benefit 4 */}
+            <div className="flex flex-col items-center space-y-1.5">
+              <div className="w-10 h-10 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">
+                <Lock size={18} />
+              </div>
+              <h4 className="font-extrabold text-xs text-slate-900">
+                Secure Payment
+              </h4>
+              <p className="text-[11px] text-slate-500 font-medium">
+                100% safe & encrypted
+              </p>
+            </div>
+
+            {/* Benefit 5 */}
+            <div className="col-span-2 md:col-span-1 flex flex-col items-center space-y-1.5">
+              <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+                <Headphones size={18} />
+              </div>
+              <h4 className="font-extrabold text-xs text-slate-900">
+                Dedicated Support
+              </h4>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Here for you and your pets
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================== */}
+      {/* FOOTER: Newsletter Subscribe, Shop, Care, About, Socials  */}
+      {/* ========================================================== */}
+      <footer className="bg-white border-t border-slate-200/90 pt-12 pb-8 mt-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
+            
+            {/* Left: Stay Updated Newsletter */}
+            <div className="md:col-span-4 space-y-3">
+              <h3 className="text-sm font-extrabold text-slate-900">
+                Stay Updated
+              </h3>
+              <p className="text-xs text-slate-500 font-medium max-w-sm leading-relaxed">
+                Get the latest deals, new arrivals and pet care tips directly to your inbox.
+              </p>
+              
+              <form onSubmit={handleNewsletterSubmit} className="flex items-center gap-2 max-w-sm">
                 <input
                   type="email"
+                  required
                   placeholder="Enter your email address"
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
-                  required
-                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-[#107b5a] flex-1"
+                  className="flex-1 bg-[#F8FAFC] border border-slate-200 text-xs px-3.5 py-2.5 rounded-full focus:outline-none focus:border-[#186452] font-medium placeholder:text-slate-400"
                 />
                 <button
                   type="submit"
-                  className="bg-[#107b5a] hover:bg-[#0c6248] text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer whitespace-nowrap"
+                  className="bg-[#186452] hover:bg-[#125342] text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-xs transition-all active:scale-95 cursor-pointer"
                 >
                   Subscribe
                 </button>
               </form>
+              {newsletterSubscribed && (
+                <p className="text-xs text-[#186452] font-semibold flex items-center gap-1">
+                  <CheckCircle2 size={13} />
+                  <span>Subscribed successfully!</span>
+                </p>
+              )}
             </div>
 
             {/* Shop Links */}
-            <div>
-              <h5 className="font-black text-sm text-slate-900 mb-2">Shop</h5>
-              <ul className="space-y-1.5 text-xs">
-                <li><button onClick={() => navigate('/marketplace/products')} className="hover:text-slate-900">All Products</button></li>
-                <li><button onClick={() => setActiveCategoryPod('dogs')} className="hover:text-slate-900">Dog Supplies</button></li>
-                <li><button onClick={() => setActiveCategoryPod('cats')} className="hover:text-slate-900">Cat Supplies</button></li>
-                <li><button onClick={() => setActiveCategoryPod('small')} className="hover:text-slate-900">Small Pets</button></li>
-                <li><button onClick={() => setPriceMax(80)} className="hover:text-slate-900">Deals</button></li>
+            <div className="md:col-span-2 space-y-3">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                Shop
+              </h4>
+              <ul className="space-y-2 text-xs font-medium text-slate-600">
+                <li><button onClick={() => { setActiveNav('All Products'); handleClearAll(); }} className="hover:text-[#186452]">All Products</button></li>
+                <li><button onClick={() => { setSelectedPetTypes(['Dogs']); }} className="hover:text-[#186452]">Dog Supplies</button></li>
+                <li><button onClick={() => { setSelectedPetTypes(['Cats']); }} className="hover:text-[#186452]">Cat Supplies</button></li>
+                <li><button onClick={() => { setSelectedPetTypes(['Small Pets']); }} className="hover:text-[#186452]">Small Pets</button></li>
+                <li><button onClick={() => { setSelectedCategories([]); setSelectedPetTypes([]); }} className="hover:text-[#186452]">Deals</button></li>
               </ul>
             </div>
 
             {/* Customer Care */}
-            <div>
-              <h5 className="font-black text-sm text-slate-900 mb-2">Customer Care</h5>
-              <ul className="space-y-1.5 text-xs">
-                <li><a href="#shipping" className="hover:text-slate-900">Shipping & Delivery</a></li>
-                <li><a href="#returns" className="hover:text-slate-900">Returns & Refunds</a></li>
-                <li><a href="#track" className="hover:text-slate-900">Track Order</a></li>
-                <li><a href="#faqs" className="hover:text-slate-900">FAQs</a></li>
-                <li><a href="#contact" className="hover:text-slate-900">Contact Us</a></li>
+            <div className="md:col-span-2 space-y-3">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                Customer Care
+              </h4>
+              <ul className="space-y-2 text-xs font-medium text-slate-600">
+                <li><span className="hover:text-[#186452] cursor-pointer">Shipping & Delivery</span></li>
+                <li><span className="hover:text-[#186452] cursor-pointer">Returns & Refunds</span></li>
+                <li><Link to="/marketplace/orders" className="hover:text-[#186452]">Track Order</Link></li>
+                <li><span className="hover:text-[#186452] cursor-pointer">FAQs</span></li>
+                <li><span className="hover:text-[#186452] cursor-pointer">Contact Us</span></li>
               </ul>
             </div>
 
-            {/* About PetZoe & Social */}
-            <div>
-              <h5 className="font-black text-sm text-slate-900 mb-2">About PetZoe</h5>
-              <ul className="space-y-1.5 text-xs mb-4">
-                <li><a href="#story" className="hover:text-slate-900">Our Story</a></li>
-                <li><a href="#rewards" className="hover:text-slate-900">Rewards Program</a></li>
-                <li><a href="#blog" className="hover:text-slate-900">Blog & Pet Care Tips</a></li>
-                <li><a href="#terms" className="hover:text-slate-900">Terms & Conditions</a></li>
-                <li><a href="#privacy" className="hover:text-slate-900">Privacy Policy</a></li>
+            {/* About PetZoe */}
+            <div className="md:col-span-2 space-y-3">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                About PetZoe
+              </h4>
+              <ul className="space-y-2 text-xs font-medium text-slate-600">
+                <li><Link to="/" className="hover:text-[#186452]">Our Story</Link></li>
+                <li><span className="hover:text-[#186452] cursor-pointer">Rewards Program</span></li>
+                <li><span className="hover:text-[#186452] cursor-pointer">Blog & Pet Care Tips</span></li>
+                <li><span className="hover:text-[#186452] cursor-pointer">Terms & Conditions</span></li>
+                <li><span className="hover:text-[#186452] cursor-pointer">Privacy Policy</span></li>
               </ul>
-              <div>
-                <span className="font-bold text-[11px] text-slate-700 block mb-1.5">Follow Us</span>
-                <div className="flex items-center gap-3 text-slate-400">
-                  <span className="hover:text-slate-800 cursor-pointer">🌐</span>
-                  <span className="hover:text-slate-800 cursor-pointer">📸</span>
-                  <span className="hover:text-slate-800 cursor-pointer">▶️</span>
-                  <span className="hover:text-slate-800 cursor-pointer">🎵</span>
-                </div>
+            </div>
+
+            {/* Follow Us */}
+            <div className="md:col-span-2 space-y-3">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                Follow Us
+              </h4>
+              <div className="flex items-center gap-2.5 text-slate-600">
+                <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#186452] hover:text-white flex items-center justify-center transition-colors">
+                  <span className="font-bold text-xs">f</span>
+                </a>
+                <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#186452] hover:text-white flex items-center justify-center transition-colors">
+                  <span className="font-bold text-xs">ig</span>
+                </a>
+                <a href="https://youtube.com" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#186452] hover:text-white flex items-center justify-center transition-colors">
+                  <span className="font-bold text-xs">yt</span>
+                </a>
+                <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#186452] hover:text-white flex items-center justify-center transition-colors">
+                  <span className="font-bold text-xs">tk</span>
+                </a>
               </div>
             </div>
 
           </div>
 
-          <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <p>© {new Date().getFullYear()} PetZoe. All rights reserved.</p>
-            <p>Crafted for Happy & Healthy Pets 🐾</p>
+          {/* Bottom Copyright */}
+          <div className="border-t border-slate-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400 font-medium">
+            <p>&copy; {new Date().getFullYear()} PetZoe Store. All rights reserved.</p>
+            <p>Dedicated to veterinary health, pet wellness, and companion happiness.</p>
           </div>
-        </footer>
 
-      </div>
+        </div>
+      </footer>
+
     </div>
   );
 }

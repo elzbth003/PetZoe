@@ -16,7 +16,7 @@ export default function Navbar() {
 
   const isBuyer = user && user.role === 'Pet Owner';
   const canBrowseAdopt = !user || user.role === 'Pet Owner';
-  const isMarketplace = location.pathname.startsWith('/marketplace');
+  const isMarketplace = location.pathname.startsWith('/marketplace') || location.pathname.startsWith('/store');
 
   useEffect(() => {
     const handleScroll = () => {

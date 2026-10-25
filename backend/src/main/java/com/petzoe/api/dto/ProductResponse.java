@@ -9,9 +9,11 @@ import java.time.LocalDateTime;
 public class ProductResponse {
     private Long id;
     private String name;
+    private String shortDescription;
     private String description;
     private String brand;
     private Double price;
+    private Double mrp;
     private Double discountPrice;
     private String sku;
     private Integer stockQuantity;
@@ -22,6 +24,7 @@ public class ProductResponse {
     private Integer reviewCount;
     private Boolean approved;
     private Boolean featured;
+    private String petType;
     private LocalDateTime createdAt;
     private Long categoryId;
     private String categoryName;
@@ -38,6 +41,9 @@ public class ProductResponse {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
+    public String getShortDescription() { return shortDescription; }
+    public void setShortDescription(String shortDescription) { this.shortDescription = shortDescription; }
+
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
@@ -46,6 +52,9 @@ public class ProductResponse {
 
     public Double getPrice() { return price; }
     public void setPrice(Double price) { this.price = price; }
+
+    public Double getMrp() { return mrp; }
+    public void setMrp(Double mrp) { this.mrp = mrp; }
 
     public Double getDiscountPrice() { return discountPrice; }
     public void setDiscountPrice(Double discountPrice) { this.discountPrice = discountPrice; }
@@ -76,6 +85,9 @@ public class ProductResponse {
 
     public Boolean getFeatured() { return featured; }
     public void setFeatured(Boolean featured) { this.featured = featured; }
+
+    public String getPetType() { return petType; }
+    public void setPetType(String petType) { this.petType = petType; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
