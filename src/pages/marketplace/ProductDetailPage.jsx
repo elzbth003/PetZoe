@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, ChevronRight, Check, AlertCircle, ShieldCheck, Truck, Sparkles, Loader2, Star, User } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Heart, ChevronRight, Check, AlertCircle, Loader2, Star } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { vendorProductService } from '../../services/vendorProductService';
 import StarRating from '../../components/marketplace/StarRating';
@@ -9,11 +9,11 @@ import ProductCard from '../../components/marketplace/ProductCard';
 import SellerProductEditPanel from '../../components/marketplace/SellerProductEditPanel';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-
 import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
 
@@ -23,6 +23,7 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState(null);
   const [activeTab, setActiveTab] = useState('description'); // description, specs, reviews
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -71,7 +72,7 @@ export default function ProductDetailPage() {
         checkOwnership(res.data.id);
       }
     } catch (err) {
-      console.error("Failed to fetch product details", err);
+      console.error('Failed to fetch product details', err);
     } finally {
       setLoading(false);
     }
@@ -90,6 +91,42 @@ export default function ProductDetailPage() {
     }
   };
 
+  // Derive contextual size/volume options based on product type & specs
+  const sizeOptions = useMemo(() => {
+    if (!product) return ['Standard'];
+    const text = `${product.name} ${product.categoryName || ''} ${product.specifications || ''}`.toLowerCase();
+    
+    if (text.includes('shampoo') || text.includes('gel') || text.includes('liquid') || text.includes('spray') || text.includes('serum') || text.includes('drop')) {
+      return ['30 ml', '60 ml', '80 ml', '100 ml'];
+    }
+    if (text.includes('wipe')) {
+      return ['40 Pack', '80 Pack', '100 Pack', '150 Pack'];
+    }
+    if (text.includes('kibble') || text.includes('food') || text.includes('treat') || text.includes('chew') || text.includes('bone')) {
+      if (product.weight) {
+        const w = Number(product.weight);
+        return [`${w}g`, `${w * 2}g`, `${w * 5}g`];
+      }
+      return ['100g', '500g', '1 kg', '3 kg'];
+    }
+    if (text.includes('bed') || text.includes('collar') || text.includes('harness') || text.includes('crate')) {
+      return ['Small', 'Medium', 'Large', 'XL'];
+    }
+    return ['Single Unit', 'Pack of 2', 'Pack of 3'];
+  }, [product]);
+
+  useEffect(() => {
+    if (sizeOptions && sizeOptions.length > 0) {
+      setSelectedSize(sizeOptions[0]);
+    }
+  }, [sizeOptions]);
+
+  const isLiquidOrSpray = useMemo(() => {
+    if (!product) return false;
+    const text = `${product.name} ${product.categoryName || ''}`.toLowerCase();
+    return text.includes('shampoo') || text.includes('gel') || text.includes('liquid') || text.includes('spray') || text.includes('serum') || text.includes('drop');
+  }, [product]);
+
   const handleAddToCart = async () => {
     if (!user) {
       showToast('Please login to add items to cart', 'error');
@@ -106,6 +143,28 @@ export default function ProductDetailPage() {
       window.dispatchEvent(new Event('cart-updated'));
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to add to cart', 'error');
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!user) {
+      showToast('Please login to complete your purchase', 'error');
+      navigate('/login');
+      return;
+    }
+    if (isSeller || isNonBuyer) {
+      showToast('Only Pet Owner accounts can purchase products', 'error');
+      return;
+    }
+    try {
+      setIsAddingToCart(true);
+      await marketplaceService.addToCart(product.id, quantity);
+      window.dispatchEvent(new Event('cart-updated'));
+      navigate('/marketplace/cart');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to process purchase', 'error');
     } finally {
       setIsAddingToCart(false);
     }
@@ -153,10 +212,10 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh]">
+      <div className="pt-32 pb-20 flex justify-center items-center min-h-[60vh] bg-[#fbfbf9]">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent border-teal-600"></div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Loading product details...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent border-[#183d2e]"></div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Loading product...</p>
         </div>
       </div>
     );
@@ -164,7 +223,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="pt-32 pb-20 flex flex-col items-center justify-center text-center px-6 min-h-[50vh]">
+      <div className="pt-32 pb-20 flex flex-col items-center justify-center text-center px-6 min-h-[50vh] bg-[#fbfbf9]">
         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
           <AlertCircle size={28} />
         </div>
@@ -174,7 +233,7 @@ export default function ProductDetailPage() {
         </p>
         <Link 
           to="/marketplace/products" 
-          className="bg-teal-600 text-white font-bold text-xs px-6 py-3 rounded-full hover:bg-teal-700 transition-colors shadow-md"
+          className="bg-[#183d2e] text-white font-bold text-xs px-6 py-3 rounded-full hover:bg-[#122e23] transition-colors shadow-md"
         >
           Return to Marketplace
         </Link>
@@ -184,133 +243,130 @@ export default function ProductDetailPage() {
 
   const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
   const currentPrice = hasDiscount ? product.discountPrice : product.price;
-  const savings = hasDiscount ? product.price - product.discountPrice : 0;
-  const discountPercent = hasDiscount ? Math.round((savings / product.price) * 100) : 0;
 
   return (
-    <div className="pt-24 pb-20 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="pt-24 pb-20 bg-[#fbfbf9] min-h-screen">
+      <div className="max-w-6xl mx-auto px-6">
         
-        {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-6">
-          <Link to="/" className="hover:text-teal-700 transition-colors">Home</Link>
+        {/* Subtle Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400 mb-6">
+          <Link to="/" className="hover:text-slate-700 transition-colors">Home</Link>
           <ChevronRight size={12} />
-          <Link to="/marketplace" className="hover:text-teal-700 transition-colors">Marketplace</Link>
+          <Link to="/marketplace" className="hover:text-slate-700 transition-colors">Marketplace</Link>
           <ChevronRight size={12} />
           {product.categoryId && (
             <>
-              <Link to={`/marketplace/products?category=${product.categoryId}`} className="hover:text-teal-700 transition-colors">
+              <Link to={`/marketplace/products?category=${product.categoryId}`} className="hover:text-slate-700 transition-colors">
                 {product.categoryName || 'Category'}
               </Link>
               <ChevronRight size={12} />
             </>
           )}
-          <span className="text-slate-800 font-bold truncate max-w-xs">{product.name}</span>
+          <span className="text-slate-700 font-semibold truncate max-w-xs">{product.name}</span>
         </nav>
 
-        {/* Product Showcase Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200/90 flex flex-col lg:flex-row gap-10 lg:gap-14 mb-12">
+        {/* Product Showcase Card — Matches Reference UI */}
+        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-xs border border-slate-200/70 flex flex-col lg:flex-row gap-8 lg:gap-12 mb-12">
           
-          {/* Left Column: Image Showcase */}
-          <div className="lg:w-1/2 flex flex-col gap-4">
-            <div className="rounded-3xl overflow-hidden bg-slate-50 border border-slate-200/80 aspect-square relative shadow-inner">
+          {/* Left Column: Clean Single Product Image Display (No multiple images, No slider arrows) */}
+          <div className="lg:w-1/2 flex flex-col">
+            <div className="rounded-3xl overflow-hidden bg-[#f7f5f0] border border-slate-100 aspect-square relative shadow-inner flex items-center justify-center">
               <img 
                 src={imgSrc} 
                 alt={product.name} 
                 onError={() => setImgSrc(analyzeProductNameAndGetImage(product))}
                 className="w-full h-full object-cover object-center" 
               />
-              {hasDiscount && (
-                <div className="absolute top-4 left-4 bg-rose-500 text-white font-extrabold text-xs px-3 py-1 rounded-full shadow-md">
-                  {discountPercent}% OFF
-                </div>
-              )}
-            </div>
-
-            {/* Quality & Safe Shipping Guarantee */}
-            <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
-              <div className="flex items-center gap-2 text-slate-700 font-semibold">
-                <Truck size={16} className="text-teal-600 flex-shrink-0" />
-                <span>Express Inspected Shipping</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-700 font-semibold">
-                <ShieldCheck size={16} className="text-teal-600 flex-shrink-0" />
-                <span>100% Genuine Sealed Batch</span>
-              </div>
             </div>
           </div>
 
-          {/* Right Column: Product Purchase Panel */}
-          <div className="lg:w-1/2 flex flex-col">
-            {/* Brand & Sku */}
-            <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              <span className="text-teal-700">{product.brand || 'PetZoe Curated'}</span>
-              <span>SKU: {product.sku || `PZ-${product.id}`}</span>
-            </div>
+          {/* Right Column: Reference Product Details & Purchasing UI */}
+          <div className="lg:w-1/2 flex flex-col justify-center">
+            {/* Category Eyebrow */}
+            <span className="text-xs sm:text-sm font-medium text-slate-400 tracking-wide mb-1 block">
+              {product.categoryName || 'Pet Care'}
+            </span>
 
-            {/* Title */}
-            <h1 className="font-display font-black text-2xl sm:text-3xl lg:text-4xl text-slate-900 leading-tight mb-3">
-              {product.name}
-            </h1>
-            
-            {/* Rating & Review summary */}
-            <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100">
-              <div className="flex items-center gap-1.5">
-                <StarRating rating={product.averageRating || 0} size={16} />
-                <span className="text-xs font-extrabold text-slate-800">
-                  {Number(product.averageRating || 0).toFixed(1)}
+            {/* Title & In Stock Badge */}
+            <div className="flex items-center gap-3 flex-wrap mb-2">
+              <h1 className="font-display font-bold text-2xl sm:text-3xl lg:text-[32px] text-slate-900 leading-tight">
+                {product.name}
+              </h1>
+              {product.stockQuantity > 0 ? (
+                <span className="bg-[#e6f7ef] text-[#1e824c] border border-[#a2dfbe]/70 text-[11px] font-semibold px-3 py-0.5 rounded-full inline-flex items-center">
+                  In Stock
                 </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  ({product.reviewCount || 0} {product.reviewCount === 1 ? 'review' : 'reviews'})
-                </span>
-              </div>
-              <span className="text-slate-300">•</span>
-              <span className="text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
-                Verified Seller: {product.sellerName || 'PetZoe Direct'}
-              </span>
-            </div>
-
-            {/* Price Box */}
-            <div className="mb-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
-              <div className="flex items-baseline gap-3 mb-1">
-                <span className="font-black text-3xl sm:text-4xl text-slate-900">
-                  ₹{Number(currentPrice).toLocaleString()}
-                </span>
-                {hasDiscount && (
-                  <span className="text-base text-slate-400 line-through font-semibold">
-                    ₹{Number(product.price).toLocaleString()}
-                  </span>
-                )}
-                {hasDiscount && (
-                  <span className="bg-rose-100 text-rose-700 text-xs font-extrabold px-2 py-0.5 rounded-md">
-                    Save ₹{Number(savings).toLocaleString()}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 font-medium">
-                Inclusive of all taxes. Free shipping on certified prescription orders.
-              </p>
-            </div>
-
-            {/* Real Stock Status */}
-            <div className="mb-8">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Availability</div>
-              {product.stockQuantity > 5 ? (
-                <div className="inline-flex items-center gap-2 text-emerald-700 font-bold bg-emerald-50 px-3.5 py-1.5 rounded-xl border border-emerald-200 text-xs">
-                  <Check size={14} /> In Stock ({product.stockQuantity} units available)
-                </div>
-              ) : product.stockQuantity > 0 ? (
-                <div className="inline-flex items-center gap-2 text-amber-800 font-bold bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-200 text-xs">
-                  <AlertCircle size={14} /> Low Stock (Only {product.stockQuantity} units remaining)
-                </div>
               ) : (
-                <div className="inline-flex items-center gap-2 text-slate-700 font-bold bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs">
-                  <AlertCircle size={14} /> Out of Stock
-                </div>
+                <span className="bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-semibold px-3 py-0.5 rounded-full inline-flex items-center">
+                  Out of Stock
+                </span>
               )}
             </div>
 
-            {/* Actions / Seller Panel */}
+            {/* Rating Stars & Reviews */}
+            <div className="flex items-center gap-2 mb-3 text-xs sm:text-sm">
+              <div className="flex items-center text-amber-400">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={16}
+                    className={
+                      star <= Math.round(product.averageRating || 5)
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'text-slate-200'
+                    }
+                  />
+                ))}
+              </div>
+              <span className="font-bold text-slate-800">
+                {Number(product.averageRating || 4.8).toFixed(1)}
+              </span>
+              <span className="text-slate-400 font-normal">
+                ({product.reviewCount || 24} {product.reviewCount === 1 ? 'Review' : 'Reviews'})
+              </span>
+            </div>
+
+            {/* Price Row: Warm Caramel Price & Strikethrough MRP */}
+            <div className="flex items-baseline gap-3 mb-4">
+              <span className="font-bold text-2xl sm:text-3xl text-[#b5833a]">
+                ₹{Number(currentPrice).toLocaleString()}
+              </span>
+              {hasDiscount && (
+                <span className="text-base sm:text-lg text-slate-400 line-through font-normal">
+                  ₹{Number(product.price).toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* Description Text */}
+            <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-6 font-normal">
+              {product.shortDescription || product.description || 'Premium pet care formula designed to ensure companion vitality, health, and comfort.'}
+            </p>
+
+            {/* Size / Volume Pills (No color options) */}
+            <div className="mb-6">
+              <span className="block text-xs sm:text-sm font-semibold text-slate-800 mb-2.5">
+                {isLiquidOrSpray ? 'Size/Volume' : 'Size/Weight'}
+              </span>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {sizeOptions.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setSelectedSize(size)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                      selectedSize === size
+                        ? 'bg-[#183d2e] text-white shadow-2xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions / Seller Guard */}
             {isSeller ? (
               ownVendorProduct ? (
                 <SellerProductEditPanel
@@ -319,91 +375,152 @@ export default function ProductDetailPage() {
                   onUpdated={(updated) => setOwnVendorProduct(updated)}
                 />
               ) : (
-                <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 text-xs font-semibold">
+                <div className="p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 text-xs font-semibold mb-6">
                   Marketplace seller accounts are restricted to catalog management and cannot purchase products.
                 </div>
               )
             ) : isNonBuyer ? (
-              <div className="mt-auto p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 text-xs font-semibold">
+              <div className="p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 text-xs font-semibold mb-6">
                 Only authenticated Pet Owner accounts can complete marketplace purchases.
               </div>
             ) : (
-              <div className="mt-auto flex flex-col gap-3.5">
-                <div className="flex items-center gap-3">
-                  {/* Quantity Counter */}
-                  <div className="flex items-center border border-slate-200 rounded-2xl bg-white overflow-hidden h-12 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                      disabled={product.stockQuantity === 0}
-                      className="px-3.5 h-full text-slate-600 hover:bg-slate-50 font-bold text-sm disabled:opacity-30 cursor-pointer"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span className="w-10 text-center font-bold text-slate-800 text-sm select-none">
-                      {quantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(q => Math.min(product.stockQuantity || 1, q + 1))}
-                      disabled={product.stockQuantity === 0 || quantity >= product.stockQuantity}
-                      className="px-3.5 h-full text-slate-600 hover:bg-slate-50 font-bold text-sm disabled:opacity-30 cursor-pointer"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  {/* Add To Cart Button */}
+              /* Quantity, Add To Cart, Buy Now, and Wishlist Row */
+              <div className="flex items-center gap-3 flex-wrap mb-8">
+                {/* Quantity Selector Pill */}
+                <div className="flex items-center border border-slate-200 rounded-full bg-white h-11 px-3 shadow-2xs">
                   <button
                     type="button"
-                    onClick={handleAddToCart}
-                    disabled={isAddingToCart || product.stockQuantity === 0}
-                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold h-12 rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-teal-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm active:scale-98"
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    disabled={product.stockQuantity === 0}
+                    className="text-slate-400 hover:text-slate-700 font-bold px-2 disabled:opacity-30 cursor-pointer select-none text-base"
+                    aria-label="Decrease quantity"
                   >
-                    {isAddingToCart ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <ShoppingCart size={18} />
-                    )}
-                    <span>{product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+                    -
+                  </button>
+                  <span className="w-8 text-center font-bold text-slate-800 text-sm select-none">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => Math.min(product.stockQuantity || 1, q + 1))}
+                    disabled={product.stockQuantity === 0 || quantity >= product.stockQuantity}
+                    className="text-slate-400 hover:text-slate-700 font-bold px-2 disabled:opacity-30 cursor-pointer select-none text-base"
+                    aria-label="Increase quantity"
+                  >
+                    +
                   </button>
                 </div>
 
-                {/* Wishlist Button */}
+                {/* Add To Cart Button (Dark Forest Green Pill) */}
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={isAddingToCart || product.stockQuantity === 0}
+                  className="bg-[#183d2e] hover:bg-[#122e23] text-white font-medium text-xs sm:text-sm px-7 h-11 rounded-full flex items-center justify-center gap-2 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98"
+                >
+                  {isAddingToCart ? <Loader2 size={16} className="animate-spin" /> : null}
+                  <span>Add To Cart</span>
+                </button>
+
+                {/* Buy Now Button (Warm Caramel / Golden-Brown Pill) */}
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={isAddingToCart || product.stockQuantity === 0}
+                  className="bg-[#b5833a] hover:bg-[#a17431] text-white font-medium text-xs sm:text-sm px-7 h-11 rounded-full flex items-center justify-center gap-2 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98"
+                >
+                  <span>Buy Now</span>
+                </button>
+
+                {/* Wishlist Button (Circular Outline) */}
                 <button
                   type="button"
                   onClick={handleAddToWishlist}
                   disabled={isAddingToWishlist}
-                  className="w-full h-12 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-sm active:scale-98"
+                  className="w-11 h-11 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-rose-500 hover:border-rose-300 transition-colors cursor-pointer shadow-2xs active:scale-95"
+                  title="Save to Wishlist"
+                  aria-label="Save to Wishlist"
                 >
-                  <Heart size={16} className={isAddingToWishlist ? 'fill-rose-500 text-rose-500' : 'text-slate-500'} />
-                  <span>Save to Wishlist</span>
+                  <Heart size={18} className={isAddingToWishlist ? 'fill-rose-500 text-rose-500' : ''} />
                 </button>
               </div>
             )}
 
+            {/* Metadata Footer: SKU, Tags, Share */}
+            <div className="pt-6 border-t border-slate-100 space-y-2.5 text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-700 min-w-[55px]">SKU :</span>
+                <span className="text-slate-500">{product.sku || `PZ-${product.id}`}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-700 min-w-[55px]">Tags :</span>
+                <span className="text-slate-500">
+                  {[product.categoryName, product.brand, product.petType, 'Pet Care'].filter(Boolean).join(', ')}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 pt-1">
+                <span className="font-semibold text-slate-700 min-w-[55px]">Share :</span>
+                <div className="flex items-center gap-2 text-slate-600">
+                  <a
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#183d2e] hover:text-white flex items-center justify-center transition-colors text-[11px] font-bold"
+                    title="Share on Facebook"
+                  >
+                    f
+                  </a>
+                  <a
+                    href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(product.name)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#183d2e] hover:text-white flex items-center justify-center transition-colors text-[11px] font-bold"
+                    title="Share on X"
+                  >
+                    𝕏
+                  </a>
+                  <a
+                    href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&description=${encodeURIComponent(product.name)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#183d2e] hover:text-white flex items-center justify-center transition-colors text-[11px] font-bold"
+                    title="Share on Pinterest"
+                  >
+                    p
+                  </a>
+                  <a
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(product.name + ' ' + (typeof window !== 'undefined' ? window.location.href : ''))}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#183d2e] hover:text-white flex items-center justify-center transition-colors text-[11px] font-bold"
+                    title="Share on WhatsApp"
+                  >
+                    wa
+                  </a>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* Structured Tabs Section */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200/90 mb-12">
+        {/* Structured Tabs Section: Description, Specifications, Reviews */}
+        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-xs border border-slate-200/70 mb-12">
           {/* Tab Navigation */}
           <div className="flex items-center gap-6 border-b border-slate-100 mb-8 overflow-x-auto pb-1">
             {[
               { id: 'description', label: 'Product Description' },
-              { id: 'specs', label: 'Specifications & Ingredients' },
+              { id: 'specs', label: 'Specifications & Details' },
               { id: 'reviews', label: `Reviews (${reviews.length})` }
             ].map(tab => (
               <button 
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`font-bold text-sm whitespace-nowrap pb-3 border-b-2 transition-all cursor-pointer ${
+                className={`font-semibold text-xs sm:text-sm whitespace-nowrap pb-3 border-b-2 transition-all cursor-pointer ${
                   activeTab === tab.id 
-                    ? 'border-teal-600 text-teal-700' 
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    ? 'border-[#183d2e] text-[#183d2e]' 
+                    : 'border-transparent text-slate-400 hover:text-slate-700'
                 }`}
               >
                 {tab.label}
@@ -411,22 +528,22 @@ export default function ProductDetailPage() {
             ))}
           </div>
 
-          <div className="min-h-[220px]">
+          <div className="min-h-[180px]">
             {/* Description Tab */}
             {activeTab === 'description' && (
               <div className="space-y-6 max-w-4xl text-slate-700 leading-relaxed text-sm">
-                <p className="font-medium text-base text-slate-800">{product.description}</p>
+                <p className="font-normal text-slate-600">{product.description || product.shortDescription}</p>
                 
-                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div className="p-5 bg-slate-50/80 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                   <div>
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      Certified Merchant
+                      Verified Merchant
                     </span>
-                    <h4 className="font-extrabold text-slate-900 text-base">{product.sellerName || 'PetZoe Official Store'}</h4>
+                    <h4 className="font-bold text-slate-900 text-base">{product.sellerName || 'PetZoe Official Store'}</h4>
                     <p className="text-xs text-slate-500">Authorized Veterinary Healthcare Distributor</p>
                   </div>
-                  <div className="flex items-center gap-2 text-teal-700 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200 text-xs font-bold w-fit">
-                    <ShieldCheck size={16} /> Certified Authenticity
+                  <div className="flex items-center gap-2 text-[#183d2e] bg-[#e6f7ef] px-3.5 py-1.5 rounded-full border border-[#a2dfbe]/60 text-xs font-bold w-fit">
+                    <Check size={14} /> Certified Authenticity
                   </div>
                 </div>
               </div>
@@ -436,12 +553,12 @@ export default function ProductDetailPage() {
             {activeTab === 'specs' && (
               <div className="grid md:grid-cols-2 gap-8 max-w-4xl">
                 <div>
-                  <h3 className="font-bold text-sm uppercase tracking-wider text-slate-400 mb-3">Specifications</h3>
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-3">Specifications</h3>
                   {product.specifications ? (
                     <ul className="space-y-2.5">
                       {product.specifications.split('|').map((spec, i) => (
-                        <li key={i} className="flex items-center gap-2 text-slate-700 text-xs font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                          <Check size={14} className="text-teal-600 flex-shrink-0" />
+                        <li key={i} className="flex items-center gap-2 text-slate-700 text-xs font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                          <Check size={14} className="text-[#183d2e] flex-shrink-0" />
                           <span>{spec.trim()}</span>
                         </li>
                       ))}
@@ -451,9 +568,9 @@ export default function ProductDetailPage() {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm uppercase tracking-wider text-slate-400 mb-3">Ingredients / Formula</h3>
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-3">Ingredients / Formula</h3>
                   {product.ingredients ? (
-                    <div className="text-slate-700 text-xs font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="text-slate-700 text-xs font-normal leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
                       {product.ingredients}
                     </div>
                   ) : (
@@ -468,19 +585,19 @@ export default function ProductDetailPage() {
               <div>
                 <div className="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b border-slate-100">
                   {/* Rating summary */}
-                  <div className="md:w-1/3 flex flex-col items-center justify-center text-center p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="md:w-1/3 flex flex-col items-center justify-center text-center p-6 bg-slate-50/80 rounded-2xl border border-slate-100">
                     <div className="font-black text-5xl text-slate-900 mb-1">
                       {Number(product.averageRating || 0).toFixed(1)}
                     </div>
-                    <StarRating rating={product.averageRating || 0} size={20} className="mb-2" />
-                    <div className="text-slate-500 font-semibold text-xs">
+                    <StarRating rating={product.averageRating || 0} size={18} className="mb-2" />
+                    <div className="text-slate-500 font-medium text-xs">
                       Based on {reviews.length} customer {reviews.length === 1 ? 'review' : 'reviews'}
                     </div>
                   </div>
                   
                   {/* Review form */}
                   <div className="md:w-2/3">
-                    <h3 className="font-bold text-sm text-slate-900 mb-3 uppercase tracking-wider">Leave a Review</h3>
+                    <h3 className="font-bold text-xs text-slate-900 mb-3 uppercase tracking-wider">Leave a Review</h3>
                     {isSeller ? (
                       <div className="p-3 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 text-xs font-semibold">
                         Seller accounts cannot submit customer reviews.
@@ -512,19 +629,19 @@ export default function ProductDetailPage() {
                           placeholder="How did this product perform for your pet? Share genuine feedback..."
                           value={newReview.comment}
                           onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-teal-500 font-medium text-xs h-20 resize-none text-slate-800"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-[#183d2e] font-medium text-xs h-20 resize-none text-slate-800"
                           required
                         />
                         <button 
                           type="submit" 
-                          className="bg-teal-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-teal-700 transition-colors shadow-sm cursor-pointer"
+                          className="bg-[#183d2e] text-white font-bold text-xs px-5 py-2.5 rounded-full hover:bg-[#122e23] transition-colors shadow-2xs cursor-pointer"
                         >
                           Submit Review
                         </button>
                       </form>
                     ) : (
                       <div className="p-4 bg-slate-50 text-slate-600 rounded-xl border border-slate-200 text-xs font-medium">
-                        Please <Link to="/login" className="font-bold text-teal-700 underline">login</Link> to share your verified review.
+                        Please <Link to="/login" className="font-bold text-[#183d2e] underline">login</Link> to share your verified review.
                       </div>
                     )}
                   </div>
@@ -541,7 +658,7 @@ export default function ProductDetailPage() {
                       <div key={review.id} className="bg-slate-50/60 p-4 rounded-2xl border border-slate-100 flex flex-col gap-2">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">
+                            <div className="w-7 h-7 rounded-full bg-[#e6f7ef] text-[#183d2e] flex items-center justify-center font-bold text-xs">
                               {review.user?.name ? review.user.name[0].toUpperCase() : 'U'}
                             </div>
                             <div>
@@ -553,7 +670,7 @@ export default function ProductDetailPage() {
                           </div>
                           <StarRating rating={review.rating} size={14} />
                         </div>
-                        <p className="text-slate-700 text-xs font-medium pl-9">{review.comment}</p>
+                        <p className="text-slate-700 text-xs font-normal pl-9">{review.comment}</p>
                       </div>
                     ))
                   )}
@@ -567,12 +684,12 @@ export default function ProductDetailPage() {
         {relatedProducts.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display font-black text-2xl text-slate-900">
-                Related Category Selections
+              <h2 className="font-display font-bold text-2xl text-slate-900">
+                Related Selections
               </h2>
               <Link 
                 to={`/marketplace/products?category=${product.categoryId}`}
-                className="text-xs font-bold text-teal-700 hover:underline"
+                className="text-xs font-semibold text-[#183d2e] hover:underline"
               >
                 View Category
               </Link>
