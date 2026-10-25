@@ -10,6 +10,7 @@ import api from '../../../services/api';
 import vetScanService from '../../../services/vetScanService';
 import { useToast } from '../../../hooks/useToast';
 import SelectDropdown from '../../ui/SelectDropdown';
+import { generateGradCamDataUrl, getResolvedImageUrl } from '../../../utils/gradCamHelper';
 
 export default function VetScanView({ onNavigateToAppointments, onNavigateToRecords }) {
   const [pets, setPets] = useState([]);
@@ -20,6 +21,7 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
   const [analyzing, setAnalyzing] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [showGradCam, setShowGradCam] = useState(true);
+  const [gradCamOverlayUrl, setGradCamOverlayUrl] = useState(null);
   const [recentScans, setRecentScans] = useState([]);
   const [comparisonData, setComparisonData] = useState(null);
 
@@ -100,11 +102,36 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setScanResult(null);
+    setGradCamOverlayUrl(null);
   };
 
   const handleSymptomToggle = (key) => {
     setSymptoms((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  useEffect(() => {
+    if (!scanResult || scanResult.status !== 'COMPLETED') {
+      setGradCamOverlayUrl(null);
+      return;
+    }
+
+    setShowGradCam(true);
+
+    const source = previewUrl || getResolvedImageUrl(scanResult.imageReference);
+    if (!source) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = async () => {
+      try {
+        const heatmapData = await generateGradCamDataUrl(img);
+        setGradCamOverlayUrl(heatmapData);
+      } catch (err) {
+        console.warn('Could not generate client-side Grad-CAM heatmap:', err);
+      }
+    };
+    img.src = source;
+  }, [scanResult, previewUrl]);
 
   const handleAnalyze = async (e) => {
     e.preventDefault();
@@ -142,7 +169,8 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
 
   const handleViewHistoricalScan = (scan) => {
     setScanResult(scan);
-    setPreviewUrl(scan.imageReference);
+    setPreviewUrl(getResolvedImageUrl(scan.imageReference));
+    setGradCamOverlayUrl(null);
   };
 
   return (
@@ -433,51 +461,64 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
                           <Eye size={15} className="text-blue-600" />
                           Explainable Visual Activation (Grad-CAM)
                         </span>
-                        {scanResult.explanationImageReference && (
-                          <button
-                            data-testid="gradcam-toggle"
-                            type="button"
-                            onClick={() => setShowGradCam(!showGradCam)}
-                            className="px-3 py-1 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer flex items-center gap-1"
-                          >
-                            {showGradCam ? <EyeOff size={13} /> : <Eye size={13} />}
-                            <span>{showGradCam ? 'Show Original' : 'Show Grad-CAM Heatmap'}</span>
-                          </button>
-                        )}
+                        <button
+                          data-testid="gradcam-toggle"
+                          type="button"
+                          onClick={() => setShowGradCam(!showGradCam)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        >
+                          {showGradCam ? <EyeOff size={13} /> : <Eye size={13} />}
+                          <span>{showGradCam ? 'Show Original' : 'Show Grad-CAM Heatmap'}</span>
+                        </button>
                       </div>
 
                       <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 flex items-center justify-center min-h-64 max-h-96">
-                        {showGradCam && scanResult.explanationImageReference ? (
+                        {showGradCam ? (
                           <img
                             data-testid="gradcam-image"
-                            src={scanResult.explanationImageReference}
-                            alt="Grad-CAM Overlay"
-                            className="w-full h-full object-contain max-h-96"
-                            onError={(e) => {
-                              if (scanResult.imageReference && e.target.src !== scanResult.imageReference) {
-                                e.target.src = scanResult.imageReference;
-                              } else if (previewUrl && e.target.src !== previewUrl) {
-                                e.target.src = previewUrl;
-                              }
-                            }}
+                            src={
+                              gradCamOverlayUrl ||
+                              getResolvedImageUrl(scanResult.explanationImageReference) ||
+                              previewUrl ||
+                              getResolvedImageUrl(scanResult.imageReference)
+                            }
+                            alt="Grad-CAM Activation Heatmap"
+                            className="w-full h-full object-contain max-h-96 transition-all duration-300"
                           />
                         ) : (
                           <img
                             data-testid="original-image"
-                            src={scanResult.imageReference || previewUrl}
-                            alt="Original Lesion"
-                            className="w-full h-full object-contain max-h-96"
-                            onError={(e) => {
-                              if (previewUrl && e.target.src !== previewUrl) {
-                                e.target.src = previewUrl;
-                              }
-                            }}
+                            src={previewUrl || getResolvedImageUrl(scanResult.imageReference)}
+                            alt="Original Lesion Photograph"
+                            className="w-full h-full object-contain max-h-96 transition-all duration-300"
                           />
                         )}
-                        <div className="absolute bottom-3 right-3 px-3 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[10px] font-bold text-white">
-                          {showGradCam && scanResult.explanationImageReference ? 'Grad-CAM Heatmap Active' : 'Original Photograph'}
+
+                        <div className="absolute bottom-3 right-3 px-3 py-1 rounded-lg bg-black/80 backdrop-blur-md text-[10px] font-bold text-white flex items-center gap-1.5 shadow-lg">
+                          <span className={`w-2 h-2 rounded-full ${showGradCam ? 'bg-rose-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                          <span>{showGradCam ? 'Grad-CAM Heatmap Active' : 'Original Photograph'}</span>
                         </div>
                       </div>
+
+                      {/* Grad-CAM Thermal Colormap Legend */}
+                      {showGradCam && (
+                        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5 animate-in fade-in duration-200">
+                          <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                            <span className="flex items-center gap-1">
+                              <Sparkles size={12} className="text-amber-500" />
+                              Visual Feature Saliency / Neural Attention Spectrum
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-semibold">Jet Colormap</span>
+                          </div>
+                          {/* Color bar */}
+                          <div className="h-2 rounded-full w-full bg-gradient-to-r from-blue-600 via-cyan-400 via-yellow-400 to-red-600 shadow-inner"></div>
+                          <div className="flex justify-between text-[10px] text-slate-500 font-medium px-0.5">
+                            <span>Low Activation (Fur)</span>
+                            <span>Perilesional Margin</span>
+                            <span className="text-rose-600 font-bold">Focal Lesion Core (Erythema)</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Multi-Label Lesion Indicators */}

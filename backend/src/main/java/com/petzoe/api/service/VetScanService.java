@@ -112,7 +112,7 @@ public class VetScanService {
         Path filePath = Paths.get(UPLOAD_DIR + fileName);
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, imageBytes);
-        String imageReference = "http://localhost:8080/uploads/" + fileName;
+        String imageReference = "/uploads/" + fileName;
 
         // If image validation failed (e.g. non-canine image, scenery, dark, blurry, or washed out)
         if (!validation.isUsable()) {
@@ -180,7 +180,7 @@ public class VetScanService {
                 String heatmapFileName = UUID.randomUUID() + "-gradcam.png";
                 Path heatmapPath = Paths.get(UPLOAD_DIR + heatmapFileName);
                 Files.write(heatmapPath, heatmapBytes);
-                explanationRef = "http://localhost:8080/uploads/" + heatmapFileName;
+                explanationRef = "/uploads/" + heatmapFileName;
             } catch (Exception e) {
                 explanationRef = null;
             }
@@ -194,7 +194,7 @@ public class VetScanService {
                     String heatmapFileName = UUID.randomUUID() + "-gradcam.png";
                     Path heatmapPath = Paths.get(UPLOAD_DIR + heatmapFileName);
                     Files.write(heatmapPath, localHeatmap);
-                    explanationRef = "http://localhost:8080/uploads/" + heatmapFileName;
+                    explanationRef = "/uploads/" + heatmapFileName;
                 }
             } catch (Exception e) {
                 explanationRef = imageReference;
