@@ -8,15 +8,15 @@
 export const PRODUCT_IMAGE_REGISTRY = {
   // Travel & Carriers
   TRAVEL_CRATE: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?auto=format&fit=crop&q=80&w=600',
-  LEATHER_COLLAR: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=600',
-  DOG_HARNESS: 'https://images.unsplash.com/photo-1544568100-847a948585b9?auto=format&fit=crop&q=80&w=600',
+  LEATHER_COLLAR: 'https://images.unsplash.com/photo-1682785821382-0fd8d0d3fc0b?auto=format&fit=crop&q=80&w=600',
+  DOG_HARNESS: 'https://images.unsplash.com/photo-1551717743-49959800b1f6?auto=format&fit=crop&q=80&w=600',
 
   // Dog Food & Nutrition
-  DOG_FOOD_KIBBLE: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&q=80&w=600',
-  PUPPY_FOOD: 'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&q=80&w=600',
+  DOG_FOOD_KIBBLE: 'https://images.unsplash.com/photo-1747577672101-542f7797048b?auto=format&fit=crop&q=80&w=600',
+  PUPPY_FOOD: 'https://images.unsplash.com/photo-1709810024789-4519a14f05ae?auto=format&fit=crop&q=80&w=600',
 
   // Cat Food & Nutrition
-  CAT_FOOD_TUNA: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=600',
+  CAT_FOOD_TUNA: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&q=80&w=600',
   CAT_FOOD_KIBBLE: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=600',
   CAT_FOOD_HERRING: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&q=80&w=600',
 
@@ -24,20 +24,20 @@ export const PRODUCT_IMAGE_REGISTRY = {
   BEEF_LIVER_TREATS: 'https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&q=80&w=600',
   DENTAL_CHEW_BONE: 'https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?auto=format&fit=crop&q=80&w=600',
   SALMON_DENTAL_CHEWS: 'https://images.unsplash.com/photo-1582798358481-d199fb7347bb?auto=format&fit=crop&q=80&w=600',
-  OMEGA_SOFT_CHEWS: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=600',
+  OMEGA_SOFT_CHEWS: 'https://images.unsplash.com/photo-1709810024789-4519a14f05ae?auto=format&fit=crop&q=80&w=600',
 
   // Toys
   KONG_CHEW_TOY: 'https://images.unsplash.com/photo-1535930749574-1399327ce78f?auto=format&fit=crop&q=80&w=600',
   FEATHER_WAND_TEASER: 'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?auto=format&fit=crop&q=80&w=600',
-  ROPE_TUG_TOY: 'https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?auto=format&fit=crop&q=80&w=600',
-  INTERACTIVE_LASER: 'https://images.unsplash.com/photo-1615789591457-74a63395c990?auto=format&fit=crop&q=80&w=600',
-  PUZZLE_TOY: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&q=80&w=600',
+  ROPE_TUG_TOY: 'https://images.unsplash.com/photo-1561038592-cb5ddedd8377?auto=format&fit=crop&q=80&w=600',
+  INTERACTIVE_LASER: 'https://images.unsplash.com/photo-1781497181951-1e2cad205acf?auto=format&fit=crop&q=80&w=600',
+  PUZZLE_TOY: 'https://images.unsplash.com/photo-1615486364134-62a4c72c822d?auto=format&fit=crop&q=80&w=600',
 
   // Grooming & Hygiene
-  DOG_SHAMPOO: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=600',
+  DOG_SHAMPOO: 'https://images.unsplash.com/photo-1701992678972-d5a053ad0fb0?auto=format&fit=crop&q=80&w=600',
   DESHEDDING_BRUSH: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=600',
-  NAIL_CLIPPER: 'https://images.unsplash.com/photo-1585664811087-47f65abbad64?auto=format&fit=crop&q=80&w=600',
-  GROOMING_WIPES: 'https://images.unsplash.com/photo-1559214369-a6b1d7919865?auto=format&fit=crop&q=80&w=600',
+  NAIL_CLIPPER: 'https://images.unsplash.com/photo-1559818469-a289200df0b1?auto=format&fit=crop&q=80&w=600',
+  GROOMING_WIPES: 'https://images.unsplash.com/photo-1734599895291-d25a27e4cb45?auto=format&fit=crop&q=80&w=600',
 
   // Health, Supplements & Medical
   DENTAL_TOOTHPASTE_KIT: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&q=80&w=600',
@@ -202,13 +202,16 @@ export function getProductImageUrl(product) {
   // List of known mismatched URLs in legacy seed data
   const isMismatchedLegacy =
     url &&
-    ((product.name?.toLowerCase().includes('dog food') && url.includes('photo-1589924691995-400dc9edfabb')) ||
-     (product.name?.toLowerCase().includes('travel crate') && url.includes('photo-1601758003122-53c40e686a19')) ||
-     (product.name?.toLowerCase().includes('laser ball') && url.includes('photo-1587300003388-59208cc962cb')) ||
+    ((product.name?.toLowerCase().includes('dog food') && (url.includes('photo-1589924691995-400dc9edfabb') || url.includes('photo-1589924691995-400dc9ecc119'))) ||
+     (product.name?.toLowerCase().includes('travel crate') && (url.includes('photo-1601758003122-53c40e686a19') || url.includes('photo-1548767797-d8c844163c4c'))) ||
+     (product.name?.toLowerCase().includes('laser ball') && (url.includes('photo-1587300003388-59208cc962cb') || url.includes('photo-1615789591457-74a63395c990'))) ||
      (product.name?.toLowerCase().includes('rope') && url.includes('photo-1601758124510-52d02ddb7cbd')) ||
-     (product.name?.toLowerCase().includes('shampoo') && url.includes('photo-1585664811087-47f65abbad64')) ||
-     (product.name?.toLowerCase().includes('nail clipper') && url.includes('photo-1516734212186-a967f81ad0d7')) ||
-     (product.name?.toLowerCase().includes('hide-a-squirrel') && url.includes('photo-1535294435445-d7249524ef2e')));
+     (product.name?.toLowerCase().includes('shampoo') && (url.includes('photo-1585664811087-47f65abbad64') || url.includes('photo-1583337130417-3346a1be7dee'))) ||
+     (product.name?.toLowerCase().includes('nail clipper') && (url.includes('photo-1516734212186-a967f81ad0d7') || url.includes('photo-1585664811087-47f65abbad64'))) ||
+     (product.name?.toLowerCase().includes('collar') && (url.includes('photo-1601758228041-f3b2795255f1'))) ||
+     (product.name?.toLowerCase().includes('harness') && (url.includes('photo-1544568100-847a948585b9'))) ||
+     (product.name?.toLowerCase().includes('wipes') && (url.includes('photo-1585664811087-47f65abbad64') || url.includes('photo-1559214369-a6b1d7919865'))) ||
+     (product.name?.toLowerCase().includes('squirrel') && (url.includes('photo-1535294435445-d7249524ef2e') || url.includes('photo-1576201836106-db1758fd1c97'))));
 
   if (url && typeof url === 'string' && url.startsWith('http') && !isMismatchedLegacy) {
     return url;
