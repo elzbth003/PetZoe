@@ -10,7 +10,7 @@ import SellerProductEditPanel from '../../components/marketplace/SellerProductEd
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=600';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -18,7 +18,7 @@ export default function ProductDetailPage() {
   const { showToast } = useToast();
 
   const [product, setProduct] = useState(null);
-  const [imgSrc, setImgSrc] = useState(FALLBACK_IMAGE);
+  const [imgSrc, setImgSrc] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ export default function ProductDetailPage() {
       setLoading(true);
       const res = await marketplaceService.getProductById(id);
       setProduct(res.data);
-      setImgSrc(res.data.imageUrl || FALLBACK_IMAGE);
+      setImgSrc(getProductImageUrl(res.data));
 
       // Fetch related products (same category)
       if (res.data.categoryId) {
@@ -217,7 +217,7 @@ export default function ProductDetailPage() {
               <img 
                 src={imgSrc} 
                 alt={product.name} 
-                onError={() => setImgSrc(FALLBACK_IMAGE)}
+                onError={() => setImgSrc(analyzeProductNameAndGetImage(product))}
                 className="w-full h-full object-cover object-center" 
               />
               {hasDiscount && (

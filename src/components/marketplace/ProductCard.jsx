@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Check, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import StarRating from './StarRating';
@@ -6,14 +6,18 @@ import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=500';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 export default function ProductCard({ product, onWishlistUpdate }) {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
-  const [imgSrc, setImgSrc] = useState(product?.imageUrl || FALLBACK_IMAGE);
+  const [imgSrc, setImgSrc] = useState(() => getProductImageUrl(product));
+
+  useEffect(() => {
+    setImgSrc(getProductImageUrl(product));
+  }, [product?.id, product?.imageUrl, product?.name]);
 
   const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
   const currentPrice = hasDiscount ? product.discountPrice : product.price;
@@ -128,7 +132,7 @@ export default function ProductCard({ product, onWishlistUpdate }) {
         <img
           src={imgSrc}
           alt={product.name}
-          onError={() => setImgSrc(FALLBACK_IMAGE)}
+          onError={() => setImgSrc(analyzeProductNameAndGetImage(product))}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />

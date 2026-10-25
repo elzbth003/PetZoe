@@ -4,6 +4,7 @@ import marketplaceService from '../../services/marketplaceService';
 import { AlertCircle, ArrowLeft, ArrowRight, Save, Send, Loader2 } from 'lucide-react';
 import ImageUpload from '../ui/ImageUpload';
 import SelectDropdown from '../ui/SelectDropdown';
+import { analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 const AddProductWizard = ({ onCancel, onProductAdded }) => {
   const [step, setStep] = useState(1);
@@ -151,13 +152,15 @@ const AddProductWizard = ({ onCancel, onProductAdded }) => {
         sku: formData.sku.trim()
       };
 
-      if (formData.imageUrl && formData.imageUrl.trim()) {
-        payload.images = [{
-          imageUrl: formData.imageUrl.trim(),
-          isPrimary: true,
-          sortOrder: 0
-        }];
-      }
+      const effectiveImageUrl = (formData.imageUrl && formData.imageUrl.trim())
+        ? formData.imageUrl.trim()
+        : analyzeProductNameAndGetImage(formData.name, formData.categoryName, formData.petType);
+
+      payload.images = [{
+        imageUrl: effectiveImageUrl,
+        isPrimary: true,
+        sortOrder: 0
+      }];
 
       const catName = (formData.categoryName || '').toLowerCase();
 

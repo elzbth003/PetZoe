@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 /* ─── Helpers ────────────────────────────────────────────── */
 function price(p) {
@@ -133,8 +134,9 @@ function CartTab() {
             <div key={item.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
               <Link to={`/marketplace/products/${p.id}`} target="_blank">
                 <img
-                  src={p.imageUrl}
+                  src={getProductImageUrl(p)}
                   alt={p.name}
+                  onError={(e) => { e.target.src = analyzeProductNameAndGetImage(p); }}
                   className="h-16 w-16 rounded-xl object-cover border border-slate-100 shrink-0 hover:scale-105 transition-transform"
                 />
               </Link>
@@ -298,7 +300,12 @@ function WishlistTab() {
 
             {/* Image */}
             <div className="relative aspect-square bg-slate-50 overflow-hidden">
-              <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img 
+                src={getProductImageUrl(p)} 
+                alt={p.name} 
+                onError={(e) => { e.target.src = analyzeProductNameAndGetImage(p); }}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+              />
               {hasDiscount && (
                 <span className="absolute top-3 left-3 bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
                   {discountPct}% OFF
@@ -400,8 +407,9 @@ function OrdersTab() {
             {order.items?.map(item => (
               <div key={item.id} className="flex items-center gap-3">
                 <img
-                  src={item.product?.imageUrl}
+                  src={getProductImageUrl(item.product)}
                   alt={item.product?.name}
+                  onError={(e) => { e.target.src = analyzeProductNameAndGetImage(item.product); }}
                   className="h-12 w-12 rounded-xl object-cover border border-slate-100 shrink-0"
                 />
                 <div className="flex-1 text-left">

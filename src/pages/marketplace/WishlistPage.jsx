@@ -5,7 +5,7 @@ import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=500';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 export default function WishlistPage() {
   const { user } = useAuth();
@@ -134,9 +134,9 @@ export default function WishlistPage() {
                 {/* Product image */}
                 <div className="relative aspect-square w-full bg-slate-50 overflow-hidden">
                   <img 
-                    src={item.product?.imageUrl || FALLBACK_IMAGE} 
+                    src={getProductImageUrl(item.product)} 
                     alt={item.product?.name || 'Product'} 
-                    onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
+                    onError={(e) => { e.target.src = analyzeProductNameAndGetImage(item.product); }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                     loading="lazy" 
                   />

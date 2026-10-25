@@ -9,6 +9,7 @@ import { vendorProductService } from '../../services/vendorProductService';
 import verificationService from '../../services/verificationService';
 import { useToast } from '../../hooks/useToast';
 import AddProductWizard from '../../components/dashboard/AddProductWizard';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 export default function SellerDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -240,7 +241,12 @@ export default function SellerDashboard() {
                       <tr key={product.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors duration-150">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
-                            <img src={product.imageUrl} alt={product.name} className="w-10 h-10 rounded-lg object-cover bg-slate-100" />
+                            <img 
+                              src={getProductImageUrl(product)} 
+                              alt={product.name} 
+                              onError={(e) => { e.target.src = analyzeProductNameAndGetImage(product); }}
+                              className="w-10 h-10 rounded-lg object-cover bg-slate-100" 
+                            />
                             <div>
                               <div className="font-bold text-slate-800 text-sm">{product.name}</div>
                               <div className="text-xs text-slate-500">{product.sku}</div>

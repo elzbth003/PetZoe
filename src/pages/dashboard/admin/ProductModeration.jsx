@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { CheckCircle, XCircle, Search, Eye } from 'lucide-react';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../../utils/productImageHelper';
 
 export default function ProductModeration() {
   const [products, setProducts] = useState([]);
@@ -82,7 +83,12 @@ export default function ProductModeration() {
                   <React.Fragment key={product.id}>
                     <tr className="hover:bg-slate-50 transition-colors">
                       <td className="p-4 flex items-center gap-4">
-                        <img src={product.imageUrl} alt={product.name} className="w-12 h-12 rounded-xl object-cover" />
+                        <img 
+                          src={getProductImageUrl(product)} 
+                          alt={product.name} 
+                          onError={(e) => { e.target.src = analyzeProductNameAndGetImage(product); }}
+                          className="w-12 h-12 rounded-xl object-cover" 
+                        />
                         <div>
                           <p className="font-bold text-slate-800">{product.name}</p>
                           <p className="text-xs text-slate-500">Brand: {product.brand}</p>

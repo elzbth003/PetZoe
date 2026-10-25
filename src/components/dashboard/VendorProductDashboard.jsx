@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { vendorProductService } from '../../services/vendorProductService';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 const VendorProductDashboard = () => {
   const [products, setProducts] = useState([]);
@@ -88,7 +89,12 @@ const VendorProductDashboard = () => {
                   <td className="p-3">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gray-200 rounded mr-3 overflow-hidden">
-                        {product.imageUrl && <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />}
+                        <img 
+                          src={getProductImageUrl(product)} 
+                          alt={product.name} 
+                          onError={(e) => { e.target.src = analyzeProductNameAndGetImage(product); }}
+                          className="w-full h-full object-cover" 
+                        />
                       </div>
                       <div>
                         <p className="font-medium text-gray-800">{product.name}</p>

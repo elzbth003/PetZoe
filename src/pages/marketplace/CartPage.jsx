@@ -4,6 +4,7 @@ import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, Lock, ShieldCheck } from 'l
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
+import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -266,7 +267,13 @@ export default function CartPage() {
                 <div key={item.id} className="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center gap-6">
                   {/* Image */}
                   <Link to={`/marketplace/products/${item.product.id}`} className="w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-slate-50 flex-shrink-0 border border-slate-100">
-                    <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
+                    <img 
+                      src={getProductImageUrl(item.product)} 
+                      alt={item.product?.name || 'Product'} 
+                      onError={(e) => { e.target.src = analyzeProductNameAndGetImage(item.product); }}
+                      className="w-full h-full object-cover" 
+                      loading="lazy" 
+                    />
                   </Link>
                   
                   {/* Details */}
