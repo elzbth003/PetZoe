@@ -4,6 +4,7 @@ import { Package, Clock, Truck, CheckCircle2, XCircle, ChevronRight, Receipt, Cr
 import marketplaceService from '../../services/marketplaceService';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import PaymentModal from '../../components/marketplace/PaymentModal';
 
 export default function OrderHistoryPage() {
   const { user } = useAuth();
@@ -11,6 +12,8 @@ export default function OrderHistoryPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [payingOrderId, setPayingOrderId] = useState(null);
+  const [paymentModalData, setPaymentModalData] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     if (user) fetchOrders();
@@ -29,124 +32,17 @@ export default function OrderHistoryPage() {
     }
   };
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handleRetryPayment = async (orderId) => {
     try {
       setPayingOrderId(orderId);
-      const isLoaded = await loadRazorpayScript();
-      if (!isLoaded) {
-        showToast('Failed to load Razorpay SDK. Please check your connection.', 'error');
-        setPayingOrderId(null);
-        return;
-      }
-
-      // Re-initiate payment for this specific existing order
       const initRes = await marketplaceService.createPayment(orderId);
       const paymentData = initRes.data;
-
-      const isMock = paymentData.razorpayOrderId?.startsWith('order_mock_') || paymentData.keyId?.includes('placeholder');
-
-      // If order was generated with a simulated mock order ID from a local dev mock
-      if (isMock) {
-        // If window.Razorpay is available and key is configured, still try to open standard modal
-        const hasValidKey = paymentData.keyId && !paymentData.keyId.includes('placeholder');
-        if (!hasValidKey || paymentData.razorpayOrderId?.startsWith('order_mock_')) {
-          const confirmed = window.confirm(`[PetZoe Test Mode Payment Retry]\n\nOrder #${paymentData.orderId}\nTotal Amount: ₹${paymentData.amount}\nSimulated Order ID: ${paymentData.razorpayOrderId}\n\nClick OK to simulate successful payment, or Cancel to abort.`);
-          if (confirmed) {
-            try {
-              await marketplaceService.verifyPayment({
-                orderId: paymentData.orderId,
-                razorpayOrderId: paymentData.razorpayOrderId,
-                razorpayPaymentId: `pay_mock_${Date.now()}`,
-                razorpaySignature: 'simulated_valid_test_signature'
-              });
-              showToast('Test payment retry verified successfully!', 'success');
-              fetchOrders();
-            } catch (verifyErr) {
-              console.error('Payment verification failed', verifyErr);
-              showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
-              fetchOrders();
-            } finally {
-              setPayingOrderId(null);
-            }
-          } else {
-            setPayingOrderId(null);
-            showToast('Payment retry aborted', 'warning');
-          }
-          return;
-        }
-      }
-
-      if (!window.Razorpay) {
-        showToast('Razorpay SDK could not be initialized in this browser.', 'error');
-        setPayingOrderId(null);
-        return;
-      }
-
-      const options = {
-        key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: paymentData.amountInPaise,
-        currency: paymentData.currency || 'INR',
-        name: 'PetZoe Marketplace',
-        description: `Order #${paymentData.orderId} Payment Retry`,
-        order_id: paymentData.razorpayOrderId,
-        prefill: {
-          name: paymentData.customerName || '',
-          email: paymentData.customerEmail || '',
-          contact: paymentData.customerPhone || ''
-        },
-        theme: {
-          color: '#0d9488'
-        },
-        handler: async function (response) {
-          try {
-            await marketplaceService.verifyPayment({
-              orderId: paymentData.orderId,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature
-            });
-            showToast('Payment verified successfully!', 'success');
-            fetchOrders();
-          } catch (verifyErr) {
-            console.error('Payment verification failed', verifyErr);
-            showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
-            fetchOrders();
-          } finally {
-            setPayingOrderId(null);
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            setPayingOrderId(null);
-            showToast('Payment cancelled or dismissed', 'warning');
-          }
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response) {
-        console.error('Razorpay payment failed:', response.error);
-        showToast(response.error?.description || 'Payment failed', 'error');
-        setPayingOrderId(null);
-      });
-      rzp.open();
+      setPaymentModalData(paymentData);
+      setShowPaymentModal(true);
     } catch (err) {
       console.error('Failed to retry payment', err);
       showToast(err.response?.data?.message || err.message || 'Failed to retry payment', 'error');
+    } finally {
       setPayingOrderId(null);
     }
   };
@@ -175,11 +71,11 @@ export default function OrderHistoryPage() {
     return (
       <div className="pt-32 pb-20 flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
         <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mb-6">
-          <Package size={40} />
+          <Receipt size={40} />
         </div>
         <h2 className="font-display font-black text-3xl text-slate-800 mb-4">View Your Orders</h2>
-        <p className="text-slate-500 font-medium mb-8">Please login to track your recent purchases.</p>
-        <Link to="/login" className="bg-teal-600 text-white font-bold text-xs px-7 py-3 rounded-full hover:bg-teal-700 transition-colors shadow-md">
+        <p className="text-slate-500 font-medium mb-8">Please login to track your orders and view order history.</p>
+        <Link to="/login" className="bg-primary-600 text-white font-bold px-8 py-3.5 rounded-full hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20">
           Login to Continue
         </Link>
       </div>
@@ -197,68 +93,74 @@ export default function OrderHistoryPage() {
   return (
     <div className="pt-24 pb-20 bg-slate-50 min-h-screen">
       <div className="max-w-5xl mx-auto px-6">
-        <h1 className="font-display font-black text-3xl text-slate-800 mb-8">Order History</h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="font-display font-black text-3xl text-slate-800">My Orders</h1>
+            <p className="text-slate-500 font-medium mt-1">Track and manage your marketplace purchases</p>
+          </div>
+          <Link to="/marketplace" className="inline-flex items-center gap-2 bg-white px-5 py-2.5 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 border border-slate-200 transition-colors shadow-sm self-start md:self-auto">
+            Browse More Products <ChevronRight size={16} />
+          </Link>
+        </div>
 
         {orders.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-              <Package size={32} />
+            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mx-auto mb-6">
+              <Package size={36} />
             </div>
-            <h3 className="font-display font-bold text-xl text-slate-800 mb-2">No orders found</h3>
-            <p className="text-slate-500 mb-6">You haven't placed any orders yet.</p>
-            <Link to="/marketplace" className="bg-teal-50 text-teal-700 font-bold px-6 py-2.5 rounded-full hover:bg-teal-100 transition-colors inline-block">
-              Start Shopping
+            <h3 className="font-bold text-2xl text-slate-800 mb-2">No Orders Yet</h3>
+            <p className="text-slate-500 font-medium mb-8 max-w-sm mx-auto">You haven't placed any orders yet. Discover our quality pet supplies and care essentials today!</p>
+            <Link to="/marketplace" className="bg-primary-600 text-white font-bold px-8 py-3.5 rounded-full hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 inline-flex items-center gap-2">
+              Start Shopping <ChevronRight size={18} />
             </Link>
           </div>
         ) : (
           <div className="space-y-6">
             {orders.map((order) => {
-              const statusConfig = getStatusConfig(order.status);
-              const StatusIcon = statusConfig.icon;
-              
+              const statusCfg = getStatusConfig(order.status);
+              const StatusIcon = statusCfg.icon;
+
               return (
-                <div key={order.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
-                  
+                <div key={order.id} className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
                   {/* Order Header */}
-                  <div className="bg-slate-50/50 p-5 md:p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="grid grid-cols-2 md:flex gap-6 md:gap-12 text-sm">
+                  <div className="bg-slate-50/70 p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-6 md:gap-10">
                       <div>
-                        <div className="text-slate-400 font-bold uppercase tracking-wider mb-1 text-[10px]">Order Date</div>
-                        <div className="font-medium text-slate-700">{new Date(order.createdAt).toLocaleDateString()}</div>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Order Placed</div>
+                        <div className="text-sm font-bold text-slate-800">{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                       </div>
                       <div>
-                        <div className="text-slate-400 font-bold uppercase tracking-wider mb-1 text-[10px]">Total Amount</div>
-                        <div className="font-bold text-slate-900">₹{order.totalAmount.toLocaleString()}</div>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Amount</div>
+                        <div className="text-sm font-black text-slate-900">₹{order.totalAmount.toLocaleString()}</div>
                       </div>
-                      <div className="col-span-2 md:col-span-1">
-                        <div className="text-slate-400 font-bold uppercase tracking-wider mb-1 text-[10px]">Order ID</div>
-                        <div className="font-medium text-slate-700">#ORD-{order.id.toString().padStart(6, '0')}</div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Order #</div>
+                        <div className="text-sm font-bold text-slate-800 font-mono">ORD-{order.id.toString().padStart(6, '0')}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
-                      <button className="text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors">
-                        <Receipt size={16} /> Invoice
-                      </button>
+                      <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+                        <StatusIcon size={14} />
+                        {order.status}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Order Content */}
-                  <div className="p-5 md:p-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                  {/* Order Body */}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
-                          <StatusIcon size={18} />
-                          <span className="font-bold">{order.status}</span>
-                        </div>
-                        {(order.status === 'Pending' || order.status === 'Pending Payment' || order.status === 'Payment Failed') && (
+                        <span className="font-bold text-slate-800 text-sm">Status:</span>
+                        <span className={`font-semibold text-sm ${statusCfg.color}`}>{order.status}</span>
+                        {(order.status === 'Pending Payment' || order.status === 'Pending' || order.status === 'Payment Failed') && (
                           <button
                             onClick={() => handleRetryPayment(order.id)}
                             disabled={payingOrderId === order.id}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                            className="ml-4 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                           >
                             <CreditCard size={14} />
-                            {payingOrderId === order.id ? 'Opening Razorpay...' : 'Pay Now'}
+                            {payingOrderId === order.id ? 'Processing...' : 'Pay Now'}
                           </button>
                         )}
                       </div>
@@ -293,7 +195,7 @@ export default function OrderHistoryPage() {
                   
                   {/* Order Footer */}
                   <div className="bg-slate-50/50 p-4 border-t border-slate-100 text-center">
-                    <Link to={`/marketplace/products/${order.items[0].product.id}`} className="text-primary-600 font-bold hover:underline inline-flex items-center gap-1">
+                    <Link to={`/marketplace/products/${order.items[0]?.product?.id}`} className="text-primary-600 font-bold hover:underline inline-flex items-center gap-1">
                       Buy it again <ChevronRight size={16} />
                     </Link>
                   </div>
@@ -303,6 +205,22 @@ export default function OrderHistoryPage() {
           </div>
         )}
       </div>
+
+      {/* Interactive Payment Checkout Modal for Retry Payment */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setPayingOrderId(null);
+        }}
+        paymentData={paymentModalData}
+        onPaymentSuccess={() => {
+          setShowPaymentModal(false);
+          setPaymentModalData(null);
+          setPayingOrderId(null);
+          fetchOrders();
+        }}
+      />
     </div>
   );
 }

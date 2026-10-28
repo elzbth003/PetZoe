@@ -44,6 +44,7 @@ public class AppointmentService {
     private final VeterinarianProfileRepository veterinarianProfileRepository;
     private final PaymentRepository paymentRepository;
     private final RazorpayClient razorpayClient;
+    private final UserPresenceService userPresenceService;
 
     @Value("${petzoe.razorpay.key-id}")
     private String razorpayKeyId;
@@ -65,7 +66,8 @@ public class AppointmentService {
                               PrescriptionRepository prescriptionRepository,
                               VeterinarianProfileRepository veterinarianProfileRepository,
                               PaymentRepository paymentRepository,
-                              RazorpayClient razorpayClient) {
+                              RazorpayClient razorpayClient,
+                              UserPresenceService userPresenceService) {
         this.paymentRepository = paymentRepository;
         this.razorpayClient = razorpayClient;
         this.appointmentRepository = appointmentRepository;
@@ -75,6 +77,7 @@ public class AppointmentService {
         this.petMedicalRecordRepository = petMedicalRecordRepository;
         this.prescriptionRepository = prescriptionRepository;
         this.veterinarianProfileRepository = veterinarianProfileRepository;
+        this.userPresenceService = userPresenceService;
     }
 
     public List<AppointmentDTO> getAppointmentsByOwner(String email) {
@@ -198,14 +201,31 @@ public class AppointmentService {
         User vet = getVet(vetEmail);
         Appointment appointment = getAppointmentForVet(id, vet);
 
-        appointment.setStatus("IN_CONSULTATION");
-        return convertToDTO(appointmentRepository.save(appointment));
+        String currentStatus = appointment.getStatus() != null ? appointment.getStatus().toUpperCase() : "";
+        if (!"CONFIRMED".equals(currentStatus) && !"UPCOMING".equals(currentStatus)) {
+            throw new IllegalStateException("Cannot start consultation for an appointment with status " + currentStatus + ". Only CONFIRMED or UPCOMING appointments can enter consultation.");
+        }
+
+        // Validate doctor presence / online availability
+        boolean isOnline = userPresenceService.isUserOnline(vet.getId(), vet.getEmail());
+        if (!isOnline) {
+            throw new IllegalStateException("Cannot start consultation: Veterinarian is currently offline. Please set your status to online before conducting consultations.");
+        }
+
+        // Real-time video/audio consultation is an unsupported future enhancement
+        throw new UnsupportedOperationException("Real-time video/audio consultation is a planned future enhancement and is currently not supported. Please conduct the consultation via in-clinic examination records or messaging.");
     }
 
     @Transactional
     public AppointmentDTO completeConsultation(Long id, ConsultationSubmissionDTO dto, String vetEmail) {
         User vet = getVet(vetEmail);
         Appointment appointment = getAppointmentForVet(id, vet);
+
+        String currentStatus = appointment.getStatus() != null ? appointment.getStatus().toUpperCase() : "";
+        if ("COMPLETED".equals(currentStatus) || "CANCELLED".equals(currentStatus) || "REJECTED".equals(currentStatus)) {
+            throw new IllegalStateException("Cannot complete consultation for an appointment that is already " + currentStatus + ".");
+        }
+
         Pet pet = appointment.getPet();
 
         // 1. Create and persist structured medical record

@@ -42,6 +42,15 @@ public class UserController {
     }
 
 
+    @GetMapping("/me/presence")
+    public ResponseEntity<Map<String, Object>> getMyPresence(Authentication auth) {
+        boolean online = false;
+        if (auth != null && auth.getName() != null) {
+            online = userPresenceService.isUserOnline(null, auth.getName());
+        }
+        return ResponseEntity.ok(Map.of("online", online));
+    }
+
     @PostMapping("/heartbeat")
     public ResponseEntity<Map<String, Object>> heartbeat(Authentication auth) {
         if (auth != null && auth.getName() != null) {

@@ -5,6 +5,7 @@ import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
+import PaymentModal from '../../components/marketplace/PaymentModal';
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -14,6 +15,8 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [paymentModalData, setPaymentModalData] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -56,136 +59,21 @@ export default function CartPage() {
     }
   };
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handleCheckout = async () => {
     try {
       setProcessing(true);
 
-      const isLoaded = await loadRazorpayScript();
-      if (!isLoaded) {
-        showToast('Failed to load Razorpay SDK. Please check your connection.', 'error');
-        setProcessing(false);
-        return;
-      }
-
-      // Step 1: Initialize payment order on backend (locks inventory & gets Razorpay Order ID)
+      // Initialize payment order on backend (locks inventory & gets Razorpay Order ID)
       const initRes = await marketplaceService.createPayment();
       const paymentData = initRes.data;
 
-      const isMock = paymentData.razorpayOrderId?.startsWith('order_mock_') || paymentData.keyId?.includes('placeholder');
-
-      if (isMock) {
-        const hasValidKey = paymentData.keyId && !paymentData.keyId.includes('placeholder');
-        if (!hasValidKey || paymentData.razorpayOrderId?.startsWith('order_mock_')) {
-          // Simulated test mode for development without live Razorpay account credentials
-          const confirmed = window.confirm(`[PetZoe Test Mode Payment]\n\nOrder #${paymentData.orderId}\nTotal Amount: ₹${paymentData.amount}\nSimulated Order ID: ${paymentData.razorpayOrderId}\n\nClick OK to simulate successful payment, or Cancel to simulate user dismissal.`);
-          if (confirmed) {
-            try {
-              setProcessing(true);
-              await marketplaceService.verifyPayment({
-                orderId: paymentData.orderId,
-                razorpayOrderId: paymentData.razorpayOrderId,
-                razorpayPaymentId: `pay_mock_${Date.now()}`,
-                razorpaySignature: 'simulated_valid_test_signature'
-              });
-              showToast('Test payment successful! Order placed.', 'success');
-              window.dispatchEvent(new Event('cart-updated'));
-              navigate('/marketplace/orders');
-            } catch (verifyErr) {
-              console.error('Payment verification failed', verifyErr);
-              showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
-              navigate('/marketplace/orders');
-            } finally {
-              setProcessing(false);
-            }
-          } else {
-            setProcessing(false);
-            showToast('Payment was cancelled. You can retry from your Orders page.', 'warning');
-            window.dispatchEvent(new Event('cart-updated'));
-            navigate('/marketplace/orders');
-          }
-          return;
-        }
-      }
-
-      if (!window.Razorpay) {
-        showToast('Razorpay SDK could not be loaded in browser. Please check adblocker or network.', 'error');
-        setProcessing(false);
-        return;
-      }
-
-      // Live / Sandbox Razorpay Checkout Modal Flow
-      const options = {
-        key: paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: paymentData.amountInPaise,
-        currency: paymentData.currency || 'INR',
-        name: 'PetZoe Marketplace',
-        description: `Order #${paymentData.orderId} Checkout`,
-        order_id: paymentData.razorpayOrderId,
-        prefill: {
-          name: paymentData.customerName || '',
-          email: paymentData.customerEmail || '',
-          contact: paymentData.customerPhone || ''
-        },
-        theme: {
-          color: '#0d9488' // primary teal
-        },
-        handler: async function (response) {
-          try {
-            setProcessing(true);
-            // Step 3: Cryptographically verify signature on backend
-            await marketplaceService.verifyPayment({
-              orderId: paymentData.orderId,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature
-            });
-
-            showToast('Payment successful! Order placed.', 'success');
-            window.dispatchEvent(new Event('cart-updated'));
-            navigate('/marketplace/orders');
-          } catch (verifyErr) {
-            console.error('Payment verification failed', verifyErr);
-            showToast(verifyErr.response?.data?.message || 'Payment verification failed', 'error');
-            navigate('/marketplace/orders');
-          } finally {
-            setProcessing(false);
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            setProcessing(false);
-            showToast('Payment was not completed. You can retry from your Orders page.', 'warning');
-            window.dispatchEvent(new Event('cart-updated'));
-            navigate('/marketplace/orders');
-          }
-        }
-      };
-
-      const razorpayInstance = new window.Razorpay(options);
-      razorpayInstance.on('payment.failed', function (response) {
-        console.error('Razorpay payment failed:', response.error);
-        showToast(response.error.description || 'Payment failed', 'error');
-        setProcessing(false);
-      });
-
-      razorpayInstance.open();
+      // Open interactive PetZoe Payment Checkout Modal
+      setPaymentModalData(paymentData);
+      setShowPaymentModal(true);
     } catch (err) {
       console.error('Checkout initialization failed', err);
       showToast(err.response?.data?.message || 'Failed to initialize payment', 'error');
+    } finally {
       setProcessing(false);
     }
   };
@@ -374,6 +262,21 @@ export default function CartPage() {
           
         </div>
       </div>
+
+      {/* Interactive Payment Checkout Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setProcessing(false);
+        }}
+        paymentData={paymentModalData}
+        onPaymentSuccess={() => {
+          setShowPaymentModal(false);
+          window.dispatchEvent(new Event('cart-updated'));
+          navigate('/marketplace/orders');
+        }}
+      />
     </div>
   );
 }

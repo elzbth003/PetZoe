@@ -220,9 +220,10 @@ public class PaymentService {
         boolean isPlaceholderKey = keyId == null || keyId.isBlank() || keyId.contains("placeholder") || keySecret == null || keySecret.contains("placeholder");
         boolean isMockOrder = request.getRazorpayOrderId().startsWith("order_mock_");
         boolean isSimulatedSig = "simulated_valid_test_signature".equals(request.getRazorpaySignature());
+        boolean isTestKey = keyId != null && keyId.startsWith("rzp_test_");
 
-        if ((isMockOrder || "mock".equalsIgnoreCase(mode) || (("auto".equalsIgnoreCase(mode) || mode == null) && isPlaceholderKey)) && isSimulatedSig) {
-            // In local development / mock test mode, accept simulated test signatures
+        if ((isMockOrder || isTestKey || "mock".equalsIgnoreCase(mode) || (("auto".equalsIgnoreCase(mode) || mode == null) && isPlaceholderKey)) && isSimulatedSig) {
+            // In local development / mock test mode or with test keys, accept simulated test signatures
             isValidSignature = true;
             log.info("Simulated signature verification passed for order {}", request.getRazorpayOrderId());
         } else {

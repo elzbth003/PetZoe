@@ -8,7 +8,8 @@ import java.util.List;
 
 /**
  * Service layer for order management.
- * Handles placing orders from cart, viewing order history, and status updates.
+ * Handles viewing order history and status updates.
+ * Direct checkout without payment verification is disabled; checkout flows through PaymentService.
  */
 @Service
 public class OrderService {
@@ -29,63 +30,12 @@ public class OrderService {
     }
 
     /**
-     * Place an order from the user's cart.
-     * Converts all cart items into order items, calculates the total, and clears the cart.
+     * Direct order placement without payment is disabled.
+     * Orders must be initiated and verified via PaymentService (/api/marketplace/payments).
      */
     @Transactional
     public Order placeOrder(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        List<CartItem> cartItems = cartItemRepository.findByUser(user);
-        if (cartItems.isEmpty()) {
-            throw new RuntimeException("Cart is empty. Add items before placing an order.");
-        }
-
-        // Create the order
-        Order order = new Order();
-        order.setUser(user);
-        order.setStatus("Pending");
-
-        double totalAmount = 0.0;
-
-        // Convert each cart item into an order item
-        for (CartItem cartItem : cartItems) {
-            // Re-fetch with a row lock (not the stale entity off the cart item)
-            // so concurrent checkouts can't both oversell the same stock.
-            Product product = productRepository.findByIdForUpdate(cartItem.getProduct().getId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
-
-            if (product.getStockQuantity() < cartItem.getQuantity()) {
-                throw new IllegalStateException("Insufficient stock for '" + product.getName() + "'. Only "
-                        + product.getStockQuantity() + " left, " + cartItem.getQuantity() + " requested.");
-            }
-
-            // Use discount price if available, otherwise use regular price
-            double effectivePrice = product.getDiscountPrice() != null
-                    ? product.getDiscountPrice()
-                    : product.getPrice();
-
-            OrderItem orderItem = new OrderItem(
-                    cartItem.getQuantity(),
-                    effectivePrice,
-                    order,
-                    product
-            );
-            order.getItems().add(orderItem);
-            totalAmount += effectivePrice * cartItem.getQuantity();
-
-            // Decrease stock
-            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
-        }
-
-        order.setTotalAmount(totalAmount);
-        Order savedOrder = orderRepository.save(order);
-
-        // Clear the cart after successful order placement
-        cartItemRepository.deleteByUser(user);
-
-        return savedOrder;
+        throw new IllegalStateException("Direct order placement without payment is disabled. Please checkout through /api/marketplace/payments/create to proceed with secure payment.");
     }
 
     /** Get all orders for the authenticated user. */

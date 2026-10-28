@@ -78,6 +78,22 @@ export const vetClinicalService = {
     return res.data;
   },
 
+  // --- Veterinarian Presence & Availability ---
+  getPresence: async () => {
+    const res = await api.get('/users/me/presence');
+    return res.data;
+  },
+
+  setHeartbeat: async () => {
+    const res = await api.post('/users/heartbeat');
+    return res.data;
+  },
+
+  setOffline: async () => {
+    const res = await api.post('/users/offline');
+    return res.data;
+  },
+
   // --- Veterinarian Profile & Verification ---
   getVetProfile: async () => {
     const res = await api.get('/vets/profile');
