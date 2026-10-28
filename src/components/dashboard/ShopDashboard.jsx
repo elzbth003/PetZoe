@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
-import PaymentModal from '../marketplace/PaymentModal';
+import { launchRazorpayGateway } from '../../utils/razorpay';
 
 /* ─── Helpers ────────────────────────────────────────────── */
 function price(p) {
@@ -61,8 +61,6 @@ function CartTab({ onOrderPlaced }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
-  const [paymentData, setPaymentData] = useState(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const fetchCart = useCallback(async () => {
     setLoading(true);
@@ -95,24 +93,36 @@ function CartTab({ onOrderPlaced }) {
   const checkout = async () => {
     setChecking(true);
     try {
-      // Initialize payment order on backend (locks inventory & creates pending payment order)
+      // Step 1: Initialize payment order on backend (locks inventory & creates pending payment order)
       const res = await marketplaceService.createPayment();
-      setPaymentData(res.data);
-      setShowPaymentModal(true);
+      const paymentData = res.data;
+
+      // Step 2: Directly open native Razorpay Gateway
+      await launchRazorpayGateway({
+        paymentData,
+        onPaymentSuccess: () => {
+          showToast('Payment successful! Order placed.', 'success');
+          window.dispatchEvent(new Event('cart-updated'));
+          setItems([]);
+          if (onOrderPlaced) {
+            onOrderPlaced();
+          }
+        },
+        onDismiss: () => {
+          showToast('Payment was not completed. You can complete payment anytime from the Orders tab.', 'warning');
+          window.dispatchEvent(new Event('cart-updated'));
+          if (onOrderPlaced) {
+            onOrderPlaced();
+          }
+        },
+        onError: (err) => {
+          showToast(err?.description || err?.message || 'Payment failed or was declined', 'error');
+        }
+      });
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to initialize payment checkout', 'error');
     } finally {
       setChecking(false);
-    }
-  };
-
-  const handlePaymentSuccess = () => {
-    setShowPaymentModal(false);
-    setPaymentData(null);
-    setItems([]);
-    window.dispatchEvent(new Event('cart-updated'));
-    if (onOrderPlaced) {
-      onOrderPlaced();
     }
   };
 
@@ -140,120 +150,110 @@ function CartTab({ onOrderPlaced }) {
   }, 0);
 
   return (
-    <>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
-        {/* Items */}
-        <div className="lg:col-span-8 space-y-3">
-          {items.map(item => {
-            const p = item.product;
-            const currentPrice = p.discountPrice ?? p.price;
-            return (
-              <div key={item.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
+      {/* Items */}
+      <div className="lg:col-span-8 space-y-3">
+        {items.map(item => {
+          const p = item.product;
+          const currentPrice = p.discountPrice ?? p.price;
+          return (
+            <div key={item.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+              <Link to={`/marketplace/products/${p.id}`} target="_blank">
+                <img
+                  src={getProductImageUrl(p)}
+                  alt={p.name}
+                  onError={(e) => { e.target.src = analyzeProductNameAndGetImage(p); }}
+                  className="h-16 w-16 rounded-xl object-cover border border-slate-100 shrink-0 hover:scale-105 transition-transform"
+                />
+              </Link>
+              <div className="flex-1 min-w-0 text-left space-y-1">
+                <p className="text-xs font-bold text-[#38BDF8] uppercase tracking-wider">{p.brand}</p>
                 <Link to={`/marketplace/products/${p.id}`} target="_blank">
-                  <img
-                    src={getProductImageUrl(p)}
-                    alt={p.name}
-                    onError={(e) => { e.target.src = analyzeProductNameAndGetImage(p); }}
-                    className="h-16 w-16 rounded-xl object-cover border border-slate-100 shrink-0 hover:scale-105 transition-transform"
-                  />
+                  <p className="text-sm font-bold text-slate-800 line-clamp-1 hover:text-[#1E3A5F]">{p.name}</p>
                 </Link>
-                <div className="flex-1 min-w-0 text-left space-y-1">
-                  <p className="text-xs font-bold text-[#38BDF8] uppercase tracking-wider">{p.brand}</p>
-                  <Link to={`/marketplace/products/${p.id}`} target="_blank">
-                    <p className="text-sm font-bold text-slate-800 line-clamp-1 hover:text-[#1E3A5F]">{p.name}</p>
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900 text-sm">{price(currentPrice)}</span>
-                    {p.discountPrice != null && (
-                      <span className="text-[10px] text-slate-400 line-through">{price(p.price)}</span>
-                    )}
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-slate-900 text-sm">{price(currentPrice)}</span>
+                  {p.discountPrice != null && (
+                    <span className="text-[10px] text-slate-400 line-through">{price(p.price)}</span>
+                  )}
                 </div>
-                {/* Qty stepper */}
-                <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0">
-                  <button
-                    onClick={() => changeQty(item.id, item.quantity - 1, p.stockQuantity)}
-                    className="h-8 w-8 text-slate-500 hover:bg-slate-50 flex items-center justify-center font-bold transition-all cursor-pointer"
-                  >
-                    <Minus size={12} />
-                  </button>
-                  <span className="h-8 w-8 text-center text-xs font-bold text-slate-800 flex items-center justify-center bg-white">{item.quantity}</span>
-                  <button
-                    onClick={() => changeQty(item.id, item.quantity + 1, p.stockQuantity)}
-                    disabled={item.quantity >= p.stockQuantity}
-                    className="h-8 w-8 text-slate-500 hover:bg-slate-50 flex items-center justify-center font-bold transition-all cursor-pointer disabled:opacity-40"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-                {/* Line total */}
-                <span className="text-sm font-black text-slate-900 shrink-0 w-20 text-right">
-                  {price(currentPrice * item.quantity)}
-                </span>
+              </div>
+              {/* Qty stepper */}
+              <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shrink-0">
                 <button
-                  onClick={() => remove(item.id)}
-                  className={`h-8 w-8 rounded-xl text-slate-400 flex items-center justify-center transition-all cursor-pointer shrink-0
-                    hover:bg-rose-50 hover:text-rose-500`}
+                  onClick={() => changeQty(item.id, item.quantity - 1, p.stockQuantity)}
+                  className="h-8 w-8 text-slate-500 hover:bg-slate-50 flex items-center justify-center font-bold transition-all cursor-pointer"
                 >
-                  <Trash2 size={14} />
+                  <Minus size={12} />
+                </button>
+                <span className="h-8 w-8 text-center text-xs font-bold text-slate-800 flex items-center justify-center bg-white">{item.quantity}</span>
+                <button
+                  onClick={() => changeQty(item.id, item.quantity + 1, p.stockQuantity)}
+                  disabled={item.quantity >= p.stockQuantity}
+                  className="h-8 w-8 text-slate-500 hover:bg-slate-50 flex items-center justify-center font-bold transition-all cursor-pointer disabled:opacity-40"
+                >
+                  <Plus size={12} />
                 </button>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Order Summary */}
-        <div className="lg:col-span-4">
-          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm sticky top-8 space-y-5">
-            <h3 className="font-bold text-slate-800 text-sm text-left">Order Summary</h3>
-            <div className="space-y-3 text-xs text-slate-600 font-semibold">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Subtotal ({items.length} items)</span>
-                <span>{price(subtotal + saved)}</span>
-              </div>
-              {saved > 0 && (
-                <div className="flex justify-between text-emerald-600">
-                  <span>Discount</span>
-                  <span>-{price(saved)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-emerald-600">
-                <span>Shipping</span>
-                <span>Free</span>
-              </div>
+              {/* Line total */}
+              <span className="text-sm font-black text-slate-900 shrink-0 w-20 text-right">
+                {price(currentPrice * item.quantity)}
+              </span>
+              <button
+                onClick={() => remove(item.id)}
+                className={`h-8 w-8 rounded-xl text-slate-400 flex items-center justify-center transition-all cursor-pointer shrink-0
+                  hover:bg-rose-50 hover:text-rose-500`}
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
-            <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
-              <span className="font-bold text-slate-700 text-sm">Total</span>
-              <span className="font-black text-xl text-slate-900">{price(subtotal)}</span>
-            </div>
-            <button
-              onClick={checkout}
-              disabled={checking}
-              className="w-full py-3.5 rounded-xl bg-[#1E3A5F] hover:bg-[#162e4d] text-white font-bold text-xs transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm"
-            >
-              {checking
-                ? <><Loader2 size={14} className="animate-spin" /> Preparing Payment…</>
-                : <><CreditCard size={14} /> Proceed to Payment</>
-              }
-            </button>
-            <Link
-              to="/marketplace"
-              className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 hover:text-slate-700 font-bold transition-all"
-            >
-              Continue Shopping <ExternalLink size={11} />
-            </Link>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Interactive Payment Checkout Modal */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        paymentData={paymentData}
-        onPaymentSuccess={handlePaymentSuccess}
-      />
-    </>
+      {/* Order Summary */}
+      <div className="lg:col-span-4">
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm sticky top-8 space-y-5">
+          <h3 className="font-bold text-slate-800 text-sm text-left">Order Summary</h3>
+          <div className="space-y-3 text-xs text-slate-600 font-semibold">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Subtotal ({items.length} items)</span>
+              <span>{price(subtotal + saved)}</span>
+            </div>
+            {saved > 0 && (
+              <div className="flex justify-between text-emerald-600">
+                <span>Discount</span>
+                <span>-{price(saved)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-emerald-600">
+              <span>Shipping</span>
+              <span>Free</span>
+            </div>
+          </div>
+          <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
+            <span className="font-bold text-slate-700 text-sm">Total</span>
+            <span className="font-black text-xl text-slate-900">{price(subtotal)}</span>
+          </div>
+          <button
+            onClick={checkout}
+            disabled={checking}
+            className="w-full py-3.5 rounded-xl bg-[#1E3A5F] hover:bg-[#162e4d] text-white font-bold text-xs transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm"
+          >
+            {checking
+              ? <><Loader2 size={14} className="animate-spin" /> Opening Razorpay…</>
+              : <><CreditCard size={14} /> Proceed to Checkout</>
+            }
+          </button>
+          <Link
+            to="/marketplace"
+            className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 hover:text-slate-700 font-bold transition-all"
+          >
+            Continue Shopping <ExternalLink size={11} />
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -383,8 +383,6 @@ function OrdersTab() {
   const { showToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [payingOrder, setPayingOrder] = useState(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [initiatingPayId, setInitiatingPayId] = useState(null);
 
   const fetchOrders = useCallback(async () => {
@@ -403,19 +401,26 @@ function OrdersTab() {
     setInitiatingPayId(orderId);
     try {
       const res = await marketplaceService.createPayment(orderId);
-      setPayingOrder(res.data);
-      setShowPaymentModal(true);
+      const paymentData = res.data;
+
+      await launchRazorpayGateway({
+        paymentData,
+        onPaymentSuccess: () => {
+          showToast('Payment successful! Order confirmed.', 'success');
+          fetchOrders();
+        },
+        onDismiss: () => {
+          showToast('Payment was not completed.', 'warning');
+        },
+        onError: (err) => {
+          showToast(err?.description || err?.message || 'Payment failed or was declined', 'error');
+        }
+      });
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to initialize payment for this order', 'error');
     } finally {
       setInitiatingPayId(null);
     }
-  };
-
-  const handlePaymentSuccess = () => {
-    setShowPaymentModal(false);
-    setPayingOrder(null);
-    fetchOrders();
   };
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#1E3A5F]" size={36} /></div>;
@@ -431,74 +436,64 @@ function OrdersTab() {
   );
 
   return (
-    <>
-      <div className="space-y-4 animate-in fade-in duration-200">
-        {orders.map(order => (
-          <div key={order.id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-            {/* Header */}
-            <div className="bg-slate-50/60 px-5 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-5 text-left">
-                <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Order ID</p>
-                  <p className="text-xs font-bold text-slate-700">#ORD-{String(order.id).padStart(6, '0')}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Date</p>
-                  <p className="text-xs font-semibold text-slate-700">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total</p>
-                  <p className="text-xs font-black text-slate-900">{price(order.totalAmount)}</p>
-                </div>
+    <div className="space-y-4 animate-in fade-in duration-200">
+      {orders.map(order => (
+        <div key={order.id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+          {/* Header */}
+          <div className="bg-slate-50/60 px-5 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-5 text-left">
+              <div>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Order ID</p>
+                <p className="text-xs font-bold text-slate-700">#ORD-{String(order.id).padStart(6, '0')}</p>
               </div>
-              <div className="flex items-center gap-2.5">
-                {order.status === 'Pending Payment' && (
-                  <button
-                    onClick={() => handlePayNow(order.id)}
-                    disabled={initiatingPayId === order.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {initiatingPayId === order.id ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <CreditCard size={12} />
-                    )}
-                    Pay Now
-                  </button>
-                )}
-                <OrderStatusBadge status={order.status} />
+              <div>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Date</p>
+                <p className="text-xs font-semibold text-slate-700">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total</p>
+                <p className="text-xs font-black text-slate-900">{price(order.totalAmount)}</p>
               </div>
             </div>
-            {/* Items */}
-            <div className="px-5 py-4 space-y-3">
-              {order.items?.map(item => (
-                <div key={item.id} className="flex items-center gap-3">
-                  <img
-                    src={getProductImageUrl(item.product)}
-                    alt={item.product?.name}
-                    onError={(e) => { e.target.src = analyzeProductNameAndGetImage(item.product); }}
-                    className="h-12 w-12 rounded-xl object-cover border border-slate-100 shrink-0"
-                  />
-                  <div className="flex-1 text-left">
-                    <p className="text-xs font-bold text-slate-800 line-clamp-1">{item.product?.name}</p>
-                    <p className="text-[10px] text-slate-400 font-semibold">Qty: {item.quantity} × {price(item.priceAtPurchase)}</p>
-                  </div>
-                  <p className="text-xs font-black text-slate-900 shrink-0">{price(item.quantity * item.priceAtPurchase)}</p>
-                </div>
-              ))}
+            <div className="flex items-center gap-2.5">
+              {order.status === 'Pending Payment' && (
+                <button
+                  onClick={() => handlePayNow(order.id)}
+                  disabled={initiatingPayId === order.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {initiatingPayId === order.id ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <CreditCard size={12} />
+                  )}
+                  Pay Now
+                </button>
+              )}
+              <OrderStatusBadge status={order.status} />
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Interactive Payment Checkout Modal for Retry Payment */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        paymentData={payingOrder}
-        onPaymentSuccess={handlePaymentSuccess}
-      />
-    </>
+          {/* Items */}
+          <div className="px-5 py-4 space-y-3">
+            {order.items?.map(item => (
+              <div key={item.id} className="flex items-center gap-3">
+                <img
+                  src={getProductImageUrl(item.product)}
+                  alt={item.product?.name}
+                  onError={(e) => { e.target.src = analyzeProductNameAndGetImage(item.product); }}
+                  className="h-12 w-12 rounded-xl object-cover border border-slate-100 shrink-0"
+                />
+                <div className="flex-1 text-left">
+                  <p className="text-xs font-bold text-slate-800 line-clamp-1">{item.product?.name}</p>
+                  <p className="text-[10px] text-slate-400 font-semibold">Qty: {item.quantity} × {price(item.priceAtPurchase)}</p>
+                </div>
+                <p className="text-xs font-black text-slate-900 shrink-0">{price(item.quantity * item.priceAtPurchase)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

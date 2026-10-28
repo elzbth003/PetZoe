@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, Lock, ShieldCheck } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react';
 import marketplaceService from '../../services/marketplaceService';
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import { getProductImageUrl, analyzeProductNameAndGetImage } from '../../utils/productImageHelper';
-import PaymentModal from '../../components/marketplace/PaymentModal';
+import { launchRazorpayGateway } from '../../utils/razorpay';
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -15,8 +15,6 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [paymentModalData, setPaymentModalData] = useState(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -63,13 +61,27 @@ export default function CartPage() {
     try {
       setProcessing(true);
 
-      // Initialize payment order on backend (locks inventory & gets Razorpay Order ID)
+      // Step 1: Initialize payment order on backend (locks inventory & creates order in Pending Payment)
       const initRes = await marketplaceService.createPayment();
       const paymentData = initRes.data;
 
-      // Open interactive PetZoe Payment Checkout Modal
-      setPaymentModalData(paymentData);
-      setShowPaymentModal(true);
+      // Step 2: Directly open native Razorpay Gateway
+      await launchRazorpayGateway({
+        paymentData,
+        onPaymentSuccess: () => {
+          showToast('Payment successful! Your order has been placed.', 'success');
+          window.dispatchEvent(new Event('cart-updated'));
+          navigate('/marketplace/orders');
+        },
+        onDismiss: () => {
+          showToast('Payment was not completed. You can complete payment anytime from your Orders page.', 'warning');
+          window.dispatchEvent(new Event('cart-updated'));
+          navigate('/marketplace/orders');
+        },
+        onError: (err) => {
+          showToast(err?.description || err?.message || 'Payment failed or was declined', 'error');
+        }
+      });
     } catch (err) {
       console.error('Checkout initialization failed', err);
       showToast(err.response?.data?.message || 'Failed to initialize payment', 'error');
@@ -127,7 +139,7 @@ export default function CartPage() {
     }
     return sum;
   }, 0);
-  const total = subtotal; // Assuming free shipping for now
+  const total = subtotal; // Free shipping
 
   return (
     <div className="pt-24 pb-20 bg-slate-50 min-h-screen">
@@ -245,7 +257,7 @@ export default function CartPage() {
               <button 
                 onClick={handleCheckout}
                 disabled={processing}
-                className="w-full bg-teal-600 text-white font-bold py-4 rounded-2xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-98"
+                className="w-full bg-[#1E3A5F] hover:bg-[#162e4d] text-white font-bold py-4 rounded-2xl transition-colors shadow-lg shadow-[#1E3A5F]/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-98"
               >
                 {processing ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"></div>
@@ -255,28 +267,13 @@ export default function CartPage() {
               </button>
               
               <div className="mt-5 text-center text-xs text-slate-500 font-semibold flex items-center justify-center gap-1.5">
-                <ShieldCheck size={14} className="text-teal-600" /> 256-Bit Encrypted & Verified Checkout
+                <ShieldCheck size={14} className="text-[#1E3A5F]" /> 256-Bit Encrypted Razorpay Checkout
               </div>
             </div>
           </div>
           
         </div>
       </div>
-
-      {/* Interactive Payment Checkout Modal */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => {
-          setShowPaymentModal(false);
-          setProcessing(false);
-        }}
-        paymentData={paymentModalData}
-        onPaymentSuccess={() => {
-          setShowPaymentModal(false);
-          window.dispatchEvent(new Event('cart-updated'));
-          navigate('/marketplace/orders');
-        }}
-      />
     </div>
   );
 }

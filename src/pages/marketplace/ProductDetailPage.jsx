@@ -27,7 +27,6 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('description'); // description, specs, reviews
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
 
@@ -152,33 +151,6 @@ export default function ProductDetailPage() {
       showToast(err.response?.data?.message || 'Failed to add to cart', 'error');
     } finally {
       setIsAddingToCart(false);
-    }
-  };
-
-  const handleBuyNow = async () => {
-    if (!user) {
-      localStorage.setItem('petzoe_pending_buy_now', JSON.stringify({ productId: product.id, quantity, name: product.name }));
-      showToast('Please sign in as a Pet Owner to complete your purchase', 'info');
-      navigate('/login?redirect=/marketplace/cart');
-      return;
-    }
-    if (isSeller || isNonBuyer) {
-      showToast('Only Pet Owner accounts can purchase products', 'error');
-      return;
-    }
-    if (product.stockQuantity != null && product.stockQuantity <= 0) {
-      showToast('This product is currently out of stock', 'warning');
-      return;
-    }
-    try {
-      setIsBuyingNow(true);
-      await marketplaceService.addToCart(product.id, quantity);
-      window.dispatchEvent(new Event('cart-updated'));
-      navigate('/marketplace/cart');
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to process purchase', 'error');
-    } finally {
-      setIsBuyingNow(false);
     }
   };
 
@@ -432,17 +404,6 @@ export default function ProductDetailPage() {
                 >
                   {isAddingToCart ? <Loader2 size={16} className="animate-spin" /> : null}
                   <span>Add To Cart</span>
-                </button>
-
-                {/* Buy Now Button (Warm Caramel / Golden-Brown Pill) */}
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  disabled={isBuyingNow}
-                  className="bg-[#b5833a] hover:bg-[#a17431] text-white font-medium text-xs sm:text-sm px-7 h-11 rounded-full flex items-center justify-center gap-2 transition-colors shadow-2xs cursor-pointer active:scale-98"
-                >
-                  {isBuyingNow ? <Loader2 size={16} className="animate-spin" /> : null}
-                  <span>{isBuyingNow ? 'Processing...' : 'Buy Now'}</span>
                 </button>
 
                 {/* Wishlist Button (Circular Outline) */}

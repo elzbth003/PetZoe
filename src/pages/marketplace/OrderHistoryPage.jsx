@@ -4,7 +4,7 @@ import { Package, Clock, Truck, CheckCircle2, XCircle, ChevronRight, Receipt, Cr
 import marketplaceService from '../../services/marketplaceService';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import PaymentModal from '../../components/marketplace/PaymentModal';
+import { launchRazorpayGateway } from '../../utils/razorpay';
 
 export default function OrderHistoryPage() {
   const { user } = useAuth();
@@ -12,8 +12,6 @@ export default function OrderHistoryPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [payingOrderId, setPayingOrderId] = useState(null);
-  const [paymentModalData, setPaymentModalData] = useState(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     if (user) fetchOrders();
@@ -37,8 +35,20 @@ export default function OrderHistoryPage() {
       setPayingOrderId(orderId);
       const initRes = await marketplaceService.createPayment(orderId);
       const paymentData = initRes.data;
-      setPaymentModalData(paymentData);
-      setShowPaymentModal(true);
+
+      await launchRazorpayGateway({
+        paymentData,
+        onPaymentSuccess: () => {
+          showToast('Payment verified successfully! Order updated.', 'success');
+          fetchOrders();
+        },
+        onDismiss: () => {
+          showToast('Payment was not completed.', 'warning');
+        },
+        onError: (err) => {
+          showToast(err?.description || err?.message || 'Payment failed or was declined', 'error');
+        }
+      });
     } catch (err) {
       console.error('Failed to retry payment', err);
       showToast(err.response?.data?.message || err.message || 'Failed to retry payment', 'error');
@@ -160,7 +170,7 @@ export default function OrderHistoryPage() {
                             className="ml-4 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                           >
                             <CreditCard size={14} />
-                            {payingOrderId === order.id ? 'Processing...' : 'Pay Now'}
+                            {payingOrderId === order.id ? 'Opening Razorpay...' : 'Pay Now'}
                           </button>
                         )}
                       </div>
@@ -205,22 +215,6 @@ export default function OrderHistoryPage() {
           </div>
         )}
       </div>
-
-      {/* Interactive Payment Checkout Modal for Retry Payment */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => {
-          setShowPaymentModal(false);
-          setPayingOrderId(null);
-        }}
-        paymentData={paymentModalData}
-        onPaymentSuccess={() => {
-          setShowPaymentModal(false);
-          setPaymentModalData(null);
-          setPayingOrderId(null);
-          fetchOrders();
-        }}
-      />
     </div>
   );
 }
