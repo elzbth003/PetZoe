@@ -62,78 +62,7 @@ export default function AuthLayout() {
             </p>
           </motion.div>
 
-          {/* Hero Digital Patient Card (Milo - Patient Record) */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.5 }}
-            className="rounded-3xl bg-white/[0.06] border border-white/15 p-5 backdrop-blur-xl shadow-2xl shadow-black/40 relative overflow-hidden space-y-4"
-          >
-            {/* Top patient profile bar */}
-            <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
-              <div className="flex items-center gap-3.5">
-                <div className="relative w-13 h-13 rounded-2xl overflow-hidden ring-2 ring-emerald-400/40 shadow-md shrink-0 bg-slate-800">
-                  <img
-                    src="/images/animals/milo-dachshund.jpg"
-                    alt="Milo - Verified Patient"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.src = '/happy_golden_retriever.jpg'; }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-white tracking-tight">Milo</h3>
-                    <span className="px-1.5 py-0.5 rounded-md bg-white/10 text-[9px] font-mono font-bold text-slate-300">
-                      PZ-PET-0021
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-300 font-medium mt-0.5">Miniature Dachshund • 14 Months</p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold shadow-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Verified Patient</span>
-              </div>
-            </div>
-
-            {/* Middle vitals & health stats (High-contrast, sleek metric pills) */}
-            <div className="grid grid-cols-3 gap-2 text-left">
-              <div className="bg-white/[0.04] hover:bg-white/[0.06] transition-colors rounded-2xl p-2.5 border border-white/10">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Vaccines</span>
-                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1 mt-1">
-                  <CheckCircle2 size={13} className="text-emerald-400" /> Current
-                </span>
-              </div>
-              <div className="bg-white/[0.04] hover:bg-white/[0.06] transition-colors rounded-2xl p-2.5 border border-white/10">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Weight</span>
-                <span className="text-xs font-bold text-white block mt-1">9.5 kg <span className="text-[10px] text-emerald-400 font-normal">Optimal</span></span>
-              </div>
-              <div className="bg-white/[0.04] hover:bg-white/[0.06] transition-colors rounded-2xl p-2.5 border border-white/10">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Microchip</span>
-                <span className="text-xs font-bold text-white block mt-1">Active #8821</span>
-              </div>
-            </div>
-
-            {/* Bottom active consultation schedule preview */}
-            <div className="bg-white/[0.03] rounded-2xl p-3 border border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center border border-teal-500/30">
-                  <Stethoscope size={16} />
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">Upcoming Consult</span>
-                  <span className="text-xs font-bold text-white">Dr. Sarah Jenkins, DVM</span>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="inline-block text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-1 rounded-lg">
-                  Today • 10:30 AM
-                </span>
-              </div>
-            </div>
-          </motion.div>
 
           {/* Three Key Pillars: Modern, Compact, Professional */}
           <div className="space-y-2 pt-1">
