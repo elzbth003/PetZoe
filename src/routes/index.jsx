@@ -49,11 +49,13 @@ import RehomingBoard from '../pages/rehoming/RehomingBoard';
 // Legal Pages
 import TermsPage from '../pages/legal/TermsPage';
 import PrivacyPage from '../pages/legal/PrivacyPage';
+import RouteErrorBoundary from '../components/common/RouteErrorBoundary';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <MainLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         index: true,
@@ -121,6 +123,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <AuthLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: 'login',
@@ -150,6 +153,7 @@ export const router = createBrowserRouter([
     // each role's own dashboard below is still individually role-gated so a
     // logged-in user of one role can't reach another role's dashboard by URL.
     element: <ProtectedRoute allowedRoles={['Pet Owner', 'Veterinarian', 'Shelter Manager', 'Admin', 'Marketplace Seller']} />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         element: <ProtectedRoute allowedRoles={['Pet Owner']} />,
@@ -189,5 +193,9 @@ export const router = createBrowserRouter([
         children: [{ path: 'seller', element: <SellerDashboard /> }]
       }
     ]
+  },
+  {
+    path: '*',
+    element: <RouteErrorBoundary />
   }
 ]);

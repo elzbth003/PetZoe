@@ -285,7 +285,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         User jessica = createOrUpdateOwner("Jessica Taylor", "jessica@petverse.com", "9876543220",
                 "15 Park Avenue, Indiranagar, Bangalore", "Active pet lover who hikes with her German Shepherd and loves birdwatching.");
         createOrUpdatePet("Rocky", "Dog", "German Shepherd", 4, "Male", 34.0, "Up-to-date",
-                "https://images.unsplash.com/photo-1589941013453-ec89f33b5455?auto=format&fit=crop&q=80&w=600",
+                "/images/animals/rocky-germanshepherd.jpg",
                 LocalDate.of(2022, 4, 12), "Black & Tan", null, "Working lineage. Mild bilateral stifle stiffness after prolonged sprint workouts.", jessica);
         createOrUpdatePet("Oliver", "Cat", "British Shorthair", 2, "Male", 5.1, "Up-to-date",
                 "https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&q=80&w=600",
@@ -613,7 +613,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         // ── Animals for Shelter 4: Compassion Paw (Pune) ──
         Animal rocky = createOrUpdateAnimal(compassionPaw, "SH-CPF-001", "Rocky", "Dog", "German Shepherd Mix",
                 AnimalSex.MALE, 30, "Sable Tan & Black", "Erect ears, alert posture", 31.0,
-                "https://images.unsplash.com/photo-1589941013453-ec89f33b5455?auto=format&fit=crop&q=80&w=600",
+                "/images/animals/rocky-germanshepherd.jpg",
                 "98514100771203", AnimalStatus.READY_FOR_ADOPTION, SterilizationStatus.STERILIZED,
                 "Excellent athletic conditioning", null,
                 "Loyal, highly trainable, eager for tasks.", null, neha);
@@ -644,7 +644,7 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         Animal milo = createOrUpdateAnimal(guardianAngels, "SH-GA-002", "Milo", "Dog", "Dachshund Indie Cross",
                 AnimalSex.MALE, 14, "Reddish Brown", "Long body, short energetic legs", 9.5,
-                "https://images.unsplash.com/photo-1521673461164-de300ebcf4d7?auto=format&fit=crop&q=80&w=600",
+                "/images/animals/milo-dachshund.jpg",
                 "98514100771206", AnimalStatus.READY_FOR_ADOPTION, SterilizationStatus.STERILIZED,
                 "Spirited, playful young dog", null,
                 "Courageous and spunky, loves blanket burrowing.", null, vikram);
@@ -677,7 +677,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         // ── Animals for Shelter 8: Shanti Trust (Ahmedabad) ──
         Animal daisy = createOrUpdateAnimal(shantiTrust, "SH-SAW-002", "Daisy", "Dog", "Poodle Indie Cross",
                 AnimalSex.FEMALE, 12, "Cream White", "Soft curly fleece coat", 11.0,
-                "https://images.unsplash.com/photo-1591769225440-811ad7d6eab2?auto=format&fit=crop&q=80&w=600",
+                "/images/animals/daisy-poodle.jpg",
                 "98514100771209", AnimalStatus.READY_FOR_ADOPTION, SterilizationStatus.STERILIZED,
                 "Hypoallergenic coat type, healthy teeth", null,
                 "Delicate, polite, very loving with gentle people.", null, meera);

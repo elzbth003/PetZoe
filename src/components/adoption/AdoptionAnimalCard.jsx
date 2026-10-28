@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, PawPrint } from 'lucide-react';
+import { getAnimalImageUrl, handleAnimalImageError } from '../../utils/animalImageHelper';
 
 export default function AdoptionAnimalCard({ animal }) {
   return (
@@ -9,12 +10,13 @@ export default function AdoptionAnimalCard({ animal }) {
       className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full relative"
     >
       <div className="relative aspect-square w-full bg-slate-50 overflow-hidden flex items-center justify-center">
-        {animal.primaryPhotoBase64 ? (
+        {getAnimalImageUrl(animal) ? (
           <img
-            src={animal.primaryPhotoBase64}
+            src={getAnimalImageUrl(animal)}
             alt={animal.name || animal.species}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
+            onError={(e) => handleAnimalImageError(e, animal)}
           />
         ) : (
           <PawPrint size={48} className="text-slate-300" />

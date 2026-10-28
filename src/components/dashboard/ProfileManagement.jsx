@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   User, Mail, Phone, MapPin, Lock, Trash2, Camera, Save,
-  Loader2, AlertTriangle, Eye, EyeOff, CheckCircle, X, Edit3
+  Loader2, AlertTriangle, Eye, EyeOff, CheckCircle, X, Edit3, Award
 } from 'lucide-react';
 import { profileService } from '../../services/profileService';
 import { useToast } from '../../hooks/useToast';

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { PawPrint, MapPin, ChevronRight, Syringe, Scissors, HeartHandshake, Heart } from 'lucide-react';
 import adoptionPublicService from '../../services/adoptionPublicService';
 import { useAuth } from '../../hooks/useAuth';
+import { getAnimalImageUrl, handleAnimalImageError } from '../../utils/animalImageHelper';
 
 const ADOPTION_STATUS_STYLES = {
   Available: 'bg-emerald-500',
@@ -70,8 +71,13 @@ export default function AdoptionDetailPage() {
         <div className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-10 mb-12">
           <div className="md:w-1/2">
             <div className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 aspect-square flex items-center justify-center">
-              {animal.primaryPhotoBase64 ? (
-                <img src={animal.primaryPhotoBase64} alt={animal.name} className="w-full h-full object-cover" />
+              {getAnimalImageUrl(animal) ? (
+                <img
+                  src={getAnimalImageUrl(animal)}
+                  alt={animal.name || 'Pet'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => handleAnimalImageError(e, animal)}
+                />
               ) : (
                 <PawPrint size={64} className="text-slate-300" />
               )}

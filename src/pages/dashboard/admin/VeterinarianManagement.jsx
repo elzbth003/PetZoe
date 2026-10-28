@@ -3,6 +3,7 @@ import { adminApi } from '../../../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { Stethoscope, Search, Filter, MoreVertical, Eye, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SelectDropdown from '../../../components/ui/SelectDropdown';
 
 const StatusBadge = ({ status }) => {
   const styles = {
