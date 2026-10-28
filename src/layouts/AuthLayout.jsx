@@ -22,12 +22,13 @@ export default function AuthLayout() {
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
         {/* Brand Header */}
-        <Link to="/" className="flex items-center gap-2 cursor-pointer group z-10 self-start select-none">
-          <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner group-hover:scale-105 transition-transform duration-300">
-            <PawPrint size={22} className="text-[#38BDF8]" />
-          </div>
+        <Link to="/" className="flex items-center gap-1.5 cursor-pointer group z-10 self-start select-none">
           <span className="font-display font-black text-2xl tracking-tight text-white flex items-center">
-            PetZ<span className="text-[#38BDF8]">oe</span>
+            PetZ
+            <span className="inline-block group-hover:rotate-12 transition-transform duration-300">
+              <PawPrint size={24} className="fill-current text-secondary-300 mx-0.5 animate-pulse" />
+            </span>
+            e
           </span>
         </Link>
 
@@ -139,12 +140,13 @@ export default function AuthLayout() {
           
           {/* Mobile Logo Header */}
           <div className="flex lg:hidden justify-center mb-6">
-            <Link to="/" className="flex items-center gap-2 select-none">
-              <div className="h-9 w-9 rounded-xl bg-[#112A46] flex items-center justify-center text-white">
-                <PawPrint size={18} className="text-[#38BDF8]" />
-              </div>
+            <Link to="/" className="flex items-center gap-1.5 select-none">
               <span className="font-display font-black text-xl tracking-tight text-slate-900 flex items-center">
-                PetZ<span className="text-primary-600">oe</span>
+                PetZ
+                <span className="inline-block hover:rotate-12 transition-transform duration-300">
+                  <PawPrint size={20} className="fill-current text-primary-500 mx-0.5 animate-pulse" />
+                </span>
+                e
               </span>
             </Link>
           </div>

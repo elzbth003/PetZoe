@@ -77,8 +77,8 @@ export default function Footer() {
             <Heart size={10} className="fill-rose-500 text-rose-500" />
           </div>
           <div className="flex gap-6">
-            <a href="#" className="hover:underline">Terms of Service</a>
-            <a href="#" className="hover:underline">Privacy Policy</a>
+            <Link to="/terms" className="hover:underline">Terms of Service</Link>
+            <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
             <a href="#" className="hover:underline">HIPAA Compliance</a>
           </div>
         </div>

@@ -92,11 +92,8 @@ export default function LoginPage() {
   return (
     <div className="space-y-6">
       
-      {/* Sleek Brand Badge Header (Replacing previous illustration) */}
-      <div className="text-center space-y-2.5">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gradient-to-tr from-[#112A46] to-[#1E3A5F] text-white shadow-md shadow-[#112A46]/15 mb-1">
-          <PawPrint size={24} className="text-[#38BDF8]" />
-        </div>
+      {/* Form Header */}
+      <div className="text-center space-y-1.5 mb-2">
         <h2 className="font-display font-black text-2xl text-slate-900 tracking-tight">
           Welcome Back
         </h2>

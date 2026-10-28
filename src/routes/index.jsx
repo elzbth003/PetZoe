@@ -46,6 +46,10 @@ import AdoptionApplicationPage from '../pages/adoption/AdoptionApplicationPage';
 // Rehoming Pages
 import RehomingBoard from '../pages/rehoming/RehomingBoard';
 
+// Legal Pages
+import TermsPage from '../pages/legal/TermsPage';
+import PrivacyPage from '../pages/legal/PrivacyPage';
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -54,6 +58,15 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <LandingPage />
+      },
+      // Legal Pages
+      {
+        path: 'terms',
+        element: <TermsPage />
+      },
+      {
+        path: 'privacy',
+        element: <PrivacyPage />
       },
       // Public Community Rehoming Board
       {

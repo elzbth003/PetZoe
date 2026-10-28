@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { GoogleLogin } from '@react-oauth/google';
+import LegalModal from '../components/legal/LegalModal';
 
 const ROLES = [
   {
@@ -47,6 +48,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [legalModalType, setLegalModalType] = useState(null);
 
   const { register: registerAuth, googleLogin } = useAuth();
   const { showToast } = useToast();
@@ -145,11 +147,8 @@ export default function RegisterPage() {
   return (
     <div className="space-y-6">
       
-      {/* Sleek Brand Badge Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gradient-to-tr from-[#112A46] to-[#1E3A5F] text-white shadow-md shadow-[#112A46]/15 mb-0.5">
-          <PawPrint size={24} className="text-[#38BDF8]" />
-        </div>
+      {/* Form Header */}
+      <div className="text-center space-y-1.5 mb-2">
         <h2 className="font-display font-black text-2xl text-slate-900 tracking-tight">
           Create Your Account
         </h2>
@@ -487,21 +486,27 @@ export default function RegisterPage() {
             />
             <span className="leading-relaxed">
               I agree to PetZoe's{' '}
-              <a
-                href="#"
-                onClick={(e) => { e.preventDefault(); showToast("Platform terms & conditions agreement verified.", "info"); }}
-                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLegalModalType('terms');
+                }}
+                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline cursor-pointer"
               >
                 Terms of Service
-              </a>{' '}
+              </button>{' '}
               and{' '}
-              <a
-                href="#"
-                onClick={(e) => { e.preventDefault(); showToast("Platform privacy policy agreement verified.", "info"); }}
-                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLegalModalType('privacy');
+                }}
+                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline cursor-pointer"
               >
                 Privacy Policy
-              </a>.
+              </button>.
             </span>
           </label>
           {errors.acceptTerms && (
@@ -562,6 +567,14 @@ export default function RegisterPage() {
           </Link>
         </p>
       </div>
+
+      {/* Interactive Terms & Conditions / Privacy Policy Modal */}
+      <LegalModal
+        isOpen={Boolean(legalModalType)}
+        type={legalModalType || 'terms'}
+        onClose={() => setLegalModalType(null)}
+        onAccept={() => setValue('acceptTerms', true, { shouldValidate: true })}
+      />
 
     </div>
   );
