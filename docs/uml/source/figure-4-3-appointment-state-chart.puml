@@ -1,0 +1,56 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 11
+skinparam roundCorner 6
+skinparam ArrowColor black
+skinparam StateBorderColor black
+
+title State Chart Diagram for PetZoe Appointment & Consultation Entity (Figure 4.3)
+
+[*] --> Requested : Owner selects slot &\ninitiates booking
+
+state Requested {
+  Requested : Initial appointment requested
+  Requested : Slot temporarily held
+}
+
+Requested --> Confirmed : Payment verified /\nVet approves booking
+Requested --> Cancelled : Payment failed /\nBooking aborted
+
+state Confirmed {
+  Confirmed : Appointment locked in doctor schedule
+  Confirmed : Automated reminders queued
+}
+
+Confirmed --> InProgress : Consultation begins /\nPatient checked in
+Confirmed --> Rescheduled : Date/Time slot\nchange requested
+Rescheduled --> Confirmed : New slot confirmed
+Confirmed --> Cancelled : Cancelled prior to cut-off time
+
+state InProgress {
+  InProgress : Clinical examination active
+  InProgress : Consultation chat & diagnostic entry open
+}
+
+InProgress --> Completed : Consultation concluded &\nDigital prescription issued
+InProgress --> FollowUpRequired : Follow-up examination\nrecommended
+FollowUpRequired --> InProgress : Follow-up consultation starts
+FollowUpRequired --> Completed : Follow-up care concluded
+
+state Completed {
+  Completed : Permanent EHR record updated
+  Completed : Electronic prescription accessible
+}
+
+state Cancelled {
+  Cancelled : Booking terminated
+  Cancelled : Clinic slot released
+}
+
+Cancelled --> [*]
+Completed --> [*]
+
+@enduml

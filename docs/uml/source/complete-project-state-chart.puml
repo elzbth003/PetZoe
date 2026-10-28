@@ -1,0 +1,123 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 10
+skinparam roundCorner 6
+skinparam ArrowColor black
+skinparam StateBorderColor black
+
+title Complete System Lifecycle State Chart Diagram - PetZoe Platform
+
+[*] --> UserRegistration : Visitor registers account
+
+state UserRegistration {
+  UserRegistration : Select user role (Owner, Vet, Shelter, Seller)
+  UserRegistration : Complete email / phone verification
+}
+
+UserRegistration --> VerificationPending : Credentials submitted\n[Role = Veterinarian / Shelter]
+UserRegistration --> ActiveSession : Immediate activation\n[Role = Pet Owner / Seller]
+
+state VerificationPending {
+  VerificationPending : Veterinary license / Shelter certificate verification
+  VerificationPending : Admin verification queue
+}
+
+VerificationPending --> ActiveSession : Admin approves credentials
+VerificationPending --> AccountRejected : Credentials rejected
+AccountRejected --> [*]
+
+state ActiveSession {
+  ActiveSession : JWT authenticated session active
+  ActiveSession : Role-based dashboard accessible
+}
+
+ActiveSession --> PetOnboarding : Owner registers companion animal
+
+state PetOnboarding {
+  PetOnboarding : Profile attributes (Breed, Age, Weight, Microchip)
+  PetOnboarding : Digital health passport initialized
+}
+
+PetOnboarding --> PlatformServiceRouting : Health passport active
+
+state PlatformServiceRouting {
+  PlatformServiceRouting : Select core platform service
+}
+
+PlatformServiceRouting --> AppointmentBooking : Book clinic consultation
+PlatformServiceRouting --> AdoptionWorkflow : Apply for pet adoption
+PlatformServiceRouting --> PetRehoming : Initiate governed rehoming
+PlatformServiceRouting --> MarketplaceOrder : Purchase pet products
+
+' 1. Clinical Appointment Subsystem
+state AppointmentBooking {
+  [*] --> SlotSelected
+  SlotSelected --> PaymentPending : Proceed to booking checkout
+  PaymentPending --> BookingConfirmed : Razorpay payment verified /\nSlot locked
+  PaymentPending --> BookingCancelled : Payment failed / Aborted
+  BookingConfirmed --> InConsultation : Patient check-in at clinic
+  BookingConfirmed --> Rescheduled : Date / slot change requested
+  Rescheduled --> BookingConfirmed : New slot confirmed
+  BookingConfirmed --> BookingCancelled : Cancelled prior to cut-off
+  
+  InConsultation --> ExaminationAndDiagnosis : Doctor conducts examination
+  ExaminationAndDiagnosis --> PrescriptionIssued : Diagnosis recorded &\nDigital prescription issued
+  PrescriptionIssued --> ConsultationCompleted : Atomic save to PetMedicalRecord &\nUpdate pet weight
+  ConsultationCompleted --> FollowUpRequired : Follow-up visit recommended
+  FollowUpRequired --> InConsultation : Follow-up session starts
+  ConsultationCompleted --> [*]
+  BookingCancelled --> [*]
+}
+
+' 2. Shelter Adoption Workflow
+state AdoptionWorkflow {
+  [*] --> ApplicationSubmitted
+  ApplicationSubmitted --> UnderReview : Shelter manager screening
+  UnderReview --> InfoRequired : Incomplete details
+  InfoRequired --> UnderReview : Adopter resubmits details
+  UnderReview --> HomeCheckPending : Virtual / physical home inspection
+  HomeCheckPending --> ApplicationApproved : Verification passed
+  UnderReview --> ApplicationRejected : Application declined
+  ApplicationApproved --> AdoptionCompleted : Animal handover completed &\nEHR history transitioned
+  ApplicationRejected --> [*]
+  AdoptionCompleted --> [*]
+}
+
+' 3. Governed Pet Rehoming & Medical Continuity
+state PetRehoming {
+  [*] --> RehomeInitiated
+  RehomeInitiated --> RehomeListingPublished : Admin / Shelter review approved
+  RehomeListingPublished --> AdopterScreening : Prospective adopter applies
+  AdopterScreening --> CustodyHandover : Adopter approved
+  CustodyHandover --> OwnershipTransferred : Digital health passport &\nVaccination history migrated
+  OwnershipTransferred --> [*]
+}
+
+' 4. Marketplace & Order Processing
+state MarketplaceOrder {
+  [*] --> CartCheckout
+  CartCheckout --> OrderProcessing : Payment verified (Razorpay)
+  OrderProcessing --> Shipped : Seller packages & dispatches
+  Shipped --> Delivered : Customer receives delivery
+  Delivered --> [*]
+}
+
+AppointmentBooking --> PostServiceLifecycle : Consultation concluded
+AdoptionWorkflow --> PostServiceLifecycle : Adoption finalized
+PetRehoming --> PostServiceLifecycle : Rehoming completed
+MarketplaceOrder --> PostServiceLifecycle : Order delivered
+
+state PostServiceLifecycle {
+  PostServiceLifecycle : Submit ratings, reviews & feedback
+  PostServiceLifecycle : Automated vaccination & care reminders active
+  PostServiceLifecycle : Permanent longitudinal medical ledger updated
+}
+
+PostServiceLifecycle --> ActiveSession : Return to dashboard
+ActiveSession --> SessionTerminated : Logout / Session expired
+SessionTerminated --> [*]
+
+@enduml

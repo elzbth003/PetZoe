@@ -3,72 +3,64 @@ skinparam monochrome true
 skinparam shadowing false
 skinparam backgroundColor white
 skinparam defaultFontName "Helvetica"
-skinparam defaultFontSize 9
+skinparam defaultFontSize 10
 skinparam roundCorner 4
 skinparam ArrowColor black
 skinparam NodeBorderColor black
 
-title Deployment Diagram - Digital Pet Healthcare & Veterinary Management System (PetVerse)
+title 4.2.8 Deployment Diagram - PetZoe Distributed System Architecture
 
-node "Client Devices" as Clients {
-    node "Web Application\n(React Frontend)" as Client_Web
-    node "Mobile Application\n(Android / iOS)" as Client_Mobile
-    node "Veterinarian Portal\n(Web)" as Client_Vet
-    node "Shelter Manager Portal\n(Web)" as Client_Shelter
-    node "Administrator Dashboard\n(Web)" as Client_Admin
-}
-
-node "Web Server\n(Nginx)" as WebServer {
-    artifact "Static Files /\nFrontend\n(React Build)" as StaticFiles
-}
-
-node "Application Server\n(Node.js / Express)" as AppServer {
-    artifact "REST API Services" as RestAPI
-    node "Business Logic Services" as BizServices {
-        artifact "Auth & User\nManagement" as Svc_Auth
-        artifact "Appointment & Booking\nManagement" as Svc_Appt
-        artifact "Medical Record\nManagement" as Svc_MedRec
-        artifact "Notification Service" as Svc_Notif
-        artifact "File / Document\nService" as Svc_Doc
-        artifact "Adoption & Shelter\nManagement" as Svc_Adopt
+node "<<device>>\nClient Workstation / Mobile Device" as ClientDevice {
+    node "<<execution environment>>\nModern Web Browser\n(Chrome / Firefox / Edge / Safari)" as BrowserEnv {
+        artifact "<<artifact>>\nReact 19 SPA Bundle\n(HTML5, CSS3, Tailwind, JS)" as ReactApp
     }
 }
 
-node "Database Server\n(MySQL)" as DBServer {
-    database "PetVerse Database\n(Users, Pets, Appointments,\nMedical Records, Prescriptions,\nPayments, Adoptions, etc.)" as MySQLDB
+node "<<device>>\nReverse Proxy & Gateway Server" as ProxyServer {
+    node "<<execution environment>>\nNginx 1.25" as NginxEnv {
+        artifact "<<artifact>>\nNginx Configuration\n(SSL Termination & Load Balancing)" as NginxConf
+    }
 }
 
-node "Cloud Storage\n(AWS S3 / Cloud Storage)" as CloudStorage {
-    artifact "Images, Documents,\nPrescriptions,\nReports, Attachments" as CloudFiles
+node "<<device>>\nBackend Application Server" as AppHost {
+    node "<<execution environment>>\nJVM (Java 21 LTS)\nEmbedded Apache Tomcat (Port 8080)" as TomcatEnv {
+        artifact "<<artifact>>\npetzoe-core-api.jar\n(Spring Boot 3, Spring Security, JWT)" as SpringArtifact
+    }
+    
+    node "<<execution environment>>\nPython 3.11 Runtime\nUvicorn ASGI Server (Port 8001)" as PythonEnv {
+        artifact "<<artifact>>\nvetscan-service.py\n(FastAPI & PyTorch/TorchVision Model)" as FastApiArtifact
+    }
 }
 
-node "Notification Service\n(Firebase Cloud Messaging)" as NotifService {
-    artifact "Push Notifications\n(Mobile / Web)" as PushNotifs
+node "<<device>>\nDatabase Server" as DBHost {
+    node "<<execution environment>>\nPostgreSQL 16 Engine (Port 5432)" as PostgreSQLEnv {
+        database "petzoe_relational_db\n(Users, Pets, Vets, Appointments,\nRecords, Orders, Rehoming)" as RelationalDB
+    }
 }
 
-node "External Services" as ExtServices {
-    artifact "Email Service\n(SendGrid / SMTP)" as ExtEmail
-    artifact "SMS Service\n(Twilio)" as ExtSMS
-    artifact "Payment Gateway\n(Razorpay / Stripe)" as ExtPay
-    artifact "Video Consultation\n(WebRTC / Jitsi / Twilio)" as ExtVideo
+node "<<device>>\nExternal Cloud & Third-Party Services" as CloudHost {
+    node "<<execution environment>>\nGoogle Cloud Platform" as GCPEnv {
+        artifact "<<artifact>>\nGemini 1.5 Pro Flash API\n(RAG / Chatbot Pipeline)" as GeminiAPI
+    }
+    node "<<execution environment>>\nPayment Gateway" as RazorpayEnv {
+        artifact "<<artifact>>\nRazorpay Payment API\n(Webhook & Order Verification)" as RazorpayAPI
+    }
+    node "<<execution environment>>\nCloud Storage & Messaging" as StorageEnv {
+        artifact "<<artifact>>\nFirebase / Cloudinary\n(Medical Records & Pet Photos)" as MediaStorage
+        artifact "<<artifact>>\nSMTP / Firebase Messaging\n(Email & Alerts)" as EmailNotif
+    }
 }
 
-node "Third Party Integrations" as ThirdParty {
-    artifact "Maps & Location Service\n(Google Maps API)" as ExtMaps
-    artifact "AI Service\n(Gemini / OpenAI API)" as ExtAI
-    artifact "Analytics Service\n(Google Analytics)" as ExtAnalytics
-}
+' Communication Paths
+ClientDevice -- ProxyServer : HTTPS (Port 443)\nWSS (WebSocket)
+ProxyServer -- TomcatEnv : Reverse Proxy HTTP (Port 8080)
+ProxyServer -- ReactApp : Static Asset Serving
 
-' Connections with protocol labels
-Clients -- WebServer : HTTPS\n(SSL/TLS)
-Clients -- AppServer : HTTPS\n(SSL/TLS)
-WebServer -- AppServer : HTTPS\n(SSL/TLS)
+TomcatEnv -- DBHost : TCP/IP JDBC (Port 5432)
+TomcatEnv -- PythonEnv : REST API HTTP (Port 8001)
 
-AppServer -- DBServer : TCP\n(3306)
-
-AppServer -- CloudStorage : HTTPS
-AppServer -- NotifService : HTTPS
-AppServer -- ExtServices : HTTPS
-AppServer -- ThirdParty : HTTPS
+TomcatEnv -- GCPEnv : HTTPS / REST API
+TomcatEnv -- RazorpayEnv : HTTPS / REST (TLS 1.3)
+TomcatEnv -- StorageEnv : HTTPS / REST (TLS 1.3)
 
 @enduml

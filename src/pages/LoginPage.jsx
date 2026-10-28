@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2, PawPrint, Stethoscope } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2, PawPrint, Sparkles, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { GoogleLogin } from '@react-oauth/google';
@@ -66,7 +67,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const user = await login(data.email, data.password);
-      showToast(`Access Granted. Welcome back, ${user.name}!`, "success");
+      showToast(`Welcome back, ${user.name}!`, "success");
       await redirectByRole(user);
     } catch (err) {
       showToast(err.response?.data?.message || err.message || "Invalid credentials.", "error");
@@ -91,30 +92,41 @@ export default function LoginPage() {
   return (
     <div className="space-y-6">
       
-      {/* Header */}
-      <div className="text-center lg:text-left space-y-1">
-        <h2 className="font-display font-black text-2xl text-slate-900">Welcome Back</h2>
-        <p className="text-xs text-slate-500 font-medium">
-          Enter your details below to log in to your secure account.
+      {/* Sleek Brand Badge Header (Replacing previous illustration) */}
+      <div className="text-center space-y-2.5">
+        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gradient-to-tr from-[#112A46] to-[#1E3A5F] text-white shadow-md shadow-[#112A46]/15 mb-1">
+          <PawPrint size={24} className="text-[#38BDF8]" />
+        </div>
+        <h2 className="font-display font-black text-2xl text-slate-900 tracking-tight">
+          Welcome Back
+        </h2>
+        <p className="text-xs text-slate-500 font-medium max-w-xs mx-auto leading-relaxed">
+          Log in to access your digital pet health records, consultations, and marketplace.
         </p>
       </div>
 
-      {/* Form */}
+      {/* Main Login Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         
         {/* Email input */}
         <div>
-          <label htmlFor="email" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Email Address</label>
+          <label htmlFor="email" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
+            Email Address
+          </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
+            <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400 pointer-events-none">
               <Mail size={16} />
             </span>
             <input
               id="email"
               type="email"
-              placeholder="owner@petverse.com"
+              placeholder="name@example.com"
               disabled={isSubmitting}
-              className={`w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border ${errors.email ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
+              className={`w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50/80 border ${
+                errors.email 
+                  ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' 
+                  : 'border-slate-200 focus:border-[#1E3A5F] focus:ring-[#1E3A5F]/15'
+              } text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 text-xs font-medium transition-all bg-white`}
               {...register('email', {
                 required: 'Email address is required',
                 pattern: {
@@ -131,9 +143,11 @@ export default function LoginPage() {
 
         {/* Password input */}
         <div>
-          <label htmlFor="password" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">Password</label>
+          <label htmlFor="password" className="block text-slate-700 text-xs font-bold mb-1.5 ml-1">
+            Password
+          </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
+            <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400 pointer-events-none">
               <Lock size={16} />
             </span>
             <input
@@ -141,13 +155,18 @@ export default function LoginPage() {
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               disabled={isSubmitting}
-              className={`w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border ${errors.password ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-primary-500'} text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500/20 text-xs font-medium transition-all`}
+              className={`w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50/80 border ${
+                errors.password 
+                  ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' 
+                  : 'border-slate-200 focus:border-[#1E3A5F] focus:ring-[#1E3A5F]/15'
+              } text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 text-xs font-medium transition-all bg-white`}
               {...register('password', { required: 'Password is required' })}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors p-1"
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -157,50 +176,53 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Remember me & Forgot Pass */}
-        <div className="flex items-center justify-between text-xs font-semibold">
+        {/* Remember me & Forgot Password */}
+        <div className="flex items-center justify-between text-xs font-semibold pt-0.5">
           <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
             <input
               type="checkbox"
-              className="rounded border-slate-300 text-primary-600 focus:ring-primary-500/20"
+              className="rounded-md border-slate-300 text-[#1E3A5F] focus:ring-[#1E3A5F]/20 cursor-pointer h-4 w-4"
               {...register('rememberMe')}
             />
             <span>Remember me</span>
           </label>
-          <Link to="/forgot-password" className="text-primary-600 hover:underline">
+          <Link to="/forgot-password" className="text-blue-600 hover:text-blue-700 font-semibold hover:underline">
             Forgot Password?
           </Link>
         </div>
 
-        {/* Submit */}
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-3.5 rounded-xl font-bold bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/15 hover:shadow-primary-600/25 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs"
+          className="w-full py-3.5 rounded-xl font-bold bg-[#112A46] hover:bg-[#1E3A5F] active:scale-[0.99] text-white shadow-lg shadow-[#112A46]/20 hover:shadow-[#112A46]/30 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs tracking-wide"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="animate-spin" size={16} />
-              Verifying Credentials...
+              Authenticating...
             </>
           ) : (
             <>
-              Login to Account <ArrowRight size={16} />
+              Sign In to PetZoe <ArrowRight size={15} />
             </>
           )}
         </button>
 
       </form>
 
-      {/* Divider */}
-      <div className="flex items-center my-4">
-        <div className="flex-grow border-t border-slate-200"></div>
-        <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Or continue with</span>
-        <div className="flex-grow border-t border-slate-200"></div>
+      {/* Styled Divider */}
+      <div className="relative flex items-center justify-center my-3">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-200/80" />
+        </div>
+        <span className="relative bg-white px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          Or continue with
+        </span>
       </div>
 
-      {/* Google Login Button */}
-      <div className="flex justify-center">
+      {/* Google Login One-Click Button */}
+      <div className="flex justify-center w-full">
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
           onError={() => showToast("Google sign-in was cancelled or failed.", "error")}
@@ -214,12 +236,14 @@ export default function LoginPage() {
       </div>
 
       {/* Navigation to Register */}
-      <p className="text-center text-xs text-slate-500 font-semibold">
-        Don't have an account?{' '}
-        <Link to="/register" className="text-primary-600 hover:underline">
-          Register here
-        </Link>
-      </p>
+      <div className="text-center pt-1 border-t border-slate-100">
+        <p className="text-xs text-slate-500 font-medium">
+          New to PetZoe?{' '}
+          <Link to="/register" className="text-blue-600 hover:text-blue-700 font-bold hover:underline inline-flex items-center gap-0.5">
+            Create an account
+          </Link>
+        </p>
+      </div>
 
     </div>
   );

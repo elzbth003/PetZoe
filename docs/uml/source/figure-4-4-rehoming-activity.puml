@@ -1,0 +1,62 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 11
+skinparam roundCorner 6
+skinparam ArrowColor black
+skinparam ActivityBorderColor black
+
+title Activity Diagram - Governed Pet Rehoming & Ownership Transfer (Figure 4.4)
+
+|Pet Owner (Current)|
+start
+:Initiate Pet Rehoming Request;
+:Fill Pet Details, Temperament &\nReason for Rehoming;
+:Attach Digital Health Passport &\nRecent Photographs;
+:Submit for Platform Governance Review;
+
+|PetZoe Platform / Shelter Admin|
+:Receive Rehoming Submission;
+:Verify Pet Ownership Credentials &\nVaccination Compliance;
+
+if (Review Passed?) then (Yes)
+    :Approve Rehoming Request;
+    :Publish Listing on Governed\nRehoming Board;
+else (No)
+    :Issue Rejection Justification;
+    |Pet Owner (Current)|
+    :Receive Rejection Notification;
+    stop
+endif
+
+|Prospective Adopter|
+:Browse Verified Rehoming Listings;
+:Inspect Longitudinal Medical Records;
+:Submit Adoption & Custody Application;
+
+|PetZoe Platform / Shelter Admin|
+:Review Adopter Profile & Housing Suitability;
+
+if (Adopter Approved?) then (Yes)
+    :Authorize Physical Meet & Greet;
+    |Pet Owner (Current)|
+    :Coordinate Direct Animal Handover;
+    |PetZoe Platform / Shelter Admin|
+    :Confirm Transfer of Physical Custody;
+    :Migrate Digital Health Passport &\nVaccination Ledger to New Owner;
+    :Update Permanent Audit Registry;
+    |Prospective Adopter|
+    :Receive Pet Digital Health Passport;
+    stop
+else (No)
+    |PetZoe Platform / Shelter Admin|
+    :Notify Adopter of Application Rejection;
+    :Reopen Pet Listing for Other Applicants;
+    |Pet Owner (Current)|
+    :Listing Remains Active on Board;
+    stop
+endif
+
+@enduml
