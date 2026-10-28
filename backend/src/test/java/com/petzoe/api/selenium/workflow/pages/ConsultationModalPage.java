@@ -15,7 +15,7 @@ public class ConsultationModalPage {
     private final WebDriver driver;
     private final WebDriverWait wait;
 
-    private final By modalHeader = By.xpath("//h2[contains(., 'Active Consultation Room')]");
+    private final By modalHeader = By.xpath("//h2[contains(., 'Clinical Examination') or contains(., 'Active Consultation Room')]");
     private final By weightInput = By.xpath("//input[contains(@placeholder, '24.5')] | //label[contains(., 'Pet Weight')]/following-sibling::input");
     private final By healthStatusSelect = By.xpath("//label[contains(., 'Health Status')]/following-sibling::select");
     private final By symptomsInput = By.xpath("//input[contains(@placeholder, 'Coughing')] | //label[contains(., 'Observed Symptoms')]/following-sibling::input");

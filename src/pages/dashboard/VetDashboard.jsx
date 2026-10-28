@@ -275,7 +275,7 @@ export default function VetDashboard() {
             </div>
             <h3 className="text-xl font-black text-slate-900">Clinical Consultation Room</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Start consultations with owners, examine clinical symptoms, log automated medical records, generate e-prescriptions, and schedule follow-ups.
+              Manage appointments with owners, review patient history, record clinical examinations, generate e-prescriptions, and schedule follow-ups.
             </p>
             <div className="flex items-center gap-4 text-xs font-bold text-slate-600 pt-2">
               <span className="bg-slate-100 px-3 py-1.5 rounded-xl">

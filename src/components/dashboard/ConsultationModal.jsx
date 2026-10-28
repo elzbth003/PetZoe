@@ -132,9 +132,9 @@ export default function ConsultationModal({ appointment, isOpen, onClose, onSucc
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight">Active Consultation Room</h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                  In Progress
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight">Clinical Examination & Record Entry</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-sky-500/20 text-sky-300 border border-sky-400/30">
+                  In-Clinic / Records
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-2">
@@ -145,6 +145,10 @@ export default function ConsultationModal({ appointment, isOpen, onClose, onSucc
                 <span>Owner: {appointment.ownerName || 'Client'}</span>
                 <span>•</span>
                 <span>Date: {appointment.appointmentDate} at {appointment.appointmentTime}</span>
+                <span>•</span>
+                <span className="text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded text-[10px] font-bold">
+                  Video Consultation: Coming Soon
+                </span>
               </p>
             </div>
           </div>

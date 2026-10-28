@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Calendar, Clock, User, MessageSquare, CheckCircle, XCircle, Loader2,
   PawPrint, Filter, Search, Stethoscope, AlertCircle, RefreshCw, FileText,
-  CalendarCheck, Clock4, X
+  CalendarCheck, Clock4, X, Video, Wifi, WifiOff, Info
 } from 'lucide-react';
 import { appointmentService } from '../../services/appointmentService';
 import { vetClinicalService } from '../../services/vetClinicalService';
@@ -19,6 +19,8 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialFilter);
+  const [isOnline, setIsOnline] = useState(false);
+  const [togglingPresence, setTogglingPresence] = useState(false);
 
   // Active Modals
   const [activeChat, setActiveChat] = useState(null);
@@ -49,8 +51,37 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
     }
   };
 
+  const checkPresence = async () => {
+    try {
+      const data = await vetClinicalService.getPresence();
+      setIsOnline(!!data?.online);
+    } catch (err) {
+      console.warn('Failed to fetch vet presence', err);
+    }
+  };
+
+  const handleTogglePresence = async () => {
+    setTogglingPresence(true);
+    try {
+      if (isOnline) {
+        await vetClinicalService.setOffline();
+        setIsOnline(false);
+        showToast('You are now marked Offline. Live consultations are unavailable.', 'info');
+      } else {
+        await vetClinicalService.setHeartbeat();
+        setIsOnline(true);
+        showToast('You are now Online and available for consultations.', 'success');
+      }
+    } catch (err) {
+      showToast('Failed to update presence status', 'error');
+    } finally {
+      setTogglingPresence(false);
+    }
+  };
+
   useEffect(() => {
     loadAppointments();
+    checkPresence();
   }, []);
 
   // Filter & Search Logic
@@ -131,16 +162,8 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
     }
   };
 
-  const handleStartConsultation = async (appt) => {
-    try {
-      if (appt.status !== 'IN_CONSULTATION') {
-        await vetClinicalService.startConsultation(appt.id);
-      }
-      setActiveConsultationAppt(appt);
-      loadAppointments();
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to start consultation', 'error');
-    }
+  const handleOpenClinicalExam = (appt) => {
+    setActiveConsultationAppt(appt);
   };
 
   // Status counters for tabs
@@ -164,6 +187,64 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Veterinarian Availability Bar */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="relative flex items-center justify-center">
+            <span
+              className={`w-3.5 h-3.5 rounded-full ${
+                isOnline ? 'bg-emerald-500 ring-4 ring-emerald-100 animate-pulse' : 'bg-slate-400 ring-4 ring-slate-100'
+              }`}
+            />
+          </div>
+          <div>
+            <div className="text-xs font-black text-slate-800 flex items-center gap-2">
+              <span>Doctor Consultation Status:</span>
+              <span className={isOnline ? 'text-emerald-700 font-bold' : 'text-slate-600 font-bold'}>
+                {isOnline ? 'Online & Available' : 'Offline / In-Clinic Hours'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {isOnline
+                ? 'Your active presence is visible. You are available for consultation management.'
+                : 'Live consultations are unavailable while offline. Confirmed appointments remain scheduled.'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleTogglePresence}
+          disabled={togglingPresence}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm ${
+            isOnline
+              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+          }`}
+        >
+          {togglingPresence ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : isOnline ? (
+            <>
+              <WifiOff size={13} /> Set Status to Offline
+            </>
+          ) : (
+            <>
+              <Wifi size={13} /> Go Online
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Offline Status Information Notice */}
+      {!isOnline && (
+        <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+          <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-800 leading-relaxed">
+            <strong className="font-bold">You are currently offline:</strong> Confirmed appointments remain confirmed and manageable (review patient charts, direct chat with clients, or record in-clinic medical records), but live consultation sessions cannot be started until you toggle your status to online.
+          </div>
+        </div>
+      )}
+
       {/* Search & Filter Header */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Filter Tabs */}
@@ -333,11 +414,21 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
                   {/* Case 2: CONFIRMED or UPCOMING */}
                   {isConfirmed && (
                     <div className="space-y-2">
+                      {/* Video Consultation Road-map Status */}
+                      <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                          <Video size={13} className="text-slate-400" /> Live Video Consultation
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200/80 text-slate-600">
+                          Coming Soon
+                        </span>
+                      </div>
+
                       <button
-                        onClick={() => handleStartConsultation(appt)}
+                        onClick={() => handleOpenClinicalExam(appt)}
                         className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                       >
-                        <Stethoscope size={15} /> Start Consultation
+                        <Stethoscope size={15} /> Record Clinical Exam & Rx
                       </button>
 
                       <div className="grid grid-cols-3 gap-2">
@@ -375,9 +466,9 @@ export default function VetAppointmentsPanel({ initialFilter = 'ALL' }) {
                     <div className="space-y-2">
                       <button
                         onClick={() => setActiveConsultationAppt(appt)}
-                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer animate-pulse"
+                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                       >
-                        <Stethoscope size={15} /> Resume Active Consultation
+                        <FileText size={15} /> Complete Clinical Record
                       </button>
 
                       <div className="flex gap-2">

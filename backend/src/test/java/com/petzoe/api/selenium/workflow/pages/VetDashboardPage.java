@@ -93,7 +93,7 @@ public class VetDashboardPage {
     public void startConsultationForPet(String petName) {
         goToAppointmentsTab();
         By startBtnXpath = By.xpath(String.format(
-                "//div[contains(@class, 'rounded-3xl')][.//h4[contains(., '%s')]]//button[contains(., 'Start Consultation') or contains(., 'Resume Active Consultation')]", petName));
+                "//div[contains(@class, 'rounded-3xl')][.//h4[contains(., '%s')]]//button[contains(., 'Record Clinical Exam') or contains(., 'Start Consultation') or contains(., 'Resume Active Consultation') or contains(., 'Complete Clinical Record')]", petName));
         WebElement startBtn = wait.until(ExpectedConditions.elementToBeClickable(startBtnXpath));
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", startBtn);
         try {

@@ -627,7 +627,7 @@ export default function VetPatientProfileModal({ petId, isOpen, onClose, onStart
                               }}
                               className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition-colors shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
                             >
-                              <Stethoscope size={14} /> {appt.status === 'IN_CONSULTATION' ? 'Resume Consultation' : 'Start Consultation'}
+                              <Stethoscope size={14} /> {appt.status === 'IN_CONSULTATION' ? 'Complete Clinical Record' : 'Record Clinical Exam'}
                             </button>
                           )}
                         </div>
