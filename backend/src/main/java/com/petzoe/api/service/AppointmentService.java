@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.List;
@@ -333,6 +334,7 @@ public class AppointmentService {
             "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
     );
 
+    public static final ZoneId IST_ZONE = ZoneId.of("Asia/Kolkata");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
 
     private LocalTime parseSlotTime(String slotStr) {
@@ -393,13 +395,18 @@ public class AppointmentService {
                 .map(String::trim)
                 .collect(Collectors.toSet());
 
-        boolean isToday = date.equals(LocalDate.now());
-        LocalTime nowTime = LocalTime.now();
+        LocalDate today = LocalDate.now(IST_ZONE);
+        boolean isPastDate = date.isBefore(today);
+        boolean isToday = date.equals(today);
+        LocalTime nowTime = LocalTime.now(IST_ZONE);
 
         List<SlotAvailabilityDTO> slots = ALL_TIME_SLOTS.stream()
                 .map(slot -> {
                     if (bookedTimes.contains(slot)) {
                         return new SlotAvailabilityDTO(slot, "BOOKED", false);
+                    }
+                    if (isPastDate) {
+                        return new SlotAvailabilityDTO(slot, "EXPIRED", false);
                     }
                     if (isToday) {
                         LocalTime slotTime = parseSlotTime(slot);
@@ -430,7 +437,8 @@ public class AppointmentService {
         if (dto.appointmentDate() == null) {
             throw new IllegalArgumentException("Appointment date is required.");
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(IST_ZONE);
+        LocalTime nowTime = LocalTime.now(IST_ZONE);
         if (dto.appointmentDate().isBefore(today)) {
             throw new IllegalArgumentException("Cannot book an appointment in the past.");
         }
@@ -441,7 +449,7 @@ public class AppointmentService {
         // Validate that time slot has not passed if booking for today
         if (dto.appointmentDate().equals(today)) {
             LocalTime slotTime = parseSlotTime(dto.appointmentTime());
-            if (slotTime != null && slotTime.isBefore(LocalTime.now())) {
+            if (slotTime != null && slotTime.isBefore(nowTime)) {
                 throw new IllegalArgumentException("The selected time slot (" + dto.appointmentTime() + ") has already passed today. Please select an upcoming slot.");
             }
         }
@@ -611,7 +619,8 @@ public class AppointmentService {
         if (dto.appointmentDate() == null) {
             throw new IllegalArgumentException("Appointment date is required.");
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(IST_ZONE);
+        LocalTime nowTime = LocalTime.now(IST_ZONE);
         if (dto.appointmentDate().isBefore(today)) {
             throw new IllegalArgumentException("Cannot book an appointment in the past.");
         }
@@ -621,7 +630,7 @@ public class AppointmentService {
 
         if (dto.appointmentDate().equals(today)) {
             LocalTime slotTime = parseSlotTime(dto.appointmentTime());
-            if (slotTime != null && slotTime.isBefore(LocalTime.now())) {
+            if (slotTime != null && slotTime.isBefore(nowTime)) {
                 throw new IllegalArgumentException("The selected time slot (" + dto.appointmentTime() + ") has already passed today. Please select an upcoming slot.");
             }
         }

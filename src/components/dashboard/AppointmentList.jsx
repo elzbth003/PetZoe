@@ -21,6 +21,14 @@ const TIME_SLOTS = [
   "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
 ];
 
+// Helper to get local date string YYYY-MM-DD
+const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Helper to convert "hh:mm AM/PM" to minutes from midnight
 const parseSlotToMinutes = (timeStr) => {
   if (!timeStr) return null;
@@ -57,14 +65,15 @@ const appointmentSchema = z.object({
     .min(1, { message: "Date is required" })
     .refine((val) => {
       if (!val) return true;
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString(new Date());
       return val >= today;
     }, { message: "Appointment date cannot be in the past" }),
   appointmentTime: z.string().min(1, { message: "Select a time slot" }),
   notes: z.string().max(1000, { message: "Notes cannot exceed 1000 characters" }).optional()
 }).refine((data) => {
   if (!data.appointmentDate || !data.appointmentTime) return true;
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString(new Date());
+  if (data.appointmentDate < today) return false;
   if (data.appointmentDate === today) {
     const slotMinutes = parseSlotToMinutes(data.appointmentTime);
     if (slotMinutes !== null) {
@@ -75,7 +84,7 @@ const appointmentSchema = z.object({
   }
   return true;
 }, {
-  message: "Selected time slot has already passed today",
+  message: "Selected time slot has already passed. Please choose an upcoming slot.",
   path: ["appointmentTime"]
 });
 
@@ -166,10 +175,12 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
           // If the currently selected time is not available in the new schedule or is in the past, clear it
           if (selectedTime) {
             const currentSlot = data.slots?.find(s => s.slot === selectedTime);
-            const isToday = selectedDate === new Date().toISOString().split('T')[0];
+            const today = getLocalDateString(new Date());
+            const isPastDate = selectedDate < today;
+            const isToday = selectedDate === today;
             const slotMins = parseSlotToMinutes(selectedTime);
             const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
-            const isPastTime = isToday && slotMins !== null && slotMins <= nowMins;
+            const isPastTime = isPastDate || (isToday && slotMins !== null && slotMins <= nowMins);
 
             if (!currentSlot || !currentSlot.available || isPastTime) {
               setValue("appointmentTime", "", { shouldValidate: true });
@@ -380,7 +391,7 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
               <DatePicker
                 value={watch('appointmentDate')}
                 onChange={(val) => setValue('appointmentDate', val, { shouldValidate: true })}
-                min={new Date().toISOString().split('T')[0]}
+                min={getLocalDateString(new Date())}
                 placeholder="Choose appointment date..."
                 error={errors.appointmentDate?.message}
               />
@@ -412,36 +423,73 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                 </div>
               )}
 
+              {/* All Slots Concluded For Today Alert */}
+              {(() => {
+                const today = getLocalDateString(new Date());
+                const now = new Date();
+                const nowMins = now.getHours() * 60 + now.getMinutes();
+                const isToday = selectedDate === today;
+                const allTodayPassed = isToday && TIME_SLOTS.every(s => {
+                  const m = parseSlotToMinutes(s);
+                  return m !== null && m <= nowMins;
+                });
+                if (allTodayPassed) {
+                  return (
+                    <div className="p-3 mb-3 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center gap-2.5 text-amber-800 text-xs font-semibold">
+                      <Clock size={16} className="text-amber-600 shrink-0" />
+                      <p className="text-[11px] leading-tight">
+                        All consultation hours for today have concluded. Please select tomorrow or an upcoming date to book an appointment.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div className="grid grid-cols-3 gap-2">
                 {TIME_SLOTS.map(slot => {
                   const slotInfo = scheduleData?.slots?.find(s => s.slot === slot);
                   const isBooked = slotInfo?.status === 'BOOKED';
                   const isOffDuty = slotInfo?.status === 'OFF_DUTY';
                   
-                  // Check if slot has already passed today
-                  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+                  // Check if slot has already passed
+                  const todayStr = getLocalDateString(new Date());
+                  const now = new Date();
+                  const nowMins = now.getHours() * 60 + now.getMinutes();
+                  const isPastDate = Boolean(selectedDate && selectedDate < todayStr);
+                  const isToday = Boolean(selectedDate && selectedDate === todayStr);
                   const slotMins = parseSlotToMinutes(slot);
-                  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
-                  const isPastTime = isToday && slotMins !== null && slotMins <= nowMins;
+                  const isPastTime = Boolean(!selectedDate || isPastDate || (isToday && slotMins !== null && slotMins <= nowMins));
                   const isExpired = slotInfo?.status === 'EXPIRED' || isPastTime;
 
-                  const isAvailable = (!scheduleData || (slotInfo ? slotInfo.available : true)) && !isPastTime && !isExpired;
+                  // Slot is available ONLY if date is chosen, not in past, not booked, doctor on duty
+                  const isAvailable = Boolean(
+                    selectedDate &&
+                    !isPastDate &&
+                    !isPastTime &&
+                    !isExpired &&
+                    (!scheduleData || (slotInfo ? slotInfo.available : true)) &&
+                    scheduleData?.isWorkingDay !== false
+                  );
                   const isSelected = selectedTime === slot;
 
                   let buttonStyle = 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 cursor-pointer';
                   let statusBadge = null;
 
-                  if (isSelected) {
-                    buttonStyle = 'bg-[#38BDF8] border-[#38BDF8] text-white shadow-sm shadow-sky-500/30';
-                  } else if (isExpired) {
-                    buttonStyle = 'bg-slate-100/50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
-                    statusBadge = <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Passed</span>;
+                  if (!selectedDate) {
+                    buttonStyle = 'bg-slate-100/60 border-slate-200/80 text-slate-400 cursor-not-allowed opacity-60';
+                    statusBadge = <span className="block text-[8px] font-medium text-slate-400 mt-0.5">Pick Date</span>;
+                  } else if (isExpired || isPastTime) {
+                    buttonStyle = 'bg-slate-100/70 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
+                    statusBadge = <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Time Over</span>;
                   } else if (isBooked) {
                     buttonStyle = 'bg-slate-100/90 border-slate-200 text-slate-400 cursor-not-allowed opacity-75';
                     statusBadge = <span className="block text-[8px] font-bold text-rose-500 uppercase tracking-wider mt-0.5">Booked</span>;
                   } else if (isOffDuty) {
                     buttonStyle = 'bg-slate-100/60 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
                     statusBadge = <span className="block text-[8px] font-bold text-amber-600 uppercase tracking-wider mt-0.5">Off Duty</span>;
+                  } else if (isSelected) {
+                    buttonStyle = 'bg-[#38BDF8] border-[#38BDF8] text-white shadow-sm shadow-sky-500/30 font-extrabold';
                   }
 
                   return (
@@ -454,9 +502,9 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
                           setValue("appointmentTime", slot, { shouldValidate: true });
                         }
                       }}
-                      className={`py-2 px-1 text-[10px] font-bold rounded-xl border text-center transition-all flex flex-col items-center justify-center min-h-[44px] ${buttonStyle}`}
+                      className={`py-2 px-1 text-[10px] font-bold rounded-xl border text-center transition-all flex flex-col items-center justify-center min-h-[46px] select-none ${buttonStyle}`}
                     >
-                      <span className={isBooked ? 'line-through decoration-slate-400/80' : ''}>{slot}</span>
+                      <span className={isBooked || isPastTime ? 'line-through decoration-slate-400/70' : ''}>{slot}</span>
                       {statusBadge}
                     </button>
                   );
@@ -499,22 +547,79 @@ export default function AppointmentList({ onAppointmentsUpdated }) {
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 rounded-xl font-bold bg-[#1E3A5F] hover:bg-[#1A3354] text-white shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer text-xs disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={14} />
-                  Opening Razorpay Checkout...
-                </>
-              ) : (
-                <>
-                  Pay ₹10 & Confirm Consultation <ArrowRight size={14} />
-                </>
-              )}
-            </button>
+            {(() => {
+              const todayStr = getLocalDateString(new Date());
+              const now = new Date();
+              const nowMins = now.getHours() * 60 + now.getMinutes();
+              const isPastDate = Boolean(selectedDate && selectedDate < todayStr);
+              const isToday = Boolean(selectedDate && selectedDate === todayStr);
+              const selectedSlotMins = parseSlotToMinutes(selectedTime);
+              const isSelectedSlotPassed = Boolean(
+                selectedTime && (
+                  !selectedDate ||
+                  isPastDate ||
+                  (isToday && selectedSlotMins !== null && selectedSlotMins <= nowMins)
+                )
+              );
+              const isDoctorOffDuty = scheduleData?.isWorkingDay === false;
+              const canSubmit = Boolean(
+                !isSubmitting &&
+                !loadingSlots &&
+                selectedDate &&
+                !isPastDate &&
+                selectedTime &&
+                !isSelectedSlotPassed &&
+                !isDoctorOffDuty
+              );
+
+              return (
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className={`w-full py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-xs select-none ${
+                    canSubmit
+                      ? 'bg-[#1E3A5F] hover:bg-[#1A3354] active:scale-[0.99] text-white shadow-md hover:shadow-lg cursor-pointer'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={14} />
+                      Opening Razorpay Checkout...
+                    </>
+                  ) : isSelectedSlotPassed && selectedDate ? (
+                    <>
+                      <Clock size={14} />
+                      Selected Time Slot Has Passed
+                    </>
+                  ) : isPastDate ? (
+                    <>
+                      <AlertTriangle size={14} />
+                      Cannot Book Past Date
+                    </>
+                  ) : !selectedDate ? (
+                    <>
+                      <Calendar size={14} />
+                      Please Choose Appointment Date
+                    </>
+                  ) : !selectedTime ? (
+                    <>
+                      <Clock size={14} />
+                      Select an Upcoming Time Slot
+                    </>
+                  ) : isDoctorOffDuty ? (
+                    <>
+                      <AlertCircle size={14} />
+                      Doctor Off-Duty on This Date
+                    </>
+                  ) : (
+                    <>
+                      Pay ₹10 & Confirm Consultation <ArrowRight size={14} />
+                    </>
+                  )}
+                </button>
+              );
+            })()}
 
           </form>
         )}
