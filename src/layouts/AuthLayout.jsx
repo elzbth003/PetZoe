@@ -1,8 +1,8 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
-  PawPrint, Heart, Stethoscope, ShieldCheck, Sparkles, 
-  Activity, Star, CheckCircle2, Lock, ArrowUpRight
+  PawPrint, Stethoscope, ShieldCheck, 
+  Activity, Star, CheckCircle2, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -13,183 +13,181 @@ export default function AuthLayout() {
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-slate-50 font-sans selection:bg-teal-100 selection:text-teal-900">
       
-      {/* Left Panel: Classic, Professional & Elegant Showcase (Desktop only) */}
-      <div className="hidden lg:flex lg:col-span-5 relative bg-gradient-to-b from-[#0A1628] via-[#0E1F38] to-[#0A1628] text-white p-10 xl:p-14 flex-col justify-between overflow-hidden shadow-2xl border-r border-slate-800/80">
+      {/* Left Panel: High-End Medical & Clinical Technology Showcase (Desktop) */}
+      <div className="hidden lg:flex lg:col-span-5 relative bg-gradient-to-br from-[#070F1E] via-[#0B182B] to-[#081222] text-white p-10 xl:p-14 flex-col justify-between overflow-hidden shadow-2xl border-r border-slate-800/80">
         
-        {/* Subtle, refined atmospheric lighting */}
-        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-br from-[#F6BD60]/10 via-transparent to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[420px] h-[420px] bg-gradient-to-tr from-[#84A59D]/15 via-transparent to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-950/20 rounded-full blur-[140px] pointer-events-none" />
+        {/* Ambient Glow & Precision Radial Lighting */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-gradient-to-tr from-emerald-500/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
         {/* Brand Header */}
-        <Link to="/" className="flex items-center gap-2 cursor-pointer group z-10 self-start select-none">
-          <span className="font-display font-black text-2xl tracking-tight text-white flex items-center">
-            PetZ
-            <span className="inline-block group-hover:rotate-12 transition-transform duration-300">
-              <PawPrint size={24} className="fill-current text-[#F6BD60] mx-0.5" />
+        <Link to="/" className="flex items-center gap-2.5 cursor-pointer group z-10 self-start select-none">
+          <div className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/15 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+            <PawPrint size={22} className="text-[#F6BD60] fill-[#F6BD60]" />
+          </div>
+          <div>
+            <div className="font-display font-black text-2xl tracking-tight text-white flex items-center leading-none">
+              PetZoe
+            </div>
+            <span className="text-[10px] tracking-widest uppercase font-semibold text-slate-400 block mt-0.5">
+              Veterinary Health Network
             </span>
-            e
-          </span>
-          <span className="ml-2 px-2.5 py-0.5 rounded-full bg-white/[0.08] text-[9px] uppercase tracking-widest font-bold text-slate-300 border border-white/10">
-            Clinical Health
-          </span>
+          </div>
         </Link>
 
         {/* Main Content Showcase */}
-        <div className="my-auto z-10 relative space-y-7 py-4 max-w-md">
+        <div className="my-auto z-10 relative space-y-6 py-4 max-w-md">
           
           {/* Header Typography */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-4"
+            className="space-y-3.5"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 backdrop-blur-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-semibold text-slate-200 tracking-wide">
-                Universal Digital Veterinary Ecosystem
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-bold text-emerald-300 tracking-wide uppercase">
+                Certified Veterinary Health Ecosystem
               </span>
             </div>
 
-            <h1 className="font-display font-extrabold text-3xl xl:text-[2.5rem] leading-[1.18] tracking-tight text-white">
-              Exceptional care for the companions who{' '}
-              <span className="font-serif italic font-normal text-[#F6BD60]">mean everything.</span>
+            <h1 className="font-display font-extrabold text-3xl xl:text-[2.5rem] leading-[1.15] tracking-tight text-white">
+              Exceptional clinical care for your lifelong companion.
             </h1>
 
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-normal">
-              A unified clinical platform connecting pet parents, licensed veterinarians, and shelter care with real-time digital continuity.
+              A unified digital healthcare platform connecting pet parents, licensed veterinarians, and shelter care with real-time clinical continuity.
             </p>
           </motion.div>
 
-          {/* Hero Clinical Preview Card */}
+          {/* Hero Digital Patient Card (Milo - Patient Record) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.5 }}
-            className="rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/15 p-4 sm:p-5 backdrop-blur-xl shadow-2xl relative overflow-hidden"
+            className="rounded-3xl bg-white/[0.06] border border-white/15 p-5 backdrop-blur-xl shadow-2xl shadow-black/40 relative overflow-hidden space-y-4"
           >
             {/* Top patient profile bar */}
             <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="relative w-11 h-11 rounded-xl overflow-hidden ring-2 ring-white/20 shrink-0 bg-slate-800">
+              <div className="flex items-center gap-3.5">
+                <div className="relative w-13 h-13 rounded-2xl overflow-hidden ring-2 ring-emerald-400/40 shadow-md shrink-0 bg-slate-800">
                   <img
                     src="/images/animals/milo-dachshund.jpg"
-                    alt="Milo - Patient Record"
+                    alt="Milo - Verified Patient"
                     className="w-full h-full object-cover"
                     onError={(e) => { e.currentTarget.src = '/happy_golden_retriever.jpg'; }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-bold text-white tracking-tight">Milo</h3>
-                    <span className="text-[10px] text-slate-400 font-mono">PZ-PET-0021</span>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white tracking-tight">Milo</h3>
+                    <span className="px-1.5 py-0.5 rounded-md bg-white/10 text-[9px] font-mono font-bold text-slate-300">
+                      PZ-PET-0021
+                    </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 font-medium">Dachshund Cross • 14 Months</p>
+                  <p className="text-xs text-slate-300 font-medium mt-0.5">Miniature Dachshund • 14 Months</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span>Verified Patient</span>
               </div>
             </div>
 
-            {/* Middle vitals & health stats */}
-            <div className="grid grid-cols-3 gap-2 py-3.5 border-b border-white/10 text-center">
-              <div className="bg-white/[0.03] rounded-xl p-2 border border-white/5">
-                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Vaccines</span>
-                <span className="text-xs font-bold text-emerald-300 flex items-center justify-center gap-1 mt-0.5">
-                  <CheckCircle2 size={11} /> Up to Date
+            {/* Middle vitals & health stats (High-contrast, sleek metric pills) */}
+            <div className="grid grid-cols-3 gap-2 text-left">
+              <div className="bg-white/[0.04] hover:bg-white/[0.06] transition-colors rounded-2xl p-2.5 border border-white/10">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Vaccines</span>
+                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1 mt-1">
+                  <CheckCircle2 size={13} className="text-emerald-400" /> Current
                 </span>
               </div>
-              <div className="bg-white/[0.03] rounded-xl p-2 border border-white/5">
-                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Weight</span>
-                <span className="text-xs font-bold text-white mt-0.5 block">9.5 kg</span>
+              <div className="bg-white/[0.04] hover:bg-white/[0.06] transition-colors rounded-2xl p-2.5 border border-white/10">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Weight</span>
+                <span className="text-xs font-bold text-white block mt-1">9.5 kg <span className="text-[10px] text-emerald-400 font-normal">Optimal</span></span>
               </div>
-              <div className="bg-white/[0.03] rounded-xl p-2 border border-white/5">
-                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sterilization</span>
-                <span className="text-xs font-bold text-white mt-0.5 block">Sterilized</span>
+              <div className="bg-white/[0.04] hover:bg-white/[0.06] transition-colors rounded-2xl p-2.5 border border-white/10">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Microchip</span>
+                <span className="text-xs font-bold text-white block mt-1">Active #8821</span>
               </div>
             </div>
 
-            {/* Bottom active consultation appointment preview */}
-            <div className="pt-3 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-[#84A59D]/20 text-[#84A59D]">
-                  <Stethoscope size={14} />
+            {/* Bottom active consultation schedule preview */}
+            <div className="bg-white/[0.03] rounded-2xl p-3 border border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center border border-teal-500/30">
+                  <Stethoscope size={16} />
                 </div>
                 <div>
-                  <span className="text-[11px] font-medium text-slate-300 block">Next Scheduled Checkup</span>
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">Upcoming Consult</span>
                   <span className="text-xs font-bold text-white">Dr. Sarah Jenkins, DVM</span>
                 </div>
               </div>
-              <span className="text-[10px] font-bold text-slate-300 bg-white/10 px-2.5 py-1 rounded-lg">
-                10:30 AM
-              </span>
+              <div className="text-right">
+                <span className="inline-block text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-1 rounded-lg">
+                  Today • 10:30 AM
+                </span>
+              </div>
             </div>
           </motion.div>
 
-          {/* Core Healthcare Pillars: Minimalist, Refined Rows */}
-          <div className="space-y-2.5 pt-1">
-            <div className="flex items-start gap-3 p-2 rounded-xl hover:bg-white/[0.03] transition-colors">
-              <div className="p-2 rounded-lg bg-white/10 text-[#F6BD60] shrink-0 mt-0.5">
+          {/* Three Key Pillars: Modern, Compact, Professional */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
                 <Stethoscope size={15} />
               </div>
-              <div>
-                <h4 className="text-xs font-bold text-white tracking-wide">Board-Certified Telemedicine</h4>
-                <p className="text-[11px] text-slate-300 leading-normal mt-0.5">
-                  Real-time video consults with certified veterinarians and electronic prescriptions.
-                </p>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-white">Board-Certified Telehealth</h4>
+                <p className="text-[11px] text-slate-300 truncate">On-demand video consults & digital prescriptions</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-2 rounded-xl hover:bg-white/[0.03] transition-colors">
-              <div className="p-2 rounded-lg bg-white/10 text-emerald-400 shrink-0 mt-0.5">
+            <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+              <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/20 text-sky-300 flex items-center justify-center shrink-0">
                 <ShieldCheck size={15} />
               </div>
-              <div>
-                <h4 className="text-xs font-bold text-white tracking-wide">Immutable PZ-PET-ID</h4>
-                <p className="text-[11px] text-slate-300 leading-normal mt-0.5">
-                  Continuous digital health charts, vaccination records, and verified adoption registry.
-                </p>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-white">Unified PZ-PET-ID™ Health Pass</h4>
+                <p className="text-[11px] text-slate-300 truncate">Verified vaccination registry & medical history</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-2 rounded-xl hover:bg-white/[0.03] transition-colors">
-              <div className="p-2 rounded-lg bg-white/10 text-sky-400 shrink-0 mt-0.5">
+            <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
                 <Activity size={15} />
               </div>
-              <div>
-                <h4 className="text-xs font-bold text-white tracking-wide">Clinical AI Health Screening</h4>
-                <p className="text-[11px] text-slate-300 leading-normal mt-0.5">
-                  Intelligent symptom assessment and instant guidance during urgent triage moments.
-                </p>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-white">Clinical AI Health Screening</h4>
+                <p className="text-[11px] text-slate-300 truncate">Instant triage guidance & symptom assessment</p>
               </div>
             </div>
           </div>
 
-          {/* Social Proof & Clinical Trust Quote */}
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex text-amber-300">
+          {/* Social Proof & Clinical Trust Rating */}
+          <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <div className="flex text-amber-400">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={11} className="fill-current" />
+                  <Star key={i} size={12} className="fill-current" />
                 ))}
               </div>
-              <span className="text-[11px] text-slate-300 font-medium">
-                <strong className="text-white font-bold">4.9 / 5.0</strong> clinical satisfaction
+              <span className="text-[11px] text-slate-300 font-semibold">
+                <strong className="text-white font-bold">4.9 / 5.0</strong> Clinical Rating
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
-              10,000+ Enrolled Pets
+            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+              15,000+ Enrolled Pets
             </span>
           </div>
 
         </div>
 
-        {/* Footer Credit & Compliance */}
+        {/* Footer Security Badge */}
         <div className="z-10 text-[11px] text-slate-400 flex items-center justify-between border-t border-white/10 pt-4">
           <span className="flex items-center gap-1.5 text-slate-300">
             <Lock size={12} className="text-emerald-400" />
