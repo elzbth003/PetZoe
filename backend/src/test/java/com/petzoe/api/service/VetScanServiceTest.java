@@ -351,4 +351,78 @@ class VetScanServiceTest {
         assertNotNull(response.explanationImageReference());
         assertTrue(response.explanationImageReference().endsWith("-gradcam.png"));
     }
+
+    @Test
+    @DisplayName("VETSCAN-TEST-11: Rejects QR codes, barcodes, and high-contrast synthetic graphics")
+    void testQrCodeOrDocumentRejected() throws IOException {
+        // Create 200x200 simulated QR code (black and white blocks)
+        BufferedImage qrImg = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = qrImg.createGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, 200, 200);
+        g.setColor(Color.BLACK);
+        // Draw black QR-like modules
+        for (int i = 0; i < 200; i += 20) {
+            for (int j = 0; j < 200; j += 20) {
+                if ((i + j) % 40 == 0) {
+                    g.fillRect(i, j, 15, 15);
+                }
+            }
+        }
+        g.dispose();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(qrImg, "png", baos);
+        byte[] qrBytes = baos.toByteArray();
+
+        MockMultipartFile file = new MockMultipartFile("image", "qr_code.png", "image/png", qrBytes);
+
+        when(userRepository.findByEmail("owner@petverse.com")).thenReturn(Optional.of(owner));
+        when(petRepository.findById(10L)).thenReturn(Optional.of(dog));
+        when(vetScanRecordRepository.save(any(VetScanRecord.class))).thenAnswer(i -> {
+            VetScanRecord r = i.getArgument(0);
+            r.setId(304L);
+            return r;
+        });
+
+        VetScanResponseDTO response = vetScanService.analyzeScan(file, 10L, "{}", "owner@petverse.com");
+
+        assertNotNull(response);
+        assertEquals("INSUFFICIENT_IMAGE", response.status());
+        assertTrue(response.statusMessage().contains("Non-biological graphic or document detected")
+                || response.statusMessage().contains("does not appear to be a canine skin")
+                || response.statusMessage().contains("dominated by blank document background"));
+        assertTrue(response.predictions().isEmpty());
+        assertNull(response.explanationImageReference());
+    }
+
+    @Test
+    @DisplayName("VETSCAN-TEST-12: Rejects desaturated / black-and-white graphics")
+    void testDesaturatedGrayscaleImageRejected() throws IOException {
+        BufferedImage grayImg = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = grayImg.createGraphics();
+        g.setColor(new Color(128, 128, 128)); // Neutral gray, saturation = 0
+        g.fillRect(0, 0, 200, 200);
+        g.dispose();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(grayImg, "jpg", baos);
+        byte[] grayBytes = baos.toByteArray();
+
+        MockMultipartFile file = new MockMultipartFile("image", "gray.jpg", "image/jpeg", grayBytes);
+
+        when(userRepository.findByEmail("owner@petverse.com")).thenReturn(Optional.of(owner));
+        when(petRepository.findById(10L)).thenReturn(Optional.of(dog));
+        when(vetScanRecordRepository.save(any(VetScanRecord.class))).thenAnswer(i -> {
+            VetScanRecord r = i.getArgument(0);
+            r.setId(305L);
+            return r;
+        });
+
+        VetScanResponseDTO response = vetScanService.analyzeScan(file, 10L, "{}", "owner@petverse.com");
+
+        assertNotNull(response);
+        assertEquals("INSUFFICIENT_IMAGE", response.status());
+        assertTrue(response.statusMessage().contains("Desaturated or black-and-white graphic detected"));
+    }
 }

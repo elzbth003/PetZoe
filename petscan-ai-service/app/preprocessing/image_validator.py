@@ -68,28 +68,57 @@ def validate_image_quality(image_bytes: bytes) -> tuple[ImageQualityResult, Imag
     elif mean_luminance > settings.MAX_LUMINANCE:
         issues.append(f"Image is overexposed / washed out (Luminance: {mean_luminance:.1f}, maximum: {settings.MAX_LUMINANCE}).")
 
-    # 5. Canine Dermal / Coat Biological Chromaticity Check
-    # Convert image to HSV to evaluate biological dermal/fur presence vs non-pet scenes (sky, foliage, cars, UI)
+    # 5. Extreme monochrome & Document detection (QR codes, barcodes, text screenshots)
     hsv_image = image.convert("HSV")
     hsv_np = np.array(hsv_image, dtype=np.float32)
     h = hsv_np[:, :, 0] * (360.0 / 255.0)  # [0, 360]
     s = hsv_np[:, :, 1] / 255.0            # [0, 1]
     v = hsv_np[:, :, 2] / 255.0            # [0, 1]
 
-    # Dermal/fur tones: warm hues (red/orange/yellow/brown), low saturation fur (black/white/grey)
-    is_warm_dermal = ((h <= 55) | (h >= 330)) & (v >= 0.15)
-    is_fur_neutral = (s < 0.22) & (v >= 0.15)
-    dermal_fur_mask = is_warm_dermal | is_fur_neutral
-    dermal_ratio = float(np.mean(dermal_fur_mask))
+    is_extreme_monochrome = (s < 0.12) & ((v > 0.88) | (v < 0.12))
+    extreme_mono_ratio = float(np.mean(is_extreme_monochrome))
+    if extreme_mono_ratio > 0.40:
+        issues.append("Non-biological graphic or document detected (e.g. QR code, text screenshot, or synthetic pattern). VetScan AI only screens authentic canine skin lesion photographs.")
 
-    # Unnatural/non-pet dominant spectra (vibrant blue sky, vibrant green foliage, unnatural synthetic neon)
+    is_pure_white = (img_np[:, :, 0] > 235) & (img_np[:, :, 1] > 235) & (img_np[:, :, 2] > 235)
+    white_ratio = float(np.mean(is_pure_white))
+    if white_ratio > 0.45:
+        issues.append("Image is dominated by blank document background. Please upload a close-up photograph of the pet's affected skin area.")
+
+    mean_saturation = float(np.mean(s))
+    if mean_saturation < 0.08:
+        issues.append("Desaturated or black-and-white graphic detected. Clinical lesion screening requires a clear color photograph showing natural skin tones and erythema.")
+
+    # 6. Canine Dermal / Coat Biological Chromaticity Check
+    # Unnatural/non-pet dominant spectra (vibrant blue sky, vibrant green foliage, unnatural synthetic neon, purple)
     is_vibrant_blue = (h >= 170) & (h <= 260) & (s > 0.35)
-    is_vibrant_green = (h >= 75) & (h <= 165) & (s > 0.40)
-    unnatural_mask = is_vibrant_blue | is_vibrant_green
+    is_vibrant_green = (h >= 75) & (h <= 165) & (s > 0.38)
+    is_vibrant_purple = (h >= 270) & (h <= 325) & (s > 0.40)
+    unnatural_mask = is_vibrant_blue | is_vibrant_green | is_vibrant_purple
     unnatural_ratio = float(np.mean(unnatural_mask))
+    if unnatural_ratio > 0.35:
+        issues.append("Non-biological or scenery colors detected (foliage, sky, synthetic objects). Please focus closely on the canine skin or coat lesion.")
 
-    if dermal_ratio < 0.22 or unnatural_ratio > 0.50:
-        issues.append("The uploaded photograph does not appear to be a canine skin or pet lesion photograph (non-biological colors or non-pet subject detected).")
+    # Dermal / Lesion Tissue Identification
+    r_ch = img_np[:, :, 0]
+    g_ch = img_np[:, :, 1]
+    b_ch = img_np[:, :, 2]
+
+    is_erythema = (r_ch > 95) & (r_ch > (g_ch * 1.10)) & (r_ch > (b_ch * 1.10)) & ((h <= 45) | (h >= 330)) & (s >= 0.12)
+    is_skin_tone = (h >= 8) & (h <= 50) & (s >= 0.12) & (s <= 0.75) & (v >= 0.20) & (v <= 0.88)
+    is_crust_melanin = (h >= 12) & (h <= 48) & (s >= 0.15) & (v >= 0.12) & (v <= 0.55) & (r_ch > g_ch) & (g_ch >= b_ch)
+    dermal_mask = is_erythema | is_skin_tone | is_crust_melanin
+    dermal_ratio = float(np.mean(dermal_mask))
+
+    is_warm_fur = ((h <= 55) | (h >= 335)) & (s >= 0.10) & (v >= 0.15) & (v <= 0.88)
+    is_neutral_fur = (s < 0.22) & (v >= 0.15) & (v <= 0.88) & (~is_extreme_monochrome)
+    fur_mask = (is_warm_fur | is_neutral_fur) & (~dermal_mask) & (~is_extreme_monochrome)
+    biological_ratio = float(np.mean(dermal_mask | fur_mask))
+
+    if dermal_ratio < 0.05 and biological_ratio < 0.25:
+        issues.append("The uploaded photograph does not appear to show a canine skin condition or lesion. Please upload a clear photo of your dog's affected skin or coat.")
+    elif dermal_ratio < 0.01:
+        issues.append("No canine skin lesion, rash, or erythema detected in the photograph. Please upload a focused close-up photo showing the affected skin area.")
 
     is_usable = (len(issues) == 0)
 

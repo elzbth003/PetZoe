@@ -10,7 +10,7 @@ import api from '../../../services/api';
 import vetScanService from '../../../services/vetScanService';
 import { useToast } from '../../../hooks/useToast';
 import SelectDropdown from '../../ui/SelectDropdown';
-import { generateGradCamDataUrl, getResolvedImageUrl } from '../../../utils/gradCamHelper';
+import { generateGradCamDataUrl, getResolvedImageUrl, validateSkinImageClient } from '../../../utils/gradCamHelper';
 
 export default function VetScanView({ onNavigateToAppointments, onNavigateToRecords }) {
   const [pets, setPets] = useState([]);
@@ -19,6 +19,8 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [validatingImage, setValidatingImage] = useState(false);
+  const [imageValidationIssue, setImageValidationIssue] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [showGradCam, setShowGradCam] = useState(true);
   const [gradCamOverlayUrl, setGradCamOverlayUrl] = useState(null);
@@ -81,11 +83,13 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
       setScanResult(null);
       setPreviewUrl(null);
       setSelectedFile(null);
+      setImageValidationIssue(null);
+      setValidatingImage(false);
       loadPetScanHistory(pet.id);
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -103,6 +107,22 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
     setPreviewUrl(URL.createObjectURL(file));
     setScanResult(null);
     setGradCamOverlayUrl(null);
+    setImageValidationIssue(null);
+    setValidatingImage(true);
+
+    try {
+      const validation = await validateSkinImageClient(file);
+      if (!validation.valid) {
+        setImageValidationIssue(validation.issue);
+        showToast(validation.issue || 'Non-dermal photograph detected. Screening cannot proceed.', 'error');
+      } else {
+        setImageValidationIssue(null);
+      }
+    } catch (err) {
+      console.warn('Client-side intake validation error:', err);
+    } finally {
+      setValidatingImage(false);
+    }
   };
 
   const handleSymptomToggle = (key) => {
@@ -143,6 +163,14 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
       showToast('Please choose an image of the affected skin area', 'error');
       return;
     }
+    if (validatingImage) {
+      showToast('Validating photograph intake, please wait...', 'warning');
+      return;
+    }
+    if (imageValidationIssue) {
+      showToast(`Cannot proceed for screening: ${imageValidationIssue}`, 'error');
+      return;
+    }
 
     setAnalyzing(true);
     try {
@@ -155,7 +183,7 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
       setScanResult(result);
 
       if (result.status === 'INSUFFICIENT_IMAGE') {
-        showToast('Image quality is insufficient. Please retake the photo in good lighting.', 'warning');
+        showToast(result.statusMessage || 'The uploaded photograph was not accepted for screening.', 'error');
       } else {
         showToast('Preliminary screening completed!', 'success');
         loadPetScanHistory(selectedPet.id);
@@ -171,6 +199,7 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
     setScanResult(scan);
     setPreviewUrl(getResolvedImageUrl(scan.imageReference));
     setGradCamOverlayUrl(null);
+    setImageValidationIssue(null);
   };
 
   return (
@@ -226,7 +255,9 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
               <div
                 onClick={() => document.getElementById('vetscan-file-input').click()}
                 className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
-                  previewUrl
+                  imageValidationIssue
+                    ? 'border-rose-400 bg-rose-50/30'
+                    : previewUrl
                     ? 'border-blue-300 bg-blue-50/20'
                     : 'border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-slate-100/50'
                 }`}
@@ -241,12 +272,24 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
                 />
                 {previewUrl ? (
                   <div className="space-y-3">
-                    <img
-                      src={previewUrl}
-                      alt="Lesion Preview"
-                      className="max-h-48 mx-auto rounded-xl object-contain shadow-sm border border-slate-200"
-                    />
-                    <p className="text-[11px] font-bold text-blue-600">Click to change photograph</p>
+                    <div className="relative inline-block mx-auto">
+                      <img
+                        src={previewUrl}
+                        alt="Lesion Preview"
+                        className={`max-h-48 mx-auto rounded-xl object-contain shadow-sm border ${
+                          imageValidationIssue ? 'border-rose-400 ring-2 ring-rose-200' : 'border-slate-200'
+                        }`}
+                      />
+                      {imageValidationIssue && (
+                        <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-md flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          <span>Invalid Subject</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-[11px] font-bold ${imageValidationIssue ? 'text-rose-600' : 'text-blue-600'}`}>
+                      Click to change photograph
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2 py-4">
@@ -259,6 +302,34 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
                 )}
               </div>
             </div>
+
+            {/* Client Validation Alert Banner */}
+            {imageValidationIssue && (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 space-y-2 text-left animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle size={18} className="text-rose-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-black text-rose-900 flex items-center gap-1.5">
+                      <span>Image Validation Error</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-200/80 text-rose-800 font-bold">Screening Blocked</span>
+                    </h4>
+                    <p className="text-[11px] text-rose-700 leading-relaxed font-medium">
+                      {imageValidationIssue}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-rose-200/70 text-[10px] text-rose-600 font-medium flex items-center justify-between">
+                  <span>Authentic canine skin lesion photo required.</span>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('vetscan-file-input').click()}
+                    className="font-bold underline hover:text-rose-800 cursor-pointer"
+                  >
+                    Upload New Photo
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Owner Reported Symptoms */}
             <div className="space-y-3">
@@ -294,13 +365,23 @@ export default function VetScanView({ onNavigateToAppointments, onNavigateToReco
             <button
               data-testid="analyze-button"
               onClick={handleAnalyze}
-              disabled={analyzing || !selectedFile}
+              disabled={analyzing || !selectedFile || !!imageValidationIssue || validatingImage}
               className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {analyzing ? (
                 <>
                   <RefreshCw size={16} className="animate-spin text-white" />
                   <span>Evaluating Lesion Metrics & Heatmaps...</span>
+                </>
+              ) : validatingImage ? (
+                <>
+                  <RefreshCw size={16} className="animate-spin text-white" />
+                  <span>Validating Photograph Intake...</span>
+                </>
+              ) : imageValidationIssue ? (
+                <>
+                  <AlertCircle size={16} className="text-rose-400" />
+                  <span>Cannot Proceed — Invalid Dermal Image</span>
                 </>
               ) : (
                 <>

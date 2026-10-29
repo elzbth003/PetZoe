@@ -171,3 +171,205 @@ export function generateGradCamDataUrl(imgElement, opacity = 0.52) {
     }
   });
 }
+
+/**
+ * Fast client-side image intake validator.
+ * Reads the uploaded file on an offscreen canvas and validates:
+ * 1. Extreme monochrome / document / QR code / barcode / text screenshot patterns
+ * 2. Pure white / document paper dominance
+ * 3. Desaturated / black & white graphics
+ * 4. Non-biological scenery colors (sky blue, foliage green, vivid purple)
+ * 5. Minimum biological canine dermal & skin lesion features (erythema, skin tone, inflammation)
+ * 6. Exposure (underexposure / glare burnout)
+ *
+ * Returns Promise<{ valid: boolean, issue: string | null }>
+ */
+export function validateSkinImageClient(file) {
+  return new Promise((resolve) => {
+    if (!file) {
+      return resolve({ valid: false, issue: 'No image file selected.' });
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const width = img.naturalWidth || img.width;
+      const height = img.naturalHeight || img.height;
+
+      if (width < 120 || height < 120) {
+        return resolve({
+          valid: false,
+          issue: `Image resolution (${width}x${height}) is too low for screening. Minimum 120x120 required.`
+        });
+      }
+
+      // Downscale to 80x80 canvas for instantaneous 6,400-pixel photometric evaluation
+      const canvas = document.createElement('canvas');
+      const sampleSize = 80;
+      canvas.width = sampleSize;
+      canvas.height = sampleSize;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return resolve({ valid: true, issue: null }); // Fallback to backend if 2D context fails
+      }
+
+      ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+      const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
+      const data = imageData.data;
+      const totalPixels = sampleSize * sampleSize;
+
+      let extremeMonochromeCount = 0;
+      let pureWhiteCount = 0;
+      let totalLuminance = 0;
+      let totalSaturation = 0;
+      let dermalCount = 0;
+      let furCount = 0;
+      let unnaturalColorCount = 0;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        totalLuminance += lum;
+
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const delta = maxC - minC;
+        const sat = maxC === 0 ? 0 : delta / maxC;
+        const bri = maxC / 255.0;
+        totalSaturation += sat;
+
+        // Hue calculation in degrees [0, 360]
+        let hue = 0;
+        if (delta > 0) {
+          if (maxC === r) {
+            hue = ((g - b) / delta) % 6;
+          } else if (maxC === g) {
+            hue = (b - r) / delta + 2;
+          } else {
+            hue = (r - g) / delta + 4;
+          }
+          hue = Math.round(hue * 60);
+          if (hue < 0) hue += 360;
+        }
+
+        // 1. Extreme monochrome (QR codes, barcodes, text screenshots)
+        const isExtremeMonochrome = sat < 0.12 && (bri > 0.88 || bri < 0.12);
+        if (isExtremeMonochrome) {
+          extremeMonochromeCount++;
+        }
+
+        // Pure white / paper document background
+        if (r > 235 && g > 235 && b > 235) {
+          pureWhiteCount++;
+        }
+
+        // 2. Unnatural / non-pet dominant spectra
+        const isVibrantBlue = (hue >= 170 && hue <= 260) && sat > 0.35;
+        const isVibrantGreen = (hue >= 75 && hue <= 165) && sat > 0.38;
+        const isVibrantPurple = (hue >= 270 && hue <= 325) && sat > 0.40;
+        if (isVibrantBlue || isVibrantGreen || isVibrantPurple) {
+          unnaturalColorCount++;
+        }
+
+        // 3. Canine Dermal / Lesion Tissue Identification
+        const isErythema = r > 95 && r > (g * 1.10) && r > (b * 1.10) && ((hue <= 45) || (hue >= 330)) && sat >= 0.12;
+        const isSkinTone = (hue >= 8 && hue <= 50) && sat >= 0.12 && sat <= 0.75 && bri >= 0.20 && bri <= 0.88;
+        const isCrustMelanin = (hue >= 12 && hue <= 48) && sat >= 0.15 && bri >= 0.12 && bri <= 0.55 && r > g && g >= b;
+
+        if (isErythema || isSkinTone || isCrustMelanin) {
+          dermalCount++;
+        }
+
+        // Surrounding animal coat / fur
+        const isWarmFur = (hue <= 55 || hue >= 335) && sat >= 0.10 && bri >= 0.15 && bri <= 0.88;
+        const isNeutralFur = sat < 0.22 && bri >= 0.15 && bri <= 0.88 && !isExtremeMonochrome;
+        if ((isWarmFur || isNeutralFur) && !isErythema && !isSkinTone && !isCrustMelanin && !isExtremeMonochrome) {
+          furCount++;
+        }
+      }
+
+      const meanLuminance = totalLuminance / totalPixels;
+      const meanSaturation = totalSaturation / totalPixels;
+      const extremeMonoRatio = extremeMonochromeCount / totalPixels;
+      const pureWhiteRatio = pureWhiteCount / totalPixels;
+      const dermalRatio = dermalCount / totalPixels;
+      const biologicalRatio = (dermalCount + furCount) / totalPixels;
+      const unnaturalRatio = unnaturalColorCount / totalPixels;
+
+      // Rule 1: Extreme monochrome / QR code / barcode / text screenshot
+      if (extremeMonoRatio > 0.40) {
+        return resolve({
+          valid: false,
+          issue: 'Non-biological graphic or document detected (e.g. QR code, barcode, or text screenshot). VetScan AI only screens authentic photographs of canine skin conditions or lesions.'
+        });
+      }
+
+      // Rule 2: Pure white / paper document background
+      if (pureWhiteRatio > 0.45) {
+        return resolve({
+          valid: false,
+          issue: 'Image is dominated by a white paper or blank document background. Please upload a focused close-up of your pet\'s skin lesion.'
+        });
+      }
+
+      // Rule 3: Desaturated / Black & white image
+      if (meanSaturation < 0.08) {
+        return resolve({
+          valid: false,
+          issue: 'Desaturated or black-and-white graphic detected. Screening requires a color photograph showing canine dermal tones and erythema.'
+        });
+      }
+
+      // Rule 4: Exposure
+      if (meanLuminance < 25) {
+        return resolve({
+          valid: false,
+          issue: 'Photograph is underexposed or too dark. Please upload a photo taken under adequate lighting.'
+        });
+      }
+      if (meanLuminance > 242) {
+        return resolve({
+          valid: false,
+          issue: 'Photograph is overexposed or washed out with flash. Please retake the photo without harsh glare.'
+        });
+      }
+
+      // Rule 5: Scenery / unnatural synthetic colors
+      if (unnaturalRatio > 0.35) {
+        return resolve({
+          valid: false,
+          issue: 'Non-biological colors or non-pet subject detected (sky, foliage, or synthetic objects). Please upload a close-up photo of the skin lesion.'
+        });
+      }
+
+      // Rule 6: Dermal / Lesion Presence
+      if (dermalRatio < 0.05 && biologicalRatio < 0.25) {
+        return resolve({
+          valid: false,
+          issue: 'The uploaded image does not appear to show a canine skin condition or lesion. Please upload a clear photo showing the affected skin or coat area on your pet.'
+        });
+      }
+
+      if (dermalRatio < 0.01) {
+        return resolve({
+          valid: false,
+          issue: 'No active canine skin lesion, rash, or erythema detected in the photograph. Please upload a clear close-up of the affected skin area.'
+        });
+      }
+
+      return resolve({ valid: true, issue: null });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      return resolve({ valid: false, issue: 'Failed to read the uploaded image file.' });
+    };
+
+    img.src = objectUrl;
+  });
+}
