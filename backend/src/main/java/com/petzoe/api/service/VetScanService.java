@@ -465,9 +465,13 @@ public class VetScanService {
             }
 
             int sampled = 0;
-            int dermalOrFurCount = 0;
+            int extremeMonochromeCount = 0;
+            int pureWhiteCount = 0;
+            int dermalCount = 0;
+            int furCount = 0;
             int unnaturalColorCount = 0;
             double totalLuminance = 0;
+            double totalSaturation = 0;
 
             int step = Math.max(1, Math.min(width, height) / 100);
 
@@ -486,29 +490,49 @@ public class VetScanService {
                     float hue = hsb[0] * 360f;
                     float sat = hsb[1];
                     float bri = hsb[2];
+                    totalSaturation += sat;
 
-                    // Dermal/fur biological tone:
-                    // Warm hues (red/orange/yellow/brown): hue in [0, 55] or [330, 360]
-                    // Or neutral fur coats (white, grey, black): sat < 0.22
-                    // Or erythematous inflamed lesion: r > 100 and r > 1.12 * g and r > 1.12 * b
-                    boolean isWarmDermal = (hue <= 55 || hue >= 330) && bri >= 0.15;
-                    boolean isNeutralFur = sat < 0.22 && bri >= 0.15;
-                    boolean isErythema = r > 100 && r > (g * 1.12) && r > (b * 1.12);
-
-                    if (isWarmDermal || isNeutralFur || isErythema) {
-                        dermalOrFurCount++;
+                    // 1. Extreme monochrome detection (QR codes, barcodes, text screenshots, black & white graphics)
+                    boolean isExtremeMonochrome = sat < 0.12 && (bri > 0.88 || bri < 0.12);
+                    if (isExtremeMonochrome) {
+                        extremeMonochromeCount++;
                     }
 
-                    // Non-biological / non-pet dominant spectra:
-                    // Vibrant blue sky / cyan / tech objects: hue in [175, 260] & sat > 0.35
-                    // Vibrant foliage green: hue in [75, 165] & sat > 0.40
+                    // Pure white / paper document background detection
+                    if (r > 235 && g > 235 && b > 235) {
+                        pureWhiteCount++;
+                    }
+
+                    // 2. Non-biological / non-pet dominant spectra:
+                    // Vibrant blue sky / cyan / tech objects: hue in [170, 260] & sat > 0.35
+                    // Vibrant foliage green: hue in [75, 165] & sat > 0.38
                     // Vibrant purple/violet: hue in [270, 325] & sat > 0.40
-                    boolean isVibrantBlue = (hue >= 175 && hue <= 260) && sat > 0.35;
-                    boolean isVibrantGreen = (hue >= 75 && hue <= 165) && sat > 0.40;
+                    boolean isVibrantBlue = (hue >= 170 && hue <= 260) && sat > 0.35;
+                    boolean isVibrantGreen = (hue >= 75 && hue <= 165) && sat > 0.38;
                     boolean isVibrantPurple = (hue >= 270 && hue <= 325) && sat > 0.40;
 
                     if (isVibrantBlue || isVibrantGreen || isVibrantPurple) {
                         unnaturalColorCount++;
+                    }
+
+                    // 3. Canine Dermal / Lesion Tissue Identification:
+                    // Erythema (inflammatory redness/pink rash, hot spots):
+                    boolean isErythema = r > 95 && r > (g * 1.10) && r > (b * 1.10) && ((hue <= 45) || (hue >= 330)) && sat >= 0.12;
+                    // Canine exposed dermal tissue / flesh tone:
+                    boolean isSkinTone = (hue >= 8 && hue <= 50) && sat >= 0.12 && sat <= 0.75 && bri >= 0.20 && bri <= 0.88;
+                    // Crust / scale / melanin hyperpigmentation:
+                    boolean isCrustMelanin = (hue >= 12 && hue <= 48) && sat >= 0.15 && bri >= 0.12 && bri <= 0.55 && r > g && g >= b;
+
+                    if (isErythema || isSkinTone || isCrustMelanin) {
+                        dermalCount++;
+                    }
+
+                    // Surrounding animal coat / fur (excluding extreme monochrome paper/QR pixels):
+                    boolean isWarmFur = (hue <= 55 || hue >= 335) && sat >= 0.10 && bri >= 0.15 && bri <= 0.88;
+                    boolean isNeutralFur = sat < 0.22 && bri >= 0.15 && bri <= 0.88 && !isExtremeMonochrome;
+
+                    if ((isWarmFur || isNeutralFur) && !isErythema && !isSkinTone && !isCrustMelanin && !isExtremeMonochrome) {
+                        furCount++;
                     }
                 }
             }
@@ -518,8 +542,34 @@ public class VetScanService {
             }
 
             double meanLuminance = totalLuminance / sampled;
+            double meanSaturation = totalSaturation / sampled;
+            double extremeMonochromeRatio = (double) extremeMonochromeCount / sampled;
+            double pureWhiteRatio = (double) pureWhiteCount / sampled;
+            double dermalRatio = (double) dermalCount / sampled;
+            double biologicalRatio = (double) (dermalCount + furCount) / sampled;
+            double unnaturalRatio = (double) unnaturalColorCount / sampled;
 
-            // Exposure checks
+            // Check 1: Extreme monochrome / document / QR code / barcode / text screenshot
+            if (extremeMonochromeRatio > 0.40) {
+                return new ImageValidationResult(false,
+                        "Non-biological graphic or document detected (e.g. QR code, text screenshot, or synthetic pattern: "
+                                + Math.round(extremeMonochromeRatio * 100) + "% monochrome pattern). VetScan AI only screens authentic canine skin lesion photographs.");
+            }
+
+            // Check 2: Pure white / blank paper document dominance
+            if (pureWhiteRatio > 0.45) {
+                return new ImageValidationResult(false,
+                        "Image is dominated by blank document background (" + Math.round(pureWhiteRatio * 100)
+                                + "% white paper). Please upload a close-up photograph of the pet's affected skin area.");
+            }
+
+            // Check 3: Desaturated / Grayscale image check
+            if (meanSaturation < 0.08) {
+                return new ImageValidationResult(false,
+                        "Desaturated or black-and-white graphic detected. Clinical lesion screening requires a clear color photograph showing natural skin tones and erythema.");
+            }
+
+            // Check 4: Exposure checks
             if (meanLuminance < 25.0) {
                 return new ImageValidationResult(false,
                         "Image is underexposed / too dark (mean brightness: " + Math.round(meanLuminance) + "). Please retake the photograph with adequate lighting on the skin area.");
@@ -529,14 +579,22 @@ public class VetScanService {
                         "Image is overexposed / washed out (mean brightness: " + Math.round(meanLuminance) + "). Please retake the photograph without direct glare or flash washout.");
             }
 
-            double dermalRatio = (double) dermalOrFurCount / sampled;
-            double unnaturalRatio = (double) unnaturalColorCount / sampled;
-
-            // Reject if image lacks dermal/fur biological features or is dominated by non-pet scenery/graphics
-            if (dermalRatio < 0.22 || unnaturalRatio > 0.50) {
+            // Check 5: Non-biological scenery colors (sky, foliage, tech)
+            if (unnaturalRatio > 0.35) {
                 return new ImageValidationResult(false,
                         "The uploaded photo does not appear to be a canine skin or pet lesion photograph (non-biological colors or non-pet subject detected: "
-                                + Math.round(dermalRatio * 100) + "% dermal/fur match). Please upload a clear photo of your dog's affected skin or coat.");
+                                + Math.round(unnaturalRatio * 100) + "% scenery colors). Please upload a clear photo of your dog's affected skin or coat.");
+            }
+
+            // Check 6: Dermal / Lesion Presence Check
+            if (dermalRatio < 0.05 && biologicalRatio < 0.25) {
+                return new ImageValidationResult(false,
+                        "The uploaded photo does not appear to be a canine skin or pet lesion photograph (no dermal or lesion indicators detected). Please upload a clear photo of your dog's affected skin or coat.");
+            }
+
+            if (dermalRatio < 0.01) {
+                return new ImageValidationResult(false,
+                        "No canine skin lesion, rash, or erythema detected in the photograph. Please upload a focused close-up photo showing the affected skin area.");
             }
 
             return new ImageValidationResult(true, null);
@@ -547,6 +605,10 @@ public class VetScanService {
 
     private byte[] generateLocalGradCamOverlay(byte[] imageBytes) {
         if (imageBytes == null || imageBytes.length == 0) {
+            return null;
+        }
+        ImageValidationResult validation = validateCanineDermalImage(imageBytes);
+        if (!validation.isUsable()) {
             return null;
         }
         try {
@@ -678,6 +740,32 @@ public class VetScanService {
     }
 
     private JsonNode generateInternalMockFallback(byte[] imageBytes) {
+        ImageValidationResult validation = validateCanineDermalImage(imageBytes);
+        if (!validation.isUsable()) {
+            try {
+                String safeMsg = validation.getIssueMessage() != null
+                        ? validation.getIssueMessage().replace("\"", "\\\"")
+                        : "Uploaded photograph is not a valid canine dermal image.";
+                String json = String.format(Locale.US, """
+                {
+                  "status": "INSUFFICIENT_IMAGE",
+                  "message": "%s",
+                  "model_name": "PetZoe-VetScan-Validator",
+                  "model_version": "v1.0.0",
+                  "dataset_version": "canine-derm-multilabel-v1",
+                  "model_mode": "VALIDATION_SCREENING",
+                  "overall_confidence": 0.0,
+                  "confidence_level": "LOW",
+                  "severity": "INSUFFICIENT_EVIDENCE",
+                  "severity_description": "Screening halted: %s",
+                  "predictions": [],
+                  "clinical_disclaimer": "PetZoe VetScan requires a clear, focused photograph of canine skin or coat for screening."
+                }
+                """, safeMsg, safeMsg);
+                return objectMapper.readTree(json);
+            } catch (Exception ignored) {
+            }
+        }
         try {
             double erythemaProb = 0.78;
             double lichenProb = 0.22;
