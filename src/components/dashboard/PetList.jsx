@@ -5,11 +5,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Plus, Search, Filter, Edit2, Trash2, X, AlertTriangle, PawPrint, Stethoscope, Info,
   ShieldCheck, ShieldAlert, Shield, Loader2, Sparkles, Palette,
-  Copy, Check, ArrowRightLeft, HeartHandshake
+  Copy, Check, ArrowRightLeft, HeartHandshake, FileText
 } from 'lucide-react';
 import api from '../../services/api';
 import rehomeService from '../../services/rehomeService';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
+import { printPetMedicalReportPdf } from '../../utils/medicalReportPdfGenerator';
+import { vetClinicalService } from '../../services/vetClinicalService';
+import { prescriptionApi } from '../../services/medicalApi';
+import vetScanService from '../../services/vetScanService';
 import ImageUpload from '../ui/ImageUpload';
 import SelectDropdown from '../ui/SelectDropdown';
 import DatePicker from '../ui/DatePicker';
@@ -105,6 +110,37 @@ export default function PetList({ onPetsUpdated }) {
   const modalFormRef = useRef(null);
 
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const [downloadingPetId, setDownloadingPetId] = useState(null);
+
+  const handleDownloadPetReport = async (pet) => {
+    setDownloadingPetId(pet.id);
+    try {
+      const [recRes, rxRes, vacRes, docRes, scanRes] = await Promise.allSettled([
+        vetClinicalService.getPetMedicalRecords(pet.id),
+        prescriptionApi.getByPet(pet.id),
+        vetClinicalService.getPetVaccinations(pet.id),
+        vetClinicalService.getPetDocuments(pet.id),
+        vetScanService.getScansByPet(pet.id),
+      ]);
+
+      printPetMedicalReportPdf({
+        pet,
+        owner: user,
+        clinicalRecords: recRes.status === 'fulfilled' ? recRes.value || [] : [],
+        prescriptions: rxRes.status === 'fulfilled' ? rxRes.value?.data || [] : [],
+        vaccinations: vacRes.status === 'fulfilled' ? vacRes.value || [] : [],
+        documents: docRes.status === 'fulfilled' ? docRes.value || [] : [],
+        vetScanRecords: scanRes.status === 'fulfilled' ? scanRes.value || [] : [],
+      });
+      showToast(`Generating medical report for ${pet.name}`, 'info');
+    } catch (err) {
+      console.error('Failed to export pet medical report:', err);
+      showToast('Failed to generate medical report PDF', 'error');
+    } finally {
+      setTimeout(() => setDownloadingPetId(null), 800);
+    }
+  };
 
   // Hide global AI button while modal is open to prevent overlapping action buttons
   useEffect(() => {
@@ -535,6 +571,21 @@ export default function PetList({ onPetsUpdated }) {
                     className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-[#1E3A5F] text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
                     <ArrowRightLeft size={13} /> Transfer Ownership
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPetReport(pet)}
+                    disabled={downloadingPetId === pet.id}
+                    className="w-full py-2 px-3 rounded-xl bg-blue-50/80 hover:bg-blue-100/90 border border-blue-200/80 text-blue-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    title="Download complete verified medical report as PDF"
+                  >
+                    {downloadingPetId === pet.id ? (
+                      <Loader2 size={13} className="animate-spin text-blue-600" />
+                    ) : (
+                      <FileText size={13} className="text-blue-600" />
+                    )}
+                    <span>Download Medical Report (PDF)</span>
                   </button>
                 </div>
 

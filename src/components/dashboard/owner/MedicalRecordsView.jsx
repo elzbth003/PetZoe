@@ -3,13 +3,16 @@ import { prescriptionApi } from '../../../services/medicalApi';
 import { vetClinicalService } from '../../../services/vetClinicalService';
 import vetScanService from '../../../services/vetScanService';
 import api from '../../../services/api';
+import { useAuth } from '../../../hooks/useAuth';
+import { printPetMedicalReportPdf, downloadMedicalReportFile } from '../../../utils/medicalReportPdfGenerator';
 import {
   FileText, Calendar, Info, Clock, Shield, Pill, Download,
   Stethoscope, AlertCircle, CheckCircle2, User as UserIcon, Loader2,
-  ScanLine, Eye
+  ScanLine, Eye, Printer, ChevronDown
 } from 'lucide-react';
 
 export default function MedicalRecordsView() {
+  const { user } = useAuth();
   const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
   const [activeTab, setActiveTab] = useState('clinical');
@@ -20,6 +23,8 @@ export default function MedicalRecordsView() {
   const [documents, setDocuments] = useState([]);
   const [vetScanRecords, setVetScanRecords] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     const loadPets = async () => {
@@ -65,6 +70,41 @@ export default function MedicalRecordsView() {
     }
   };
 
+  const handleDownloadPdf = () => {
+    if (!selectedPet) return;
+    setDownloadingPdf(true);
+    setShowExportMenu(false);
+    try {
+      printPetMedicalReportPdf({
+        pet: selectedPet,
+        owner: user,
+        clinicalRecords,
+        prescriptions,
+        vaccinations,
+        documents,
+        vetScanRecords,
+      });
+    } catch (err) {
+      console.error('Failed to generate medical report PDF:', err);
+    } finally {
+      setTimeout(() => setDownloadingPdf(false), 800);
+    }
+  };
+
+  const handleDownloadHtmlFile = () => {
+    if (!selectedPet) return;
+    setShowExportMenu(false);
+    downloadMedicalReportFile({
+      pet: selectedPet,
+      owner: user,
+      clinicalRecords,
+      prescriptions,
+      vaccinations,
+      documents,
+      vetScanRecords,
+    });
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-left">
       {/* Pet Selector Header */}
@@ -74,11 +114,69 @@ export default function MedicalRecordsView() {
             <FileText size={20} className="text-blue-600" /> Complete Pet Health & Clinical History
           </h2>
           {selectedPet && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 w-fit">
-              <span className="text-[10px] font-black uppercase text-slate-400">Pet ID:</span>
-              <span className="font-mono text-xs font-bold text-blue-700 select-all">
-                {selectedPet.petCode || `PZ-PET-${String(selectedPet.id).padStart(6, '0')}`}
-              </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 w-fit">
+                <span className="text-[10px] font-black uppercase text-slate-400">Pet ID:</span>
+                <span className="font-mono text-xs font-bold text-blue-700 select-all">
+                  {selectedPet.petCode || `PZ-PET-${String(selectedPet.id).padStart(6, '0')}`}
+                </span>
+              </div>
+
+              {/* Action: Download PDF Report */}
+              <div className="relative">
+                <div className="inline-flex rounded-xl shadow-xs overflow-hidden border border-blue-600">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    disabled={loading || downloadingPdf}
+                    className="flex items-center gap-2 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Download and print complete medical report as PDF"
+                  >
+                    {downloadingPdf ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Download size={14} />
+                    )}
+                    <span>Download PDF Report</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowExportMenu((prev) => !prev)}
+                    disabled={loading || downloadingPdf}
+                    className="px-2 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs border-l border-blue-500 transition-all cursor-pointer disabled:opacity-50"
+                    title="More export options"
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                </div>
+
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
+                    <button
+                      type="button"
+                      onClick={handleDownloadPdf}
+                      className="w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-blue-50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <Printer size={15} className="text-blue-600 shrink-0" />
+                      <div>
+                        <div className="font-bold text-slate-800">Print / Save as PDF</div>
+                        <div className="text-[10px] text-slate-400">Formatted A4 clinical record</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadHtmlFile}
+                      className="w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer border-t border-slate-100 transition-colors"
+                    >
+                      <Download size={15} className="text-emerald-600 shrink-0" />
+                      <div>
+                        <div className="font-bold text-slate-800">Download Raw File</div>
+                        <div className="text-[10px] text-slate-400">Standalone offline HTML file</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -110,6 +208,37 @@ export default function MedicalRecordsView() {
 
       {selectedPet && (
         <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
+          {/* Health Passport & EHR Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-2xl p-4 sm:p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-slate-800">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-md">
+                  Digital Health Passport
+                </span>
+                <span className="text-xs text-slate-300">• Verified EHR</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white">
+                {selectedPet.name}'s Medical Chart & EHR Summary
+              </h3>
+              <p className="text-xs text-slate-300 max-w-xl">
+                Official clinical compilation including diagnostic examinations, active prescriptions (Rx), immunizations, and VetScan AI screenings. Printable as an authenticated veterinary report.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={loading || downloadingPdf}
+              className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 active:scale-[0.98] text-slate-900 text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-50"
+            >
+              {downloadingPdf ? (
+                <Loader2 size={15} className="animate-spin text-blue-600" />
+              ) : (
+                <Printer size={15} className="text-blue-600" />
+              )}
+              <span>Export PDF Report</span>
+            </button>
+          </div>
+
           {/* Sub Navigation Tabs */}
           <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-4">
             {[
