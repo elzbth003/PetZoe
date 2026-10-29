@@ -852,4 +852,13 @@ public class AppointmentService {
         return convertToDTO(savedAppt);
     }
 
+    public List<AppointmentDTO> getAllAppointmentsForAdmin() {
+        return appointmentRepository.findAll(org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Direction.DESC, "appointmentDate", "id"
+        )).stream()
+          .limit(50)
+          .map(this::convertToDTO)
+          .collect(Collectors.toList());
+    }
+
 }

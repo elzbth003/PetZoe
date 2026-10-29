@@ -4,7 +4,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { notificationService } from '../services/notificationService';
 import { adminApi } from '../services/adminApi';
-import { Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope, ShoppingBag, Bell, Settings, Menu, X, Check, Trash2, Loader2, ArrowUpRight } from 'lucide-react';
+import {
+  Users, LogOut, PawPrint, CheckSquare, Home, HeartPulse, Stethoscope,
+  ShoppingBag, Bell, Settings, Menu, X, Check, Trash2, Loader2, ArrowUpRight,
+  ChevronLeft, ChevronRight, Search, ShieldCheck, Calendar, Activity
+} from 'lucide-react';
 import { getNotificationDestination } from '../utils/notificationNavigator';
 
 function timeAgo(dateString) {
@@ -25,7 +29,10 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Desktop sidebar collapse state & mobile drawer state
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Notification state
   const [notifOpen, setNotifOpen] = useState(false);
@@ -34,10 +41,19 @@ export default function AdminLayout() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifError, setNotifError] = useState(null);
   const notifRef = useRef(null);
-  const pollingRef = useRef(false); // Guard against overlapping polls
+  const pollingRef = useRef(false);
 
-  // Pending-review counts, surfaced as sidebar badges so admins see what needs action at a glance
-  const [pendingCounts, setPendingCounts] = useState({});
+  // Global search input state
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Pending-review counts for badges
+  const [pendingCounts, setPendingCounts] = useState({
+    veterinarians: 0,
+    shelters: 0,
+    sellers: 0,
+    products: 0,
+    adoptions: 0,
+  });
 
   const handleLogout = () => {
     logout();
@@ -48,29 +64,29 @@ export default function AdminLayout() {
     if (!user) return;
     adminApi.getStats()
       .then(res => setPendingCounts({
-        veterinarians: res.data.pendingVets,
-        shelters: res.data.pendingShelters,
-        sellers: res.data.pendingSellers,
-        products: res.data.pendingProducts,
+        veterinarians: res.data.pendingVets || 0,
+        shelters: res.data.pendingShelters || 0,
+        sellers: res.data.pendingSellers || 0,
+        products: res.data.pendingProducts || 0,
+        adoptions: res.data.pendingAdoptionListings || 0,
       }))
-      .catch(() => { /* Degrade gracefully — badges just stay hidden */ });
+      .catch(() => { /* Degrade gracefully */ });
   }, [user]);
 
-  // Fetch unread count
+  // Fetch unread notifications count
   const fetchUnreadCount = useCallback(async () => {
-    if (pollingRef.current) return; // Skip if previous request is still in flight
+    if (pollingRef.current) return;
     pollingRef.current = true;
     try {
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
     } catch {
-      // Degrade gracefully — don't break the layout
+      // Degrade gracefully
     } finally {
       pollingRef.current = false;
     }
   }, []);
 
-  // Initial fetch + 30s polling
   useEffect(() => {
     if (!user) return;
     fetchUnreadCount();
@@ -78,15 +94,13 @@ export default function AdminLayout() {
     return () => clearInterval(interval);
   }, [user, fetchUnreadCount]);
 
-  // Fetch full notifications when dropdown opens
   const openNotifDropdown = async () => {
     setNotifOpen(true);
     setNotifLoading(true);
     setNotifError(null);
     try {
       const data = await notificationService.getNotifications();
-      setNotifications(data);
-      // Refresh unread count after fetch
+      setNotifications(data || []);
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
     } catch (err) {
@@ -104,7 +118,6 @@ export default function AdminLayout() {
     }
   };
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -115,10 +128,9 @@ export default function AdminLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Mark as read
   const handleMarkRead = async (id) => {
     try {
-      const updated = await notificationService.markAsRead(id);
+      await notificationService.markAsRead(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
@@ -126,7 +138,6 @@ export default function AdminLayout() {
     }
   };
 
-  // Delete notification
   const handleDelete = async (id) => {
     try {
       await notificationService.deleteNotification(id);
@@ -149,215 +160,422 @@ export default function AdminLayout() {
     }
   };
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard/admin', icon: Home },
-    { name: 'User Management', path: '/dashboard/admin/users', icon: Users },
-    { name: 'Veterinarians', path: '/dashboard/admin/veterinarians', icon: Stethoscope, badge: pendingCounts.veterinarians },
-    { name: 'Shelter Verification', path: '/dashboard/admin/shelters', icon: HeartPulse, badge: pendingCounts.shelters },
-    { name: 'Adoption Review', path: '/dashboard/admin/adoptions', icon: PawPrint },
-    { name: 'Seller Verification', path: '/dashboard/admin/sellers', icon: ShoppingBag, badge: pendingCounts.sellers },
-    { name: 'Product Moderation', path: '/dashboard/admin/products', icon: CheckSquare, badge: pendingCounts.products },
-    { name: 'Notifications', path: '/dashboard/admin/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : null },
-    { name: 'Settings', path: '/dashboard/admin/settings', icon: Settings },
+  // Structured sidebar nav items
+  const navSections = [
+    {
+      title: 'OVERVIEW',
+      items: [
+        { name: 'Dashboard', path: '/dashboard/admin', icon: Home, exact: true },
+      ]
+    },
+    {
+      title: 'MANAGEMENT',
+      items: [
+        { name: 'User Management', path: '/dashboard/admin/users', icon: Users },
+        { name: 'Veterinarians', path: '/dashboard/admin/veterinarians', icon: Stethoscope, badge: pendingCounts.veterinarians },
+        { name: 'Shelter Verification', path: '/dashboard/admin/shelters', icon: HeartPulse, badge: pendingCounts.shelters },
+        { name: 'Adoption Review', path: '/dashboard/admin/adoptions', icon: PawPrint, badge: pendingCounts.adoptions },
+        { name: 'Seller Verification', path: '/dashboard/admin/sellers', icon: ShoppingBag, badge: pendingCounts.sellers },
+        { name: 'Product Moderation', path: '/dashboard/admin/products', icon: CheckSquare, badge: pendingCounts.products },
+      ]
+    },
+    {
+      title: 'SYSTEM',
+      items: [
+        { name: 'Notifications', path: '/dashboard/admin/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : null },
+        { name: 'Settings', path: '/dashboard/admin/settings', icon: Settings },
+      ]
+    }
   ];
 
+  // Current page header contextual info
+  const getContextualInfo = () => {
+    const p = location.pathname;
+    if (p === '/dashboard/admin') {
+      return {
+        title: 'Administrator Console',
+        subtitle: 'Digital Pet Healthcare Platform • Operational Analytics & Queues',
+        breadcrumbs: ['Admin Console', 'Dashboard']
+      };
+    }
+    if (p.includes('/users')) {
+      return {
+        title: 'User & Identity Management',
+        subtitle: 'Platform accounts, role assignments, and authentication states',
+        breadcrumbs: ['Admin Console', 'User Management']
+      };
+    }
+    if (p.includes('/veterinarians')) {
+      return {
+        title: 'Veterinarian Management',
+        subtitle: 'Clinical license verification, practice records, and credentials',
+        breadcrumbs: ['Admin Console', 'Veterinarians']
+      };
+    }
+    if (p.includes('/shelters')) {
+      return {
+        title: 'Shelter & Rescue Verification',
+        subtitle: 'NGO credentials, facility capacity, and adoption authorization',
+        breadcrumbs: ['Admin Console', 'Shelter Verification']
+      };
+    }
+    if (p.includes('/adoptions')) {
+      return {
+        title: 'Adoption Listing Review',
+        subtitle: 'Listing moderation, pet health verification, and applicant routing',
+        breadcrumbs: ['Admin Console', 'Adoption Review']
+      };
+    }
+    if (p.includes('/sellers')) {
+      return {
+        title: 'Marketplace Seller Verification',
+        subtitle: 'Merchant validation, catalog authorization, and GST credentials',
+        breadcrumbs: ['Admin Console', 'Seller Verification']
+      };
+    }
+    if (p.includes('/products')) {
+      return {
+        title: 'Product Catalog Moderation',
+        subtitle: 'Veterinary pharmaceuticals, diets, and pet supplies approvals',
+        breadcrumbs: ['Admin Console', 'Product Moderation']
+      };
+    }
+    if (p.includes('/notifications')) {
+      return {
+        title: 'System Notifications',
+        subtitle: 'Administrative alerts, critical incidents, and review triggers',
+        breadcrumbs: ['Admin Console', 'Notifications']
+      };
+    }
+    if (p.includes('/settings')) {
+      return {
+        title: 'Console & Security Settings',
+        subtitle: 'Administrative credentials, session controls, and platform policies',
+        breadcrumbs: ['Admin Console', 'Settings']
+      };
+    }
+    return {
+      title: 'Administrator Console',
+      subtitle: 'Digital Pet Healthcare Platform • Enterprise Management',
+      breadcrumbs: ['Admin Console', 'Overview']
+    };
+  };
+
+  const contextInfo = getContextualInfo();
+
   return (
-    <div className="h-screen overflow-hidden bg-slate-50 flex">
-      {/* Sidebar Overlay (Mobile) */}
-      {!isSidebarOpen && (
+    <div className="h-screen overflow-hidden bg-[#F5F8FC] flex text-[#172B4D] font-sans antialiased">
+      {/* Mobile Backdrop */}
+      {mobileOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/50 z-20 md:hidden" 
-          onClick={() => setIsSidebarOpen(true)}
+          className="fixed inset-0 bg-[#102844]/60 backdrop-blur-sm z-40 md:hidden transition-opacity" 
+          onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Left Sidebar ── */}
       <aside 
-        className={`${
-          isSidebarOpen ? '-translate-x-full md:translate-x-0 md:w-20 lg:w-64' : 'translate-x-0 w-64'
-        } bg-slate-900 text-slate-200 flex flex-col justify-between p-4 lg:p-6 h-screen sticky top-0 z-30 transition-all duration-300 fixed md:relative`}
+        className={`fixed md:relative z-50 h-screen transition-all duration-300 ease-in-out flex flex-col justify-between
+          ${mobileOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'}
+          ${isCollapsed ? 'md:w-20' : 'md:w-64 lg:w-72'}
+          bg-[#102844] border-r border-[#17365C] text-slate-200 shadow-xl`}
       >
-        <div className="space-y-8">
-          <div className="flex items-center justify-between gap-1.5 select-none">
-            <span className={`font-display font-black text-xl text-white flex items-center ${isSidebarOpen ? 'md:hidden lg:flex' : 'flex'}`}>
-              PetZ
-              <span className="inline-block hover:rotate-12 transition-transform duration-300">
-                <PawPrint size={20} className="fill-current text-slate-400 mx-0.5 animate-pulse" />
-              </span>
-              e
-            </span>
-            {isSidebarOpen && <PawPrint size={28} className="hidden md:block lg:hidden fill-current text-slate-400 mx-auto" />}
-            
-            <button 
-              className="md:hidden text-slate-400 hover:text-white"
-              onClick={() => setIsSidebarOpen(true)}
+        {/* Top Branding Section */}
+        <div className="p-4 lg:p-5 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div 
+              onClick={() => navigate('/dashboard/admin')}
+              className="flex items-center gap-2.5 cursor-pointer select-none group"
+            >
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#3B82F6] to-[#10B981] flex items-center justify-center text-white shadow-md shadow-blue-900/30 group-hover:scale-105 transition-transform">
+                <PawPrint size={20} className="fill-current text-white animate-pulse" />
+              </div>
+              {(!isCollapsed || mobileOpen) && (
+                <div className="flex flex-col">
+                  <span className="font-display font-black text-lg text-white tracking-tight flex items-center leading-none">
+                    PetZoe
+                    <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#17365C] text-[#38BDF8] border border-blue-500/20">
+                      ADMIN
+                    </span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-[#71829E] tracking-wider uppercase mt-1">
+                    Healthcare Console
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Collapse Toggle */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden md:flex h-7 w-7 rounded-lg bg-[#17365C] hover:bg-[#1f487a] text-slate-300 hover:text-white items-center justify-center transition-colors cursor-pointer"
+              title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              aria-label="Toggle Sidebar"
+            >
+              {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
+
+            {/* Mobile Close Button */}
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="md:hidden text-slate-400 hover:text-white p-1"
+              aria-label="Close Sidebar"
             >
               <X size={20} />
             </button>
           </div>
-          
-          <nav className="space-y-2">
-            <p className={`text-[10px] uppercase font-bold text-slate-500 tracking-wider px-2 lg:px-4 mb-2 ${isSidebarOpen ? 'md:hidden lg:block' : 'block'}`}>Admin Panel</p>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path) && (item.path !== '/dashboard/admin' || location.pathname === '/dashboard/admin');
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  title={item.name}
-                  className={`flex items-center gap-3 w-full px-2 lg:px-4 py-3 rounded-xl font-semibold text-xs transition-all duration-200 cursor-pointer active:scale-[0.98] ${
-                    isActive
-                      ? 'bg-[#1E3A5F] text-white border-l-2 border-[#38BDF8]'
-                      : 'hover:bg-slate-800 text-slate-400 hover:text-white hover:translate-x-0.5'
-                  } ${isSidebarOpen ? 'md:justify-center lg:justify-start' : 'justify-start'}`}
-                >
-                  <Icon size={isSidebarOpen ? 20 : 16} className="shrink-0 lg:w-4 lg:h-4" />
-                  <span className={`flex-1 text-left ${isSidebarOpen ? 'md:hidden lg:block' : 'block'}`}>{item.name}</span>
-                  {item.badge > 0 && (
-                    <span className={`h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black items-center justify-center ${isSidebarOpen ? 'hidden lg:flex' : 'flex'}`}>
-                      {item.badge > 9 ? '9+' : item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+
+          {/* Navigation Items */}
+          <nav className="space-y-5 overflow-y-auto max-h-[calc(100vh-230px)] pr-1 custom-scrollbar">
+            {navSections.map((section, idx) => (
+              <div key={idx} className="space-y-1">
+                {(!isCollapsed || mobileOpen) && (
+                  <p className="text-[9px] uppercase font-extrabold text-[#71829E] tracking-widest px-3 mb-1.5">
+                    {section.title}
+                  </p>
+                )}
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.exact
+                    ? location.pathname === item.path
+                    : location.pathname.startsWith(item.path);
+
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => {
+                        navigate(item.path);
+                        setMobileOpen(false);
+                      }}
+                      title={isCollapsed ? item.name : undefined}
+                      className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl font-medium text-xs transition-all duration-150 cursor-pointer group relative ${
+                        isActive
+                          ? 'bg-[#17365C] text-white shadow-sm font-semibold'
+                          : 'text-[#71829E] hover:text-white hover:bg-[#17365C]/40'
+                      } ${isCollapsed && !mobileOpen ? 'justify-center' : 'justify-start'}`}
+                    >
+                      {/* Active indicator bar */}
+                      {isActive && (
+                        <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#3B82F6] rounded-r-full" />
+                      )}
+
+                      <Icon 
+                        size={17} 
+                        className={`shrink-0 transition-transform group-hover:scale-110 ${
+                          isActive ? 'text-[#3B82F6]' : 'text-[#71829E] group-hover:text-slate-200'
+                        }`} 
+                      />
+
+                      {(!isCollapsed || mobileOpen) && (
+                        <span className="flex-1 text-left truncate">{item.name}</span>
+                      )}
+
+                      {/* Pending Badge */}
+                      {item.badge > 0 && (
+                        <span className={`h-4 min-w-[16px] px-1 rounded-full text-[9px] font-black flex items-center justify-center shrink-0 ${
+                          item.name === 'Notifications' 
+                            ? 'bg-[#3B82F6] text-white' 
+                            : 'bg-[#F59E0B] text-slate-900'
+                        } ${isCollapsed && !mobileOpen ? 'absolute top-1 right-1' : ''}`}>
+                          {item.badge > 99 ? '99+' : item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </div>
 
-        <button
-          onClick={handleLogout}
-          title="Sign Out"
-          className={`flex items-center gap-3 px-2 lg:px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-300 font-semibold text-xs transition-all cursor-pointer w-full mt-8 ${
-            isSidebarOpen ? 'md:justify-center lg:justify-start' : 'justify-start'
-          }`}
-        >
-          <LogOut size={isSidebarOpen ? 20 : 16} className="shrink-0 lg:w-4 lg:h-4" /> 
-          <span className={`${isSidebarOpen ? 'md:hidden lg:block' : 'block'}`}>Sign Out</span>
-        </button>
+        {/* Bottom Administrator Profile Footer */}
+        <div className="p-4 border-t border-[#17365C] bg-[#0c1f35]/60 flex flex-col gap-3">
+          <div className={`flex items-center gap-3 ${isCollapsed && !mobileOpen ? 'justify-center' : ''}`}>
+            <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-[#17365C] to-[#3B82F6] border border-blue-400/30 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-inner">
+              {user?.name?.charAt(0).toUpperCase() || 'A'}
+            </div>
+            {(!isCollapsed || mobileOpen) && (
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-white truncate leading-tight">
+                  {user?.name || 'Administrator'}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                  <p className="text-[10px] font-medium text-[#71829E] truncate">
+                    Platform Admin
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleLogout}
+            title="Sign Out"
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#71829E] hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer w-full ${
+              isCollapsed && !mobileOpen ? 'justify-center' : 'justify-start'
+            }`}
+          >
+            <LogOut size={15} className="shrink-0" />
+            {(!isCollapsed || mobileOpen) && <span>Sign Out</span>}
+          </button>
+        </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto w-full">
-        <header className="bg-white border-b border-slate-200 px-4 md:px-10 py-4 flex justify-between items-center sticky top-0 z-10">
-          <div className="flex items-center gap-4">
+      {/* ── Main Workspace ── */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Top Header */}
+        <header className="bg-white border-b border-[#E5ECF4] px-4 md:px-8 py-3.5 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-xs">
+          {/* Left: Mobile Toggle & Page Context */}
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <button 
-              className="p-2 -ml-2 text-slate-400 hover:text-slate-600 md:hidden"
-              onClick={() => setIsSidebarOpen(false)}
+              className="p-2 -ml-2 text-slate-500 hover:text-slate-800 md:hidden rounded-lg hover:bg-slate-100 transition-colors"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open Navigation"
             >
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Administrator Console</h1>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-1">
-                Secure Admin Workspace • {user?.name}
-              </p>
+
+            <div className="min-w-0">
+              {/* Breadcrumbs */}
+              <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-[#71829E] mb-0.5">
+                {contextInfo.breadcrumbs.map((crumb, idx) => (
+                  <React.Fragment key={idx}>
+                    {idx > 0 && <span className="text-slate-300">/</span>}
+                    <span className={idx === contextInfo.breadcrumbs.length - 1 ? 'text-[#17365C] font-bold' : ''}>
+                      {crumb}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
+              <h1 className="text-base md:text-lg font-black text-[#172B4D] truncate tracking-tight leading-tight">
+                {contextInfo.title}
+              </h1>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Notification Bell */}
+
+          {/* Right: Search, Notifications & Controls */}
+          <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
+            {/* Global Search Bar */}
+            <div className="relative hidden lg:block w-64 xl:w-80">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search entities, doctors, pets..."
+                className="w-full bg-[#F5F8FC] border border-[#E5ECF4] rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-[#172B4D] placeholder-slate-400 focus:outline-none focus:border-[#3B82F6] focus:bg-white transition-all"
+              />
+            </div>
+
+            {/* Notification Dropdown Bell */}
             <div className="relative" ref={notifRef}>
               <button
-                className="p-2 rounded-xl text-slate-400 hover:text-[#1E3A5F] hover:bg-slate-50 relative transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-slate-500 hover:text-[#17365C] hover:bg-slate-50 relative transition-colors cursor-pointer border border-transparent hover:border-[#E5ECF4]"
                 onClick={toggleNotifDropdown}
-                aria-label="Notifications"
+                aria-label="Platform Notifications"
               >
-                <Bell size={20} />
+                <Bell size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-rose-500 text-white text-[10px] font-black rounded-full border-2 border-white">
+                  <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 flex items-center justify-center bg-[#F43F5E] text-white text-[9px] font-black rounded-full border-2 border-white shadow-xs">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
 
-              {/* Notification Dropdown */}
+              {/* Notification Popup Modal */}
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50">
-                  <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-[#E5ECF4] rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="p-3.5 border-b border-[#E5ECF4] flex items-center justify-between bg-slate-50/70">
                     <div>
-                      <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
-                      <p className="text-[10px] text-slate-400 font-semibold">{unreadCount} unread</p>
+                      <h3 className="font-bold text-[#172B4D] text-xs">Administrative Alerts</h3>
+                      <p className="text-[10px] text-[#71829E] font-medium">{unreadCount} unread actions</p>
                     </div>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-rose-50 text-[#F43F5E] text-[10px] font-bold border border-rose-200">
+                        Attention Required
+                      </span>
+                    )}
                   </div>
 
-                  <div className="max-h-80 overflow-y-auto">
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
                     {notifLoading ? (
-                      <div className="py-12 flex items-center justify-center">
-                        <Loader2 className="animate-spin text-slate-400" size={24} />
+                      <div className="py-10 flex items-center justify-center">
+                        <Loader2 className="animate-spin text-[#3B82F6]" size={22} />
                       </div>
                     ) : notifError ? (
-                      <div className="p-6 text-center">
+                      <div className="p-5 text-center">
                         <p className="text-rose-600 text-xs font-semibold">Failed to load notifications</p>
                         <p className="text-slate-400 text-[10px] mt-1">{notifError}</p>
                       </div>
                     ) : notifications.length === 0 ? (
                       <div className="p-8 text-center">
-                        <Bell size={28} className="text-slate-200 mx-auto mb-2" />
-                        <p className="text-slate-500 text-xs font-semibold">No new notifications</p>
+                        <Bell size={24} className="text-slate-300 mx-auto mb-2" />
+                        <p className="text-slate-500 text-xs font-semibold">All queues clear. No new notifications.</p>
                       </div>
                     ) : (
                       notifications.slice(0, 15).map((notif) => {
                         const dest = getNotificationDestination(notif, 'Admin');
                         return (
-                        <div 
-                          key={notif.id} 
-                          onClick={() => handleNotificationClick(notif)}
-                          className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-100/80 transition-colors flex items-start gap-3 cursor-pointer group ${
-                            !notif.isRead ? 'bg-blue-50/40' : ''
-                          }`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={`text-xs leading-snug group-hover:text-primary-700 transition-colors ${!notif.isRead ? 'font-bold text-slate-900' : 'font-semibold text-slate-600'}`}>
-                                {notif.title}
-                              </p>
+                          <div 
+                            key={notif.id} 
+                            onClick={() => handleNotificationClick(notif)}
+                            className={`px-4 py-3 hover:bg-slate-50 transition-colors flex items-start gap-3 cursor-pointer group ${
+                              !notif.isRead ? 'bg-blue-50/30' : ''
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className={`text-xs leading-snug group-hover:text-[#3B82F6] transition-colors ${
+                                  !notif.isRead ? 'font-bold text-[#172B4D]' : 'font-semibold text-slate-600'
+                                }`}>
+                                  {notif.title}
+                                </p>
+                                {!notif.isRead && (
+                                  <span className="h-2 w-2 rounded-full bg-[#3B82F6] shrink-0 mt-1" />
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{notif.message}</p>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <p className="text-[10px] text-slate-400 font-medium">{timeAgo(notif.createdAt)}</p>
+                                {dest && dest.label && (
+                                  <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-[#3B82F6] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                    {dest.label} <ArrowUpRight size={10} />
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
                               {!notif.isRead && (
-                                <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1" />
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleMarkRead(notif.id); }}
+                                  title="Mark as read"
+                                  className="h-6 w-6 rounded-md text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 flex items-center justify-center transition-colors"
+                                >
+                                  <Check size={12} />
+                                </button>
                               )}
-                            </div>
-                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-[10px] text-slate-400 font-semibold">{timeAgo(notif.createdAt)}</p>
-                              {dest && dest.label && (
-                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded">
-                                  {dest.label} <ArrowUpRight size={10} />
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1 shrink-0">
-                            {!notif.isRead && (
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleMarkRead(notif.id); }}
-                                title="Mark as read"
-                                className={`h-6 w-6 rounded-lg text-slate-400 flex items-center justify-center transition-colors
-                                  hover:bg-blue-100 hover:text-blue-500`}
+                                onClick={(e) => { e.stopPropagation(); handleDelete(notif.id); }}
+                                title="Dismiss"
+                                className="h-6 w-6 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors"
                               >
-                                <Check size={12} />
+                                <Trash2 size={12} />
                               </button>
-                            )}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDelete(notif.id); }}
-                              title="Dismiss"
-                              className={`h-6 w-6 rounded-lg text-slate-400 flex items-center justify-center transition-colors
-                                hover:bg-rose-100 hover:text-rose-500`}
-                            >
-                              <Trash2 size={12} />
-                            </button>
+                            </div>
                           </div>
-                        </div>
                         );
                       })
                     )}
                   </div>
 
                   {notifications.length > 0 && (
-                    <div className="p-3 border-t border-slate-100 bg-slate-50">
+                    <div className="p-2.5 border-t border-[#E5ECF4] bg-slate-50 text-center">
                       <button 
                         onClick={() => { setNotifOpen(false); navigate('/dashboard/admin/notifications'); }}
-                        className="w-full text-center text-xs font-bold text-slate-600 hover:text-slate-800 transition-colors py-1"
+                        className="text-xs font-bold text-[#3B82F6] hover:text-[#17365C] transition-colors py-0.5"
                       >
-                        View all notifications
+                        View all operational notifications →
                       </button>
                     </div>
                   )}
@@ -365,22 +583,24 @@ export default function AdminLayout() {
               )}
             </div>
 
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-              <div className="h-8 w-8 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white font-bold text-sm">
-                {user?.name?.charAt(0) || 'A'}
+            {/* Admin Badge */}
+            <div className="flex items-center gap-2 pl-3 border-l border-[#E5ECF4]">
+              <div className="h-8 w-8 rounded-full bg-[#17365C] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                {user?.name?.charAt(0).toUpperCase() || 'A'}
               </div>
-              <div className="hidden md:block text-sm">
-                <p className="font-bold text-slate-700 leading-none">{user?.name}</p>
-                <p className="text-xs text-slate-500">Super Admin</p>
+              <div className="hidden sm:block text-left">
+                <p className="text-xs font-bold text-[#172B4D] leading-none">{user?.name || 'Administrator'}</p>
+                <p className="text-[10px] font-semibold text-[#10B981] mt-0.5">Super Admin</p>
               </div>
             </div>
           </div>
         </header>
-        
-        <div className="p-4 md:p-10 max-w-7xl mx-auto">
+
+        {/* ── Main Content Scroll Container ── */}
+        <main className="flex-1 overflow-y-auto px-4 md:px-8 py-6 max-w-[1700px] w-full mx-auto space-y-6">
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

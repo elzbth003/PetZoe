@@ -28,6 +28,8 @@ export const adminApi = {
   getRecentActivity: () => api.get('/admin/dashboard/activity'),
   getAnalytics: (days = 30) => api.get(`/admin/dashboard/analytics?days=${days}`),
   getSystemHealth: () => api.get('/admin/dashboard/system-health'),
+  getRecentAppointments: () => api.get('/admin/dashboard/appointments/recent'),
+  getRecentOrders: () => api.get('/admin/dashboard/orders/recent'),
 
   // Settings
   changePassword: (data) => api.put('/users/me/password', data)

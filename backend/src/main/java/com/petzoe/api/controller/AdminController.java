@@ -16,13 +16,19 @@ public class AdminController {
     private final AdminService adminService;
     private final com.petzoe.api.repository.AuditLogRepository auditLogRepository;
     private final com.petzoe.api.service.AdminAnalyticsService adminAnalyticsService;
+    private final com.petzoe.api.service.AppointmentService appointmentService;
+    private final com.petzoe.api.service.OrderService orderService;
 
     public AdminController(AdminService adminService,
                            com.petzoe.api.repository.AuditLogRepository auditLogRepository,
-                           com.petzoe.api.service.AdminAnalyticsService adminAnalyticsService) {
+                           com.petzoe.api.service.AdminAnalyticsService adminAnalyticsService,
+                           com.petzoe.api.service.AppointmentService appointmentService,
+                           com.petzoe.api.service.OrderService orderService) {
         this.adminService = adminService;
         this.auditLogRepository = auditLogRepository;
         this.adminAnalyticsService = adminAnalyticsService;
+        this.appointmentService = appointmentService;
+        this.orderService = orderService;
     }
 
     @GetMapping("/dashboard/stats")
@@ -39,6 +45,16 @@ public class AdminController {
     public ResponseEntity<com.petzoe.api.dto.AdminAnalyticsDTO> getAnalytics(
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "30") int days) {
         return ResponseEntity.ok(adminAnalyticsService.getAnalytics(days));
+    }
+
+    @GetMapping("/dashboard/appointments/recent")
+    public ResponseEntity<java.util.List<com.petzoe.api.dto.AppointmentDTO>> getRecentAppointments() {
+        return ResponseEntity.ok(appointmentService.getAllAppointmentsForAdmin());
+    }
+
+    @GetMapping("/dashboard/orders/recent")
+    public ResponseEntity<java.util.List<com.petzoe.api.entity.Order>> getRecentOrders() {
+        return ResponseEntity.ok(orderService.getAllOrders());
     }
 
     @GetMapping("/dashboard/system-health")
